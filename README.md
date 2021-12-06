@@ -1,3 +1,7 @@
-# Vue 3 + Typescript + Vite + Tailwindcss + Vue Router
+# Ownclipboard Client Side
 
-This template should help get you started developing with Vue 3, Typescript, and Tailwindcss in Vite.
+Powered by [Vue](https://npmjs.org/package/vue)
+
+In order to expand the functionality of the client side, We have decided to create a standalone client side application.
+
+More notes will be added here in the long run.
