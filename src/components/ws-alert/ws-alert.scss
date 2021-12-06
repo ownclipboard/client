@@ -1,0 +1,41 @@
+.ws-alert-container {
+  z-index: 200;
+  position: fixed;
+  right: 0;
+  top: 25px;
+
+  @apply max-w-sm w-full space-y-2;
+
+  .ws-alert {
+    @apply flex  rounded-l shadow
+    text-sm font-medium  p-3 space-x-3;
+
+    .ws-alert-icon {
+      @apply flex-initial;
+    }
+
+    .ws-alert-message {
+      @apply flex-auto text-black font-medium;
+    }
+
+    .ws-alert-close {
+      @apply flex-initial;
+    }
+
+    &.success {
+      @apply bg-green-200 text-green-900;
+    }
+
+    &.info {
+      @apply bg-cyan-200 text-cyan-900;
+    }
+
+    &.warning {
+      @apply bg-yellow-200 text-yellow-900;
+    }
+
+    &.error {
+      @apply bg-red-200 text-red-900;
+    }
+  }
+}
