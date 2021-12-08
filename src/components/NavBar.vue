@@ -37,7 +37,7 @@ const userNavigation = [
         <div class="relative z-10 px-2 flex lg:px-0">
           <div class="flex-shrink-0 flex items-center">
             <img class="block h-8 w-auto mr-1" src="/logo.png" alt="Workflow" />
-            <span class="font-light">{{ config.name }}</span>
+            <span class="font-light hidden md:block">{{ config.name }}</span>
           </div>
         </div>
         <div

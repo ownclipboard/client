@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { $http } from "../http";
+import { currentTab, foldersAsObject, getFolders } from "../stores/tabs.store";
 
 const hasClickedPasteboard = ref(false);
 
@@ -25,10 +26,13 @@ async function paste(btn: ILoadingButton) {
 }
 
 async function pasteToServer(data: string, title?: string) {
-  return $http.post("content/paste", {
-    title,
-    content: data
-  });
+  return $http
+    .post("content/paste", {
+      title,
+      content: data,
+      folder: currentTab.value
+    })
+    .then(getFolders);
 }
 </script>
 
@@ -38,15 +42,21 @@ async function pasteToServer(data: string, title?: string) {
     @mouseleave="clickPasteBoard(false)"
     @focusout="clickPasteBoard(false)"
     :class="[hasClickedPasteboard ? 'bg-gray-200' : 'bg-gray-900']"
-    class="my-5 rounded pt-14 shadow-md"
+    class="rounded pt-5 lg:pt-10 shadow-md"
   >
-    <h1 class="text-4xl text-center text-gray-500 font-mono">
+    <h6 v-if="foldersAsObject[currentTab]" class="text-center text-gray-500 mb-1">
+      Paste in <span class="text-gray-300">{{ foldersAsObject[currentTab].name }}</span>
+    </h6>
+
+    <h1 class="text-4xl hidden lg:block text-center text-gray-500 font-mono">
       <template v-if="!hasClickedPasteboard">click</template>
       <small v-if="!hasClickedPasteboard" class="mx-3 font-sans text-gray-300">&</small>
       <span>ctrl+v</span>
     </h1>
 
-    <section class="text-center mt-10 mb-5 space-x-2">
+    <section
+      class="text-center mt-5 lg:mt-10 mb-5 space-x-2 text-xs md:text-sm lg:text-base"
+    >
       <LoadingButton :click="paste" class="btn gray rounded-sm shadow-lg">
         <i class="fa fa-paste"></i>
         PASTE

@@ -7,7 +7,13 @@ body {
 }
 
 .btn {
-  @apply py-2 px-5;
+  &:not(.-px) {
+    @apply px-5;
+  }
+
+  &:not(.-py) {
+    @apply py-2;
+  }
 
   i.fa {
     @apply mr-1;
@@ -17,4 +23,8 @@ body {
     @apply bg-gray-800 border border-gray-600;
     @apply hover:bg-gray-700;
   }
+}
+
+.text-antiquewhite {
+  color: antiquewhite;
 }

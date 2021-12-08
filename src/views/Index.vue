@@ -49,14 +49,16 @@ function login(btn: ILoadingButton) {
 </script>
 
 <template>
-  <div class="pl-5 pt-5">
+  <div class="lg:pl-5 lg:pt-5">
     <div class="text-center">
-      <h1 class="text-6xl font-bold text-gray-300 mt-24">{{ config.name }}</h1>
+      <h1 class="text-5xl lg:text-6xl font-bold text-gray-300 mt-24">
+        {{ config.name }}
+      </h1>
       <h5 class="font-light">Create, Copy, Paste or Send Documents across devices</h5>
     </div>
 
     <!-- Auth Form  -->
-    <div class="flex mt-20">
+    <div class="flex mt-5 lg:mt-10">
       <div class="m-auto max-w-md w-full p-5 rounded">
         <!-- Check Username  -->
         <form class="space-y-3">

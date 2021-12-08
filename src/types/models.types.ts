@@ -8,3 +8,9 @@ export type OwnClip = {
   favorite: boolean;
   updatedAt: string;
 };
+
+export type OwnFolder = {
+  name: string;
+  slug: string;
+  contents: number;
+};
