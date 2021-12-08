@@ -1,5 +1,20 @@
 @import "var.scss";
+
 body {
-  background-color: $dark;
+  //background-color: $dark;
+  @apply bg-gray-800;
   color: white;
+}
+
+.btn {
+  @apply py-2 px-5;
+
+  i.fa {
+    @apply mr-1;
+  }
+
+  &.gray {
+    @apply bg-gray-800 border border-gray-600;
+    @apply hover:bg-gray-700;
+  }
 }

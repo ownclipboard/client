@@ -1,13 +1,15 @@
 import axios from "axios";
 import config from "./config";
 import { $alert } from "./components/ws-alert/ws-alert";
+import { $localStorage } from "./stores/native";
 
 export const $http = axios.create({
   baseURL: config.baseUrl,
   timeout: 1000,
   headers: {
     "Content-Type": "application/json",
-    Accept: "application/json"
+    Accept: "application/json",
+    oc_token: $localStorage.get("token")
   }
 });
 

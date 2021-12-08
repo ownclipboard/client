@@ -3,11 +3,14 @@ import config from "../config";
 import { reactive, ref } from "vue";
 import { $http, alertRequestError } from "../http";
 import type { ILoadingButton } from "revue-components/vues/component-types";
+import { $localStorage } from "../stores/native";
+import { $alert } from "../components/ws-alert/ws-alert";
+import { redirect } from "../functions";
 
 const userNameExists = ref<boolean>();
 const form = reactive({
   username: "ownclipboard",
-  password: ""
+  password: "ownclipboard"
 });
 
 function checkUsername(btn: ILoadingButton) {
@@ -33,11 +36,15 @@ function login(btn: ILoadingButton) {
       password: form.password
     })
     .then((res) => {
-      localStorage.setItem("token", res.token);
-      window.location.href = config.baseUrl;
+      $alert.success("Login successful, Redirecting to your clipboard...");
+      $localStorage.set("token", res.token);
+
+      redirect("/clipboard", 3000);
     })
-    .catch(alertRequestError)
-    .finally(btn.stopLoading);
+    .catch((e) => {
+      alertRequestError(e);
+      btn.stopLoading();
+    });
 }
 </script>
 
@@ -97,7 +104,7 @@ function login(btn: ILoadingButton) {
             <div>
               <LoadingButton
                 type="submit"
-                message="Checking"
+                message="Validating"
                 :click="login"
                 icon="fa fa-slash fa-spin mr-3"
               >
