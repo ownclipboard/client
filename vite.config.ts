@@ -9,7 +9,9 @@ export default defineConfig({
     ViteEjsPlugin((config) => {
       return {
         config: {
-          name: config.env.VITE_APP_NAME || "Ownclipboard Client"
+          name: config.env.VITE_APP_NAME || "Ownclipboard Client",
+          useCdnForExternalScripts:
+            config.env.VITE_APP_USE_CDN_FOR_EXTERNAL_SCRIPTS || config.isProduction
         }
       };
     })

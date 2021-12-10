@@ -1,6 +1,9 @@
 {
   "name": "ownclipboard-client",
   "version": "1.0.0",
+  "repository": "https://github.com/ownclipboard/client",
+  "author": "ownclipboard",
+  "license": "MIT",
   "scripts": {
     "dev": "vite --port 3004 --host",
     "build": "vue-tsc --noEmit && vite build",
