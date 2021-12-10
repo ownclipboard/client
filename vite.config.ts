@@ -7,11 +7,16 @@ export default defineConfig({
   plugins: [
     vue(),
     ViteEjsPlugin((config) => {
+      const useCdnForExternalScripts =
+        config.env.VITE_APP_USE_CDN_FOR_EXTERNAL_SCRIPTS === "true" ||
+        config.isProduction;
+
+      const name = config.env.VITE_APP_NAME || "Ownclipboard Client";
+
       return {
         config: {
-          name: config.env.VITE_APP_NAME || "Ownclipboard Client",
-          useCdnForExternalScripts:
-            config.env.VITE_APP_USE_CDN_FOR_EXTERNAL_SCRIPTS || config.isProduction
+          name,
+          useCdnForExternalScripts
         }
       };
     })
