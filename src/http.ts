@@ -14,6 +14,10 @@ export const $http = axios.create({
 });
 
 $http.interceptors.response.use((response) => {
+  if (response.data && response.data.info) {
+    $alert.info(response.data.info);
+  }
+
   return response.data;
 });
 

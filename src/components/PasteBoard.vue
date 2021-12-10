@@ -44,7 +44,10 @@ async function pasteToServer(data: string, title?: string) {
     :class="[hasClickedPasteboard ? 'bg-gray-200' : 'bg-gray-900']"
     class="rounded pt-5 lg:pt-10 shadow-md"
   >
-    <h6 v-if="foldersAsObject[currentTab]" class="text-center text-gray-500 mb-1">
+    <h6
+      v-if="currentTab && foldersAsObject[currentTab]"
+      class="text-center text-gray-500 mb-1"
+    >
       Paste in <span class="text-gray-300">{{ foldersAsObject[currentTab].name }}</span>
     </h6>
 

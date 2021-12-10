@@ -32,7 +32,7 @@ onMounted(loadClips);
 <template>
   <section class="space-y-5">
     <template v-for="clip in clips" :key="clip.uuid">
-      <div class="bg-gray-900 p-3 rounded">
+      <div class="bg-gray-900 p-3 rounded hover:-mx-4 transition-all">
         <div class="meta text-xs text-gray-600">
           <div class="float-left">Length: {{ clips.length }}</div>
           <div class="float-right">
@@ -42,7 +42,14 @@ onMounted(loadClips);
         </div>
 
         <div class="block my-3 text-antiquewhite text-sm font-mono">
-          <p v-text="clip.context"></p>
+          <p v-if="clip.type === 'text'" v-text="clip.context"></p>
+          <a
+            v-else-if="clip.type === 'url'"
+            :href="clip.context"
+            v-text="clip.context"
+            target="_blank"
+            class="text-green-400 hover:text-green-500"
+          ></a>
         </div>
       </div>
     </template>
