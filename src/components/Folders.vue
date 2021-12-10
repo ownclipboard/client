@@ -24,6 +24,18 @@ function createFolder(btn: ILoadingButton) {
     .finally(btn.stopLoading);
 }
 
+// Get visibility icon
+function visibilityIcon(visibility: OwnFolder["visibility"]) {
+  switch (visibility) {
+    case "private":
+      return "fa-eye-slash";
+    case "encrypted":
+      return "fa-lock";
+    default:
+      return "fa-folder";
+  }
+}
+
 /**
  * Open Folder
  */
@@ -56,10 +68,7 @@ onMounted(getFolders);
         :message="`Opening (${folder.name})`"
         class="btn -px px-3 gray border border-gray-500 rounded-md text-xs"
       >
-        <i
-          :class="[currentTab === folder.slug ? 'fa-folder-open' : 'fa-folder']"
-          class="fa text-gray-400"
-        ></i>
+        <i :class="visibilityIcon(folder.visibility)" class="fa text-gray-400"></i>
         <span class="mx-1 font-medium text-gray-400">{{ folder.name }}</span>
         <span class="text-yellow-300 font-medium">({{ folder.contents }})</span>
       </LoadingButton>
@@ -87,12 +96,12 @@ onMounted(getFolders);
       </button>
     </form>
 
-    <a
+    <button
       v-else
       @click.prevent="showAddFolderForm = true"
       class="text-sm text-green-300 hover:text-green-500"
     >
-      <i class="fa fa-folder-plus mr-1"></i> Add</a
-    >
+      <i class="fa fa-folder-plus mr-1"></i> Add
+    </button>
   </section>
 </template>

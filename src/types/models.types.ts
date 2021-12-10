@@ -13,4 +13,5 @@ export type OwnFolder = {
   name: string;
   slug: string;
   contents: number;
+  visibility: "public" | "private" | "encrypted";
 };
