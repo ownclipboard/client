@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { PropType, ref } from "vue";
 import { md5 } from "../functions/crypto";
-import { OwnFolder } from "../types/models.types";
-import LoadingButton from "../../node_modules/revue-components/vues/LoadingButton.vue";
+import type { OwnFolder } from "../types/models.types";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { $http, alertRequestError } from "../http";
 
@@ -32,10 +31,14 @@ function setFolderPassword(btn: ILoadingButton) {
       // unset password.
       password.value = "";
       // reload to get fresh state.
-      window.location.reload();
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     })
-    .catch(alertRequestError)
-    .finally(btn.stopLoading);
+    .catch(e => {
+      alertRequestError(e);
+      btn.stopLoading();
+    });
 }
 </script>
 
@@ -88,6 +91,7 @@ function setFolderPassword(btn: ILoadingButton) {
                     class="bg-gray-800 p-2 text-sm border rounded border-gray-700 focus:outline-none"
                   />
                   <LoadingButton
+                    icon="fa fa-slash fa-spin mr-3"
                     type="submit"
                     :click="setFolderPassword"
                     class="btn text-sm font-medium bg-white hover:bg-gray-200 text-gray-700 rounded-sm ml-1"

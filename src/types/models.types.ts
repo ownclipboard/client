@@ -6,6 +6,8 @@ export type OwnClip = {
   context: string;
   locked: boolean;
   favorite: boolean;
+  encrypted: boolean;
+  decrypted?: boolean;
   updatedAt: string;
 };
 
