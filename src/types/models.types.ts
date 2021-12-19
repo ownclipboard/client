@@ -12,6 +12,7 @@ export type OwnClip = {
 export type OwnFolder = {
   name: string;
   slug: string;
-  contents: number;
+  contents: number; // number of clips in this folder
   visibility: "public" | "private" | "encrypted";
+  hasPassword?: boolean;
 };

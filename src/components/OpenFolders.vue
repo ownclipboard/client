@@ -57,15 +57,13 @@ onMounted(sortCurrentTab);
                 tab.slug === currentTab
                   ? 'border-green-500 text-green-300 bg-gray-900 rounded-t-md'
                   : 'border-transparent text-gray-500 hover:text-white hover:border-green-500',
-                'flex whitespace-nowrap flex py-2 px-4 border-b-2 font-medium text-xs lg:text-sm cursor-pointer'
+                'flex whitespace-nowrap py-2 px-4 border-b-2 font-medium text-xs lg:text-sm cursor-pointer'
               ]"
               :aria-current="tab.slug === currentTab ? 'page' : undefined"
             >
               <a class="flex-auto" @click.prevent="changeTab(index)">
                 {{ tab.name }}
-                <span v-if="tab.contents" class="text-gray-200"
-                  >({{ tab.contents }})</span
-                >
+                <span v-if="tab.contents" class="text-gray-200">({{ tab.contents }})</span>
               </a>
               <a
                 v-if="openTabs.length > 1"

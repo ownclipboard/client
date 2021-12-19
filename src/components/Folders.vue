@@ -1,12 +1,23 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { currentTab, folders, getFolders, openTabs } from "../stores/tabs.store";
+import {
+  currentTab,
+  folders,
+  getFolders,
+  openTabs,
+  foldersAsObject
+} from "../stores/tabs.store";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import type { OwnFolder } from "../types/models.types";
 import { $http, alertRequestError } from "../http";
+import Modal from "./Modal.vue";
+import ConfigureFolder from "./ConfigureFolder.vue";
 
 const showAddFolderForm = ref(false);
 const newFolderName = ref("");
+
+// Configure Folder Modal Variables
+const configuringFolder = ref<OwnFolder>();
 
 function createFolder(btn: ILoadingButton) {
   if (!newFolderName.value) return btn.stopLoading();
@@ -55,11 +66,30 @@ function openFolder(btn: ILoadingButton, folder: OwnFolder) {
   btn.stopLoading();
 }
 
+/**
+ * Configure folder
+ */
+function configureFolder() {
+  // Open folder
+  if (!currentTab.value) return;
+  configuringFolder.value = foldersAsObject.value[currentTab.value!];
+}
+
 onMounted(getFolders);
 </script>
 <template>
   <section class="space-x-3 space-y-3 lg:px-4 my-5 lg:my-10">
-    <h3 class="text-gray-400 text-xs font-medium uppercase">Folders:</h3>
+    <div class="text-gray-400 text-xs font-medium uppercase">
+      <span class="mr-2">Folders:</span>
+      <a
+        @click.prevent="configureFolder"
+        href="#"
+        class="text-xs text-yellow-300 opacity-50 hover:opacity-90"
+      >
+        <i class="fa fa-cog mr-1"></i>
+        Configure ({{ currentTab }})
+      </a>
+    </div>
     <template v-for="folder in folders" :key="folder.slug">
       <LoadingButton
         :click="openFolder"
@@ -88,8 +118,9 @@ onMounted(getFolders);
         message
         class="text-green-300"
         icon="fa fa-slash fa-spin mr-3"
-        ><i class="fa fa-save"></i
-      ></LoadingButton>
+      >
+        <i class="fa fa-save"></i>
+      </LoadingButton>
 
       <button @click.prevent="showAddFolderForm = false" class="text-red-300">
         <i class="fa fa-times"></i>
@@ -104,4 +135,9 @@ onMounted(getFolders);
       <i class="fa fa-folder-plus mr-1"></i> Add
     </button>
   </section>
+
+  <!--  Configure Folder Modal -->
+  <Modal v-if="configuringFolder" max-size="max-w-md" @closeModal="configuringFolder = undefined">
+    <ConfigureFolder :folder="configuringFolder" />
+  </Modal>
 </template>
