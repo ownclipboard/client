@@ -19,9 +19,9 @@ const user = {
 };
 const navigation = [
   { name: "Clipboard", href: "#", current: true },
+  { name: "Gallery", href: "#", current: false },
   { name: "Devices", href: "#", current: false },
-  { name: "Settings", href: "#", current: false },
-  { name: "Calendar", href: "#", current: false }
+  { name: "Settings", href: "#", current: false }
 ];
 const userNavigation = [
   { name: "Your Profile", href: "#" },

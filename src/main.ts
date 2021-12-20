@@ -11,9 +11,11 @@ app.use(router);
 import LoadingButton from "revue-components/vues/LoadingButton.vue";
 import WsAlert from "./components/ws-alert/WsAlert.vue";
 import TimeAgo from "revue-components/vues/TimeAgoLite.vue";
+import PasswordPrompt from "./components/PasswordPrompt.vue";
 
 app.component("LoadingButton", LoadingButton);
 app.component("WsAlert", WsAlert);
 app.component("TimeAgo", TimeAgo);
+app.component("PasswordPrompt", PasswordPrompt);
 
 app.mount("#app");

@@ -3,7 +3,8 @@ import { onMounted, ref } from "vue";
 import { $localStorage } from "../stores/native";
 import { $http } from "../http";
 import { redirect } from "../functions";
-import SideBar from "../components/NavBar.vue";
+import NavBar from "../components/NavBar.vue";
+import { askForPassword } from "../components/PasswordPrompt";
 
 const authenticated = ref<boolean>();
 
@@ -21,15 +22,17 @@ function ping() {
 }
 
 onMounted(ping);
+
 </script>
 
 <template>
   <section v-if="authenticated === undefined">Authenticating...</section>
   <section v-else-if="authenticated === true">
-    <SideBar />
+    <NavBar />
     <section class="container py-10">
       <router-view />
     </section>
+    <PasswordPrompt />
   </section>
   <section v-else-if="authenticated === false">Login Required!</section>
 </template>

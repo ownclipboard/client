@@ -7,6 +7,7 @@ import type { ILoadingButton } from "revue-components/vues/component-types";
 import { aesDecrypt, aesEncrypt, md5 } from "../functions/crypto";
 import { checkFolderPassword } from "../services/clips.services";
 import { $alert } from "./ws-alert/ws-alert";
+import { askForPassword } from "./PasswordPrompt";
 
 const clips = ref<OwnClip[]>([]);
 const clipsCache: Record<string, OwnClip[]> = {};
@@ -42,6 +43,9 @@ function belongsToEncryptedFolderButNotEncrypted(clip: OwnClip) {
   return folder && folder.hasPassword && !clip.encrypted;
 }
 
+/**
+ * Encrypt clip
+ */
 async function encryptClip(btn: ILoadingButton, clip: OwnClip) {
   let password = prompt("Enter password to encrypt clip");
   if (!password) return btn.stopLoading();
@@ -79,8 +83,12 @@ async function encryptClip(btn: ILoadingButton, clip: OwnClip) {
   }
 }
 
+/**
+ * Decrypt clip
+ */
 async function decryptClip(btn: ILoadingButton, clip: OwnClip) {
-  let password = prompt("Enter password to decrypt clip");
+  let password = await askForPassword("Enter password to decrypt clip:");
+  
   if (!password) return btn.stopLoading();
 
   // hash password with md5

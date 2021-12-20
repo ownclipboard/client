@@ -96,10 +96,10 @@ onMounted(getFolders);
         :data="folder"
         icon="fa fa-slash fa-spin mr-3"
         :message="`Opening (${folder.name})`"
-        class="btn -px px-3 gray border border-gray-500 rounded-md text-xs"
+        class="btn -px px-3 gray border text-gray-400 hover:text-green-300 border-gray-500 rounded-md text-xs"
       >
-        <i :class="visibilityIcon(folder.visibility)" class="fa text-gray-400"></i>
-        <span class="mx-1 font-medium text-gray-400">{{ folder.name }}</span>
+        <i :class="visibilityIcon(folder.visibility)" class="fa"></i>
+        <span class="mx-1 font-medium">{{ folder.name }}</span>
         <span class="text-yellow-300 font-medium">({{ folder.contents }})</span>
       </LoadingButton>
     </template>
