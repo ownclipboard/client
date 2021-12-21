@@ -2,18 +2,39 @@
 import Modal from './Modal.vue';
 import { ref } from "vue";
 import { PasswordPromptLabel, PasswordPromptResolveFn, ShowPasswordPrompt } from './PasswordPrompt';
+import { md5 } from '../functions/crypto';
 
+// Password input.
 const password = ref("")
 
+/**
+ * Confirm password
+ * Send hashed password to resolve function.
+ */
 function confirmPassword() {
+    let pass: string | undefined = password.value;
+
+    if (pass && pass.length > 0) {
+        // hash password with md5
+        pass = md5(pass);
+    } else {
+        pass = undefined;
+    }
+
     ShowPasswordPrompt.value = false;
-    PasswordPromptResolveFn.value(password.value || undefined);
-    password.value = "";
+    PasswordPromptResolveFn.value(pass || undefined);
+    // clear password
+    pass = password.value = "";
 }
 
+/**
+ * Cancel password prompt
+ * Send undefined to resolve function
+ */
 function cancelPassword() {
     ShowPasswordPrompt.value = false;
     PasswordPromptResolveFn.value(undefined);
+    // clear password
     password.value = "";
 }
 
