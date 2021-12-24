@@ -1,0 +1,25 @@
+.Paginator > .pagination {
+  @apply block w-full mt-2 px-3;
+
+  .pagination-previous,
+  .pagination-next {
+    @apply px-3 py-1 text-sm border border-yellow-600 hover:bg-yellow-600 hover:text-yellow-50 rounded text-yellow-600 cursor-pointer;
+  }
+
+  .pagination-list {
+    @apply block list-none;
+  }
+
+  .pagination-link {
+    @apply px-3 py-1.5 text-sm border border-yellow-600 hover:bg-yellow-600 hover:text-yellow-50 rounded text-yellow-600 cursor-pointer;
+    @apply inline-block;
+  }
+
+  .pagination-link.is-current {
+    @apply bg-yellow-600 text-white font-bold border-white;
+  }
+
+  .pagination-ellipsis {
+    @apply text-yellow-600;
+  }
+}
