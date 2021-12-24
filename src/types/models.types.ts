@@ -16,5 +16,6 @@ export type OwnFolder = {
   slug: string;
   contents: number; // number of clips in this folder
   visibility: "public" | "private" | "encrypted";
+  publicPaste?: { id: string; date: string };
   hasPassword?: boolean;
 };

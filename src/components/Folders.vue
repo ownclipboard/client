@@ -17,7 +17,7 @@ const showAddFolderForm = ref(false);
 const newFolderName = ref("");
 
 // Configure Folder Modal Variables
-const configuringFolder = ref<OwnFolder>();
+const configuringFolder = ref<string>();
 
 function createFolder(btn: ILoadingButton) {
   if (!newFolderName.value) return btn.stopLoading();
@@ -72,12 +72,13 @@ function openFolder(btn: ILoadingButton, folder: OwnFolder) {
 function configureFolder() {
   // Open folder
   if (!currentTab.value) return;
-  configuringFolder.value = foldersAsObject.value[currentTab.value!];
+  configuringFolder.value = currentTab.value!;
 }
 
 onMounted(getFolders);
-onMounted(() => setTimeout(configureFolder, ));
 
+// Activate configuring folder
+// setTimeout(configureFolder, 500);
 </script>
 <template>
   <section class="space-x-3 space-y-3 lg:px-4 my-5 lg:my-10">

@@ -4,7 +4,7 @@ import { $alert } from "./components/ws-alert/ws-alert";
 import { $localStorage } from "./stores/native";
 
 export const $http = axios.create({
-  baseURL: config.baseUrl,
+  baseURL: config.serverUrl,
   timeout: 1000,
   headers: {
     "Content-Type": "application/json",

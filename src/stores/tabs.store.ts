@@ -33,15 +33,21 @@ watch(openTabs, (n) => $localStorage.setAsType("tabs", n), { immediate: true });
 // Update counter on open tabs
 export function updateOpenTabStats() {
   const folders = foldersAsObject.value;
-  openTabs.forEach((tab) => {
-    tab.contents = folders[tab.slug].contents;
+  openTabs.forEach((tab, i) => {
+    const folder = folders[tab.slug];
+    if(folder) {
+      tab.contents = folders[tab.slug].contents;
+    } else {
+      // delete tab if folder no longer exists
+      openTabs.splice(i, 1);
+    }
   });
 }
 
 // Get folders
-export function getFolders() {
-  return $http.get<any, OwnFolder[]>("/folders").then((f) => {
-    folders.value = f;
-    updateOpenTabStats();
-  });
+export async function getFolders() {
+  const f = await $http.get<any, OwnFolder[]>("/folders");
+  folders.value = f;
+
+  updateOpenTabStats();
 }
