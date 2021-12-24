@@ -9,8 +9,11 @@ import { checkFolderPassword } from "../services/clips.services";
 import { $alert } from "./ws-alert/ws-alert";
 import { askForPassword } from "./PasswordPrompt";
 import { $events } from "../events";
-import { stringifyQuery } from "vue-router";
+import { strLimitWordsByLength } from "@trapcode/js-toolbox/string/limit"
+import { useClipboard } from '@vueuse/core'
 
+const { copy } = useClipboard();
+const copied = ref("");
 const clips = ref<OwnClip[]>([]);
 const clipsCache: Record<string, OwnClip[]> = {};
 
@@ -38,6 +41,21 @@ $events.on("refreshClips", loadClips);
 watch(currentTab, loadClips);
 // Load clips on first mount.
 onMounted(loadClips);
+
+// Copy clip to clipboard
+function copyClip(btn: ILoadingButton, clip: OwnClip) {
+  // copy clip to clipboard
+  copy(clip.context)
+  // update copied message uuid
+  copied.value = clip.uuid;
+  // Stop loading button
+  btn.stopLoading();
+
+  // Set timeout to clear copied message
+  setTimeout(() => {
+    copied.value = "";
+  }, 3000);
+}
 
 /**
  * Check if clip folder is encrypted and if clip is encrypted
@@ -111,21 +129,22 @@ async function decryptClip(btn: ILoadingButton, clip: OwnClip) {
 }
 
 
+// Delete clip from server
 async function deleteClip(btn: ILoadingButton, [index, clip]: [index: number, clip: OwnClip]) {
   const folder = foldersAsObject.value[clip.folder];
   let password: string | undefined;
 
   if (folder && folder.hasPassword) {
-     password = await askForPassword("Enter password to delete clip:");
-     if(!password) return btn.stopLoading();
+    password = await askForPassword("Enter password to delete clip:");
+    if (!password) return btn.stopLoading();
   } else {
-    if(!confirm("Are you sure you want to delete this clip?")) {
+    if (!confirm("Are you sure you want to delete this clip?")) {
       return btn.stopLoading();
     }
   }
 
   try {
-    await $http.post(`/clip/${clip.uuid}/delete`, {password});
+    await $http.post(`/clip/${clip.uuid}/delete`, { password });
     clips.value = clips.value.filter((c) => c.uuid !== clip.uuid);
   } catch (error) {
     alertRequestError(error);
@@ -138,7 +157,7 @@ async function deleteClip(btn: ILoadingButton, [index, clip]: [index: number, cl
 </script>
 <template>
   <section class="space-y-5">
-    <template v-for="(clip, index) in clips" :key="clip.uuid">
+    <template v-if="clips.length" v-for="(clip, index) in clips" :key="clip.uuid">
       <div class="clip">
         <div class="meta text-xs text-gray-600">
           <div class="float-left">
@@ -162,7 +181,10 @@ async function deleteClip(btn: ILoadingButton, [index, clip]: [index: number, cl
               <small>click to decrypt</small>
             </LoadingButton>
           </div>
-          <p v-else-if="clip.type === 'text'" v-text="clip.context"></p>
+          <p
+            v-else-if="clip.type === 'text'"
+            v-text="strLimitWordsByLength(clip.context, 250, '...')"
+          ></p>
           <a
             v-else-if="clip.type === 'url'"
             :href="clip.context"
@@ -183,6 +205,17 @@ async function deleteClip(btn: ILoadingButton, [index, clip]: [index: number, cl
               <i class="fa fa-key"></i> Encrypt
             </LoadingButton>
           </template>
+
+          <LoadingButton
+            message="Copying"
+            :click="copyClip"
+            :data="clip"
+            class="text-green-300 hover:text-green-500"
+          >
+            <i class="fa fa-copy"></i>
+            {{ copied === clip.uuid ? '#Copied!' : 'Copy' }}
+          </LoadingButton>
+
           <LoadingButton
             message="Deleting"
             :click="deleteClip"
@@ -192,6 +225,11 @@ async function deleteClip(btn: ILoadingButton, [index, clip]: [index: number, cl
             <i class="fa fa-trash"></i> Delete
           </LoadingButton>
         </div>
+      </div>
+    </template>
+    <template v-else>
+      <div class="text-center my-5">
+        <p class="text-gray-400">No clips yet.</p>
       </div>
     </template>
   </section>
@@ -209,7 +247,10 @@ async function deleteClip(btn: ILoadingButton, [index, clip]: [index: number, cl
   @apply block;
 }
 
+.actions {
+  @apply space-x-3;
+}
 .actions a {
-  @apply cursor-pointer;
+  @apply font-medium cursor-pointer;
 }
 </style>

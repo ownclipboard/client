@@ -13,6 +13,7 @@
     "@headlessui/vue": "^1.4.2",
     "@heroicons/vue": "^1.0.5",
     "@trapcode/browser-storage": "^2.2.3",
+    "@trapcode/js-toolbox": "^0.0.5",
     "@vueuse/core": "^7.1.2",
     "@vueuse/integrations": "^7.1.2",
     "animate.css": "^4.1.1",
