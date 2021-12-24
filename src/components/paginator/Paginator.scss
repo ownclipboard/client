@@ -3,7 +3,7 @@
 
   .pagination-previous,
   .pagination-next {
-    @apply px-3 py-1 text-sm border border-yellow-600 hover:bg-yellow-600 hover:text-yellow-50 rounded text-yellow-600 cursor-pointer;
+    @apply px-3 py-1 text-sm border border-green-300 hover:bg-green-300 hover:text-gray-900 rounded text-green-300 cursor-pointer;
   }
 
   .pagination-list {
@@ -11,15 +11,15 @@
   }
 
   .pagination-link {
-    @apply px-3 py-1.5 text-sm border border-yellow-600 hover:bg-yellow-600 hover:text-yellow-50 rounded text-yellow-600 cursor-pointer;
+    @apply px-3 py-1.5 text-sm border border-green-300 hover:bg-green-300 hover:text-gray-900 rounded text-green-300 cursor-pointer;
     @apply inline-block;
   }
 
   .pagination-link.is-current {
-    @apply bg-yellow-600 text-white font-bold border-white;
+    @apply bg-green-300 text-gray-900 font-bold border-gray-900;
   }
 
   .pagination-ellipsis {
-    @apply text-yellow-600;
+    @apply text-green-300;
   }
 }

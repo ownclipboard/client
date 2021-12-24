@@ -10,14 +10,21 @@ import { $alert } from "./ws-alert/ws-alert";
 import { askForPassword } from "./PasswordPrompt";
 import { $events } from "../events";
 import { strLimitWordsByLength } from "@trapcode/js-toolbox/string/limit"
-import { useClipboard } from '@vueuse/core'
+import { useClipboard } from '@vueuse/core';
+import Paginator, { Pagination } from "./paginator/Paginator.vue";
+import { useRoute } from "vue-router";
 
+// Paginated Clips
+type PaginatedClips = Pagination<OwnClip>;
+
+// Paginated
 const { copy } = useClipboard();
 const copied = ref("");
-const clips = ref<OwnClip[]>([]);
-const clipsCache: Record<string, OwnClip[]> = {};
+const $route = useRoute();
+const clips = ref(Pagination<OwnClip>());
+const clipsCache: Record<string, PaginatedClips> = {};
 
-function loadClips() {
+async function loadClips() {
   const tab = currentTab.value!;
 
   // if we have clips cached for this tab,
@@ -26,12 +33,13 @@ function loadClips() {
     clips.value = clipsCache[tab];
   }
 
-  return $http
-    .get<any, { clips: OwnClip[] }>(`/clips/${tab}`)
-    .then((response) => {
-      clips.value = response.clips;
-      clipsCache[tab] = response.clips;
+  const response = await $http
+    .get<any, { clips: typeof clips.value; }>(`/clips/${tab}`, {
+      params: $route.query
     });
+
+  clips.value = response.clips;
+  clipsCache[tab] = response.clips;
 }
 
 // Register refresh clips event 
@@ -46,8 +54,10 @@ onMounted(loadClips);
 function copyClip(btn: ILoadingButton, clip: OwnClip) {
   // copy clip to clipboard
   copy(clip.context)
+
   // update copied message uuid
   copied.value = clip.uuid;
+  
   // Stop loading button
   btn.stopLoading();
 
@@ -145,7 +155,7 @@ async function deleteClip(btn: ILoadingButton, [index, clip]: [index: number, cl
 
   try {
     await $http.post(`/clip/${clip.uuid}/delete`, { password });
-    clips.value = clips.value.filter((c) => c.uuid !== clip.uuid);
+    clips.value.data = clips.value.data.filter((c) => c.uuid !== clip.uuid);
   } catch (error) {
     alertRequestError(error);
   } finally {
@@ -157,7 +167,7 @@ async function deleteClip(btn: ILoadingButton, [index, clip]: [index: number, cl
 </script>
 <template>
   <section class="space-y-5">
-    <template v-if="clips.length" v-for="(clip, index) in clips" :key="clip.uuid">
+    <template v-if="clips.data.length" v-for="(clip, index) in clips.data" :key="clip.uuid">
       <div class="clip">
         <div class="meta text-xs text-gray-600">
           <div class="float-left">
@@ -233,6 +243,8 @@ async function deleteClip(btn: ILoadingButton, [index, clip]: [index: number, cl
       </div>
     </template>
   </section>
+
+  <Paginator @on-page-change="loadClips" class="mt-5" :data="clips" />
 </template>
 
 <style scoped>

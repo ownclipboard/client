@@ -76,6 +76,8 @@ function configureFolder() {
 }
 
 onMounted(getFolders);
+onMounted(() => setTimeout(configureFolder, ));
+
 </script>
 <template>
   <section class="space-x-3 space-y-3 lg:px-4 my-5 lg:my-10">

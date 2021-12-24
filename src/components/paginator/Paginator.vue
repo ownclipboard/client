@@ -1,14 +1,31 @@
 <script lang="ts">
-import { computed, defineComponent, onMounted, toRefs } from "vue";
+import { computed, defineComponent, onMounted, PropType, toRefs } from "vue";
 import { useRoute, useRouter } from "vue-router";
+
+export type Pagination<T = any> = {
+  total: number;
+  perPage: number;
+  page: number;
+  lastPage: number;
+  data: T[]
+};
+
+export function Pagination<T = any>(): Pagination<T> {
+  return {
+    total: 0,
+    page: 1,
+    perPage: 0,
+    lastPage: 1,
+    data: []
+  };
+}
 
 export default defineComponent({
   emits: ["onPageChange"],
 
   props: {
-    // page: { type: Number, default: 1 },
     data: {
-      type: Object,
+      type: Object as PropType<any>,
       default: () => ({})
     },
     name: {
@@ -84,7 +101,7 @@ export default defineComponent({
               stroke-linejoin="round"
               stroke-width="2"
               d="M7 16l-4-4m0 0l4-4m-4 4h18"
-            ></path>
+            />
           </svg>
         </button>
         <button
@@ -105,7 +122,7 @@ export default defineComponent({
               stroke-linejoin="round"
               stroke-width="2"
               d="M17 8l4 4m0 0l-4 4m4-4H3"
-            ></path>
+            />
           </svg>
         </button>
       </div>
@@ -113,22 +130,22 @@ export default defineComponent({
         <template v-if="data.page > 3">
           <button @click.prevent="openPage(1)" class="pagination-link">1</button>
           <span class="pagination-ellipsis">&hellip;</span>
-          <button @click.prevent="openPage(data.page - 1)" class="pagination-link">
-            {{ data.page - 1 }}
-          </button>
+          <button
+            @click.prevent="openPage(data.page - 1)"
+            class="pagination-link"
+          >{{ data.page - 1 }}</button>
           <template v-if="data.page !== data.lastPage">
             <button
               @click.prevent="openPage(data.page)"
               class="pagination-link is-current"
               aria-current="page"
-            >
-              {{ data.page }}
-            </button>
+            >{{ data.page }}</button>
           </template>
           <template v-if="data.page + 1 < data.lastPage">
-            <button @click.prevent="openPage(data.page + 1)" class="pagination-link">
-              {{ data.page + 1 }}
-            </button>
+            <button
+              @click.prevent="openPage(data.page + 1)"
+              class="pagination-link"
+            >{{ data.page + 1 }}</button>
           </template>
         </template>
         <template v-else>
@@ -137,9 +154,7 @@ export default defineComponent({
               @click.prevent="openPage(pageIndex)"
               :class="'pagination-link' + (data.page === pageIndex ? ' is-current' : '')"
               aria-label="Goto page 1"
-            >
-              {{ pageIndex }}
-            </button>
+            >{{ pageIndex }}</button>
           </template>
         </template>
         <template v-if="data.lastPage >= 5 || data.page === 4">
@@ -151,9 +166,7 @@ export default defineComponent({
                 'pagination-link ' + (data.lastPage === data.page ? 'is-current' : '')
               ).trim()
             "
-          >
-            {{ data.lastPage }}
-          </button>
+          >{{ data.lastPage }}</button>
         </template>
       </div>
       <div class="clear-both"></div>

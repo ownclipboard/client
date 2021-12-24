@@ -1,15 +1,24 @@
 <script setup lang="ts">
 import { currentTab, openTabs } from "../stores/tabs.store";
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+
+const [$route, $router] = [useRoute(), useRouter()];
+const page = computed(() => $route.query.page);
 
 /**
  * Change tab
  * @param index
  */
-function changeTab(index: number) {
+async function changeTab(index: number) {
+  // Remove pagination from query.
+  if (page.value) await $router.push({
+    name: $route.name!,
+    query: { ...$route.query, page: undefined }
+  });
+
   const tab = openTabs[index];
   if (tab.slug === currentTab.value) return;
-
   currentTab.value = tab.slug;
 }
 
@@ -43,6 +52,7 @@ function closeTab(index: number) {
     openTabs.splice(index, 1);
   }
 }
+
 onMounted(sortCurrentTab);
 </script>
 
