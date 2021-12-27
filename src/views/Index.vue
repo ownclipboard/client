@@ -6,6 +6,7 @@ import type { ILoadingButton } from "revue-components/vues/component-types";
 import { $localStorage } from "../stores/native";
 import { $alert } from "../components/ws-alert/ws-alert";
 import { redirect } from "../functions";
+import Intro from "../components/Intro.vue";
 
 const userNameExists = ref<boolean>();
 const form = reactive({
@@ -50,12 +51,7 @@ function login(btn: ILoadingButton) {
 
 <template>
   <div class="lg:pl-5 lg:pt-5">
-    <div class="text-center">
-      <h1 class="text-5xl lg:text-6xl font-bold text-gray-300 mt-24">
-        {{ config.name }}
-      </h1>
-      <h5 class="font-light">Create, Copy, Paste or Send Documents across devices</h5>
-    </div>
+    <Intro />
 
     <!-- Auth Form  -->
     <div class="flex mt-5 lg:mt-10">

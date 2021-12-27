@@ -20,6 +20,7 @@ async function paste(btn: ILoadingButton) {
 
   // Get data from clipboard
   let pasteData = (await window.navigator.clipboard.readText()) || "";
+  
   // trim whitespace
   pasteData = pasteData.trim();
 
@@ -54,6 +55,7 @@ async function paste(btn: ILoadingButton) {
 }
 
 async function pasteToServer(data: string, title?: string) {
+
   return $http
     .post("clips/paste", {
       title,
@@ -73,7 +75,7 @@ async function pasteToServer(data: string, title?: string) {
     @mouseleave="clickPasteBoard(false)"
     @focusout="clickPasteBoard(false)"
     :class="[hasClickedPasteboard ? 'bg-gray-200' : 'bg-gray-900']"
-    class="rounded pt-5 lg:pt-10 shadow-md"
+    class="rounded shadow-md"
   >
     <h6 v-if="currentTab && foldersAsObject[currentTab]" class="text-center text-gray-500 mb-1">
       Paste in

@@ -103,10 +103,10 @@
   resolved "https://registry.yarnpkg.com/@trapcode/browser-storage/-/browser-storage-2.2.3.tgz#bf75cd1623336f3ffce0e2ae44b629b6f52459ee"
   integrity sha512-TMlyNGtQdGotH50bOXy82ZEuMv39QQVnicA1SZD241ixe1oDk9s64HSh1B+UzmwkfA/r7Vkg2Gkn2MzCotDvvg==
 
-"@trapcode/js-toolbox@^0.0.5":
-  version "0.0.5"
-  resolved "https://registry.yarnpkg.com/@trapcode/js-toolbox/-/js-toolbox-0.0.5.tgz#c5175841a9f89eb9519b424e736aeb418a774a59"
-  integrity sha512-aboC5650nZzAi/kJNEnJlYstDQoTkw7c6dzni/Qr/ZkeAMIbG/cwjr0asNnS4vP5QO2n7mnD5wXtYN55xxROuA==
+"@trapcode/js-toolbox@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@trapcode/js-toolbox/-/js-toolbox-1.0.1.tgz#41713a002a7eb83c2522f16a5bf5c7b78114c0f4"
+  integrity sha512-xNB/C6TUmf/tc82Dyqr2aR8eCPM1jnYWxwbKO948KRDlJVA8icrvwZ2Rh2Gsi7uyYGkbEW2qOvfCm+qmHdie4g==
 
 "@types/cookie@^0.3.3":
   version "0.3.3"

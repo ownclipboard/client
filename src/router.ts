@@ -18,14 +18,14 @@ const routes: Array<RouteRecordRaw> = [
         name: "clipboard",
         component: () => import("./views/Clipboard.vue")
       },
-
-      {
-        path: "paste/:pasteId",
-        name: "public-paste",
-        component: () => import("./views/PublicPaste.vue")
-      }
     ]
   },
+  
+  {
+    path: "/paste/:pasteId",
+    name: "public-paste",
+    component: () => import("./views/PublicPaste.vue")
+  }
 ];
 
 const router = createRouter({

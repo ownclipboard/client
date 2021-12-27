@@ -11,14 +11,16 @@ import {
 import { SearchIcon } from "@heroicons/vue/solid";
 import { BellIcon, MenuIcon, XIcon } from "@heroicons/vue/outline";
 import config from "../config";
-import { $localStorage } from "../stores/native";
+import { $localStorage, $sessionStorage } from "../stores/native";
 import LoadingButton from "../../node_modules/revue-components/vues/LoadingButton.vue";
+import { authUser } from "../stores/auth.store";
 
 const user = {
   name: "Tom Cook",
   email: "tom@example.com",
   imageUrl: "https://cdn.jsdelivr.net/npm/xpresser@0.25.4/xpresser-logo-white.png"
 };
+
 
 const navigation = [
   { name: "Clipboard", href: "#", current: true },
@@ -31,8 +33,12 @@ const userNavigation = [
   { name: "Settings", href: "#" },
 ];
 
+// remove token from local storage on signout.
 function signOut() {
   $localStorage.remove("token");
+  $localStorage.remove("tabs");
+  $sessionStorage.remove("currentTab");
+
   window.location.href = "/";
 }
 
@@ -117,7 +123,10 @@ function signOut() {
                   >{{ item.name }}</a>
                 </MenuItem>
                 <MenuItem>
-                  <LoadingButton @click.prevent="signOut" class="block py-2 px-4 text-sm text-gray-700">Sign out</LoadingButton>
+                  <LoadingButton
+                    @click.prevent="signOut"
+                    class="block py-2 px-4 text-sm text-gray-700"
+                  >Sign out</LoadingButton>
                 </MenuItem>
               </MenuItems>
             </transition>
@@ -162,8 +171,8 @@ function signOut() {
             <img class="h-10 w-10 rounded-full" :src="user.imageUrl" alt />
           </div>
           <div class="ml-3">
-            <div class="text-base font-medium text-white">{{ user.name }}</div>
-            <div class="text-sm font-medium text-gray-400">{{ user.email }}</div>
+            <div class="text-base font-medium text-white">{{ authUser.username }}</div>
+            <div class="text-sm font-medium text-gray-400">{{ authUser.email }}</div>
           </div>
           <button
             type="button"

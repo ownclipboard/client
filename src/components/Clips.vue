@@ -52,12 +52,13 @@ onMounted(loadClips);
 
 // Copy clip to clipboard
 function copyClip(btn: ILoadingButton, clip: OwnClip) {
+
   // copy clip to clipboard
   copy(clip.context)
 
   // update copied message uuid
   copied.value = clip.uuid;
-  
+
   // Stop loading button
   btn.stopLoading();
 
@@ -193,6 +194,7 @@ async function deleteClip(btn: ILoadingButton, [index, clip]: [index: number, cl
           </div>
           <p
             v-else-if="clip.type === 'text'"
+            class="break-words"
             v-text="strLimitWordsByLength(clip.context, 250, '...')"
           ></p>
           <a
@@ -233,6 +235,18 @@ async function deleteClip(btn: ILoadingButton, [index, clip]: [index: number, cl
             class="text-red-300 hover:text-red-500"
           >
             <i class="fa fa-trash"></i> Delete
+          </LoadingButton>
+        </div>
+
+        <div class="actions" v-if="clip.encrypted && !clip.decrypted">
+          <LoadingButton
+            message="Copying"
+            :click="copyClip"
+            :data="clip"
+            class="text-green-300 hover:text-green-500"
+          >
+            <i class="fa fa-copy"></i>
+            {{ copied === clip.uuid ? '#Copied!' : 'Copy Encrypted Text' }}
           </LoadingButton>
         </div>
       </div>
