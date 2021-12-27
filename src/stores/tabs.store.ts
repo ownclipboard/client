@@ -33,9 +33,11 @@ watch(openTabs, (n) => $localStorage.setAsType("tabs", n), { immediate: true });
 // Update counter on open tabs
 export function updateOpenTabStats() {
   const folders = foldersAsObject.value;
+
   openTabs.forEach((tab, i) => {
     const folder = folders[tab.slug];
-    if(folder) {
+    
+    if (folder) {
       tab.contents = folders[tab.slug].contents;
     } else {
       // delete tab if folder no longer exists

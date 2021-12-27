@@ -11,12 +11,15 @@ import {
 import { SearchIcon } from "@heroicons/vue/solid";
 import { BellIcon, MenuIcon, XIcon } from "@heroicons/vue/outline";
 import config from "../config";
+import { $localStorage } from "../stores/native";
+import LoadingButton from "../../node_modules/revue-components/vues/LoadingButton.vue";
 
 const user = {
   name: "Tom Cook",
   email: "tom@example.com",
   imageUrl: "https://cdn.jsdelivr.net/npm/xpresser@0.25.4/xpresser-logo-white.png"
 };
+
 const navigation = [
   { name: "Clipboard", href: "#", current: true },
   { name: "Gallery", href: "#", current: false },
@@ -26,8 +29,13 @@ const navigation = [
 const userNavigation = [
   { name: "Your Profile", href: "#" },
   { name: "Settings", href: "#" },
-  { name: "Sign out", href: "#" }
 ];
+
+function signOut() {
+  $localStorage.remove("token");
+  window.location.href = "/";
+}
+
 </script>
 
 <template>
@@ -46,9 +54,7 @@ const userNavigation = [
           <div class="w-full sm:max-w-xs">
             <label for="search" class="sr-only">Search</label>
             <div class="relative">
-              <div
-                class="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center"
-              >
+              <div class="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center">
                 <SearchIcon class="h-5 w-5 text-gray-400" aria-hidden="true" />
               </div>
               <input
@@ -87,7 +93,7 @@ const userNavigation = [
                 class="bg-gray-800 rounded-full flex text-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white"
               >
                 <span class="sr-only">Open user menu</span>
-                <img class="h-8 w-8 rounded-full" :src="user.imageUrl" alt="" />
+                <img class="h-8 w-8 rounded-full" :src="user.imageUrl" alt />
               </MenuButton>
             </div>
             <transition
@@ -101,19 +107,17 @@ const userNavigation = [
               <MenuItems
                 class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 py-1 focus:outline-none"
               >
-                <MenuItem
-                  v-for="item in userNavigation"
-                  :key="item.name"
-                  v-slot="{ active }"
-                >
+                <MenuItem v-for="item in userNavigation" :key="item.name" v-slot="{ active }">
                   <a
                     :href="item.href"
                     :class="[
                       active ? 'bg-gray-100' : '',
                       'block py-2 px-4 text-sm text-gray-700'
                     ]"
-                    >{{ item.name }}</a
-                  >
+                  >{{ item.name }}</a>
+                </MenuItem>
+                <MenuItem>
+                  <LoadingButton @click.prevent="signOut" class="block py-2 px-4 text-sm text-gray-700">Sign out</LoadingButton>
                 </MenuItem>
               </MenuItems>
             </transition>
@@ -132,9 +136,7 @@ const userNavigation = [
             'rounded-md py-2 px-3 inline-flex items-center text-sm font-medium'
           ]"
           :aria-current="item.current ? 'page' : undefined"
-        >
-          {{ item.name }}
-        </a>
+        >{{ item.name }}</a>
       </nav>
     </div>
 
@@ -152,13 +154,12 @@ const userNavigation = [
             'block rounded-md py-2 px-3 text-base font-medium'
           ]"
           :aria-current="item.current ? 'page' : undefined"
-          >{{ item.name }}
-        </DisclosureButton>
+        >{{ item.name }}</DisclosureButton>
       </div>
       <div class="border-t border-gray-700 pt-4 pb-3">
         <div class="px-4 flex items-center">
           <div class="flex-shrink-0">
-            <img class="h-10 w-10 rounded-full" :src="user.imageUrl" alt="" />
+            <img class="h-10 w-10 rounded-full" :src="user.imageUrl" alt />
           </div>
           <div class="ml-3">
             <div class="text-base font-medium text-white">{{ user.name }}</div>
@@ -179,8 +180,7 @@ const userNavigation = [
             as="a"
             :href="item.href"
             class="block rounded-md py-2 px-3 text-base font-medium text-gray-400 hover:bg-gray-700 hover:text-white"
-            >{{ item.name }}
-          </DisclosureButton>
+          >{{ item.name }}</DisclosureButton>
         </div>
       </div>
     </DisclosurePanel>

@@ -5,20 +5,25 @@ import { $http } from "../http";
 import { redirect } from "../functions";
 import NavBar from "../components/NavBar.vue";
 import { askForPassword } from "../components/PasswordPrompt";
+import { authUser } from "../stores/auth.store";
 
 const authenticated = ref<boolean>();
 
-function ping() {
+async function ping() {
   if ($localStorage.has("token")) {
     authenticated.value = true;
   }
 
-  return $http.get<any, { user: any }>("/ping").catch(() => {
+  try {
+    const { user } = await $http.get<any, { user: authUser; }>("/ping");
+    // Update authUser
+    Object.assign(authUser, user);
+  } catch {
     authenticated.value = false;
     $localStorage.remove("token");
     // Redirect to login page.
     redirect("/", 3000);
-  });
+  }
 }
 
 onMounted(ping);

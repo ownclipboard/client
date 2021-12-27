@@ -112,6 +112,7 @@ async function deleteFolder(btn: ILoadingButton) {
       <div class="space-x-2 text-center my-3">
         <template v-for="item in configureMenu">
           <button
+            v-if="item.name !== 'Delete' || (item.name === 'Delete' && folder.slug !== 'clipboard')"
             @click.prevent="configureTab = item.name"
             :class="{
               'bg-gray-800 text-green-300 font-medium rounded-md':
