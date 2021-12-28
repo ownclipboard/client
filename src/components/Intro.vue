@@ -10,8 +10,8 @@ const props = defineProps({
 <template>
     <div :class="{
         [props.marginTop]: true,
-    }" class="text-center">
-        <router-link :to="{name: 'index'}">
+    }" class="flex">
+        <router-link :to="{ name: 'index' }" class="mx-auto">
             <h1 class="text-5xl lg:text-6xl font-bold text-gray-300">{{ config.name }}</h1>
             <h5 class="font-light">Create, Copy, Paste or Send Documents across devices</h5>
         </router-link>

@@ -28,3 +28,17 @@ body {
 .text-antiquewhite {
   color: antiquewhite;
 }
+
+.blink {
+  animation: blinker 1s linear infinite;
+}
+
+.blink-slow {
+  animation: blinker 1.5s linear infinite;
+}
+
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}
