@@ -98,10 +98,10 @@
     "@nodelib/fs.scandir" "2.1.4"
     fastq "^1.6.0"
 
-"@trapcode/browser-storage@^2.2.3":
-  version "2.2.3"
-  resolved "https://registry.yarnpkg.com/@trapcode/browser-storage/-/browser-storage-2.2.3.tgz#bf75cd1623336f3ffce0e2ae44b629b6f52459ee"
-  integrity sha512-TMlyNGtQdGotH50bOXy82ZEuMv39QQVnicA1SZD241ixe1oDk9s64HSh1B+UzmwkfA/r7Vkg2Gkn2MzCotDvvg==
+"@trapcode/browser-storage@^2.3.2":
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/@trapcode/browser-storage/-/browser-storage-2.3.2.tgz#9971926d05ee1ddb3f0ddc39101651d3960a0863"
+  integrity sha512-H32kWSoYWrOO8o2NvlumYeq1YnJ7WuMrPKMts2eX8W5gWSZ6UG6hnfefu5H43gdnAeHmkQih+4ZbfBmvJESYOQ==
 
 "@trapcode/js-toolbox@^1.0.1":
   version "1.0.1"

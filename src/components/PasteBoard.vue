@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { $http } from "../http";
 import { currentTab, foldersAsObject, getFolders } from "../stores/tabs.store";
 import { $events } from "../events";
-import { askForPassword } from "./PasswordPrompt";
+import { askForPassword } from "./PasswordPromptHandler";
 import { $alert } from "./ws-alert/ws-alert";
 import { checkFolderPassword } from "../services/clips.services";
 import { aesEncrypt } from "../functions/crypto";
+import { nanoid } from "nanoid";
 
 const hasClickedPasteboard = ref(false);
 
@@ -15,47 +16,93 @@ function clickPasteBoard(val: boolean = true) {
   hasClickedPasteboard.value = val;
 }
 
+function blobToFile(blob: Blob, fileName: string): File {
+  return new File([blob], fileName, {
+    lastModified: new Date().getTime(),
+    type: blob.type
+  });
+}
+
+async function getPasteItem() {
+  let type: "text" | "image" = "text";
+  let data: any = "";
+
+  try {
+    const pasteItems = await window.navigator.clipboard.read();
+
+    if (pasteItems && pasteItems.length) {
+      const item = pasteItems[0];
+
+      console.log(item.types);
+
+      if (item.types.includes("text/plain")) {
+        const blob = await item.getType("text/plain");
+        data = await blob.text();
+        type = "text";
+      } else if (item.types.includes("image/png")) {
+        const blob = await item.getType("image/png");
+        data = blobToFile(blob, nanoid() + ".png");
+        type = "image";
+      }
+    }
+  } catch (e: any) {
+    // console.error(e.message);
+  }
+
+  return [type, data];
+}
+
+// onMounted(getPasteItem);
+
 async function paste(btn: ILoadingButton) {
   clickPasteBoard(false);
 
-  // Get data from clipboard
-  let pasteData = (await window.navigator.clipboard.readText()) || "";
-  
-  // trim whitespace
-  pasteData = pasteData.trim();
+  let [type, pasteData] = await getPasteItem();
 
-  // If there is no data, return
-  if (!pasteData || (pasteData && !pasteData.length)) return btn.stopLoading();
+  if (!pasteData) return btn.stopLoading();
 
-  // Get folder data from store
-  const folder = foldersAsObject.value[currentTab.value!];
-  if (folder && folder.hasPassword) {
-    let password = await askForPassword(`Enter password for: '${folder.name}'`);
+  if (type === "text") {
+    // trim whitespace
+    pasteData = pasteData.trim();
 
-    if (!password) {
-      $alert.warning(`Password required to paste in folder: '${folder.name}'`);
-      return btn.stopLoading();
+    // If there is no data, return
+    if (!pasteData.length) return btn.stopLoading();
+
+    // Get folder data from store
+    const folder = foldersAsObject.value[currentTab.value!];
+    if (folder && folder.hasPassword) {
+      let password = await askForPassword(`Enter password for: '${folder.name}'`);
+
+      if (!password) {
+        $alert.warning(`Password required to paste in folder: '${folder.name}'`);
+        return btn.stopLoading();
+      }
+
+      // check if clip belongs to an encrypted folder
+      if (!(await checkFolderPassword(folder.slug, password))) {
+        $alert.error(`Incorrect password for folder: '${folder.name}'`);
+        return btn.stopLoading();
+      }
+
+      // Encrypt clip
+      pasteData = aesEncrypt(pasteData, password);
+
+      // delete password from memory
+      password = "";
     }
 
-    // check if clip belongs to an encrypted folder
-    if (!await checkFolderPassword(folder.slug, password)) {
-      $alert.error(`Incorrect password for folder: '${folder.name}'`);
-      return btn.stopLoading();
-    }
-
-    // Encrypt clip
-    pasteData = aesEncrypt(pasteData, password);
-
-    // delete password from memory
-    password = "";
+    // Send data to server
+    return pasteToServer(pasteData).finally(btn.stopLoading);
+  } else if (type === "image") {
+    // Send data to server
+    const file = pasteData as File;
+    console.log(file);
   }
 
-  // Send data to server
-  return pasteToServer(pasteData).finally(btn.stopLoading);
+  return btn.stopLoading();
 }
 
 async function pasteToServer(data: string, title?: string) {
-
   return $http
     .post("clips/paste", {
       title,
@@ -77,7 +124,10 @@ async function pasteToServer(data: string, title?: string) {
     :class="[hasClickedPasteboard ? 'bg-gray-200' : 'bg-gray-900']"
     class="rounded shadow-md"
   >
-    <h6 v-if="currentTab && foldersAsObject[currentTab]" class="text-center text-gray-500 mb-1">
+    <h6
+      v-if="currentTab && foldersAsObject[currentTab]"
+      class="text-center text-gray-500 mb-1"
+    >
       Paste in
       <span class="text-gray-300">{{ foldersAsObject[currentTab].name }}</span>
     </h6>
@@ -88,7 +138,9 @@ async function pasteToServer(data: string, title?: string) {
       <span>ctrl+v</span>
     </h1>
 
-    <section class="text-center mt-5 lg:mt-10 mb-5 space-x-2 text-xs md:text-sm lg:text-base">
+    <section
+      class="text-center mt-5 lg:mt-10 mb-5 space-x-2 text-xs md:text-sm lg:text-base"
+    >
       <LoadingButton :click="paste" class="btn gray rounded-sm shadow-lg">
         <i class="fa fa-paste"></i>
         PASTE

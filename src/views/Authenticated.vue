@@ -4,7 +4,7 @@ import { $localStorage } from "../stores/native";
 import { $http } from "../http";
 import { redirect } from "../functions";
 import NavBar from "../components/NavBar.vue";
-import { askForPassword } from "../components/PasswordPrompt";
+import { askForPassword } from "../components/PasswordPromptHandler";
 import { authUser } from "../stores/auth.store";
 
 const authenticated = ref<boolean>();
@@ -15,7 +15,7 @@ async function ping() {
   }
 
   try {
-    const { user } = await $http.get<any, { user: authUser; }>("/ping");
+    const { user } = await $http.get<any, { user: authUser }>("/ping");
     // Update authUser
     Object.assign(authUser, user);
   } catch {
@@ -27,7 +27,6 @@ async function ping() {
 }
 
 onMounted(ping);
-
 </script>
 
 <template>

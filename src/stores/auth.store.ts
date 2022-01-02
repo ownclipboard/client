@@ -5,7 +5,7 @@ export type authUser = {
     username: string;
 }
 
-export const authUser = reactive({
-    username: "",
-})
+export const authUser = reactive<authUser>({
+  username: ""
+});
 

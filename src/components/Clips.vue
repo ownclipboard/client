@@ -4,9 +4,9 @@ import { $http, alertRequestError } from "../http";
 import { onMounted, ref, watch } from "vue";
 import type { OwnClip } from "../types/models.types";
 import type { ILoadingButton } from "revue-components/vues/component-types";
-import { askForPassword } from "./PasswordPrompt";
+import { askForPassword } from "./PasswordPromptHandler";
 import { $events } from "../events";
-import { useClipboard } from '@vueuse/core';
+import { useClipboard } from "@vueuse/core";
 import Paginator, { Pagination } from "./paginator/Paginator.vue";
 import { useRoute } from "vue-router";
 import Clip from "./clips/Clip.vue";
@@ -30,16 +30,15 @@ async function loadClips() {
     clips.value = clipsCache[tab];
   }
 
-  const response = await $http
-    .get<any, { clips: typeof clips.value; }>(`/clips/${tab}`, {
-      params: $route.query
-    });
+  const response = await $http.get<any, { clips: typeof clips.value }>(`/clips/${tab}`, {
+    params: $route.query
+  });
 
   clips.value = response.clips;
   clipsCache[tab] = response.clips;
 }
 
-// Register refresh clips event 
+// Register refresh clips event
 $events.on("refreshClips", loadClips);
 
 // Load clips on currentTab change.
@@ -71,15 +70,20 @@ async function deleteClip(btn: ILoadingButton, [clip, index]: [OwnClip, number])
   }
 }
 
-$events.on("delete-clip", ({ btn, data }: { btn: ILoadingButton, data: [OwnClip, number] }) => {
-  deleteClip(btn, data);
-});
-
-
+$events.on(
+  "delete-clip",
+  ({ btn, data }: { btn: ILoadingButton; data: [OwnClip, number] }) => {
+    deleteClip(btn, data);
+  }
+);
 </script>
 <template>
   <section class="space-y-5">
-    <template v-if="clips.data.length" v-for="(clip, index) in clips.data" :key="clip.uuid">
+    <template
+      v-if="clips.data.length"
+      v-for="(clip, index) in clips.data"
+      :key="clip.uuid"
+    >
       <Clip :index="index" :clip="clip" can-delete />
     </template>
     <template v-else>
