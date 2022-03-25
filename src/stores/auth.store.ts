@@ -1,11 +1,10 @@
 import { reactive } from "vue";
 
 export type authUser = {
-    email?: string;
-    username: string;
-}
+  email?: string;
+  username: string;
+};
 
 export const authUser = reactive<authUser>({
   username: ""
 });
-
