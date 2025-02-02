@@ -1,3 +1,4 @@
+@use "functions" as *;
 $dark: #28282B;
-$darker: darken($dark, 5%);
-$darkest: darken($dark, 10%);
+$darker: oc_darken($dark, 5%);
+$darkest: oc_darken($dark, 10%);

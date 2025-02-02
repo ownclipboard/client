@@ -1,0 +1,15 @@
+@use "sass:color";
+
+@function oc_darken($color, $amount) {
+  @return color.scale($color, $lightness: -$amount);
+}
+
+@function oc_lighten($color, $amount) {
+  @return color.scale($color, $lightness: $amount);
+}
+
+@function oc_fade_out($color, $amount) {
+  $current-alpha: color.alpha($color);
+  $new-alpha: $current-alpha - color.alpha($color) * $amount;
+  @return color.change($color, $alpha: $new-alpha);
+}
