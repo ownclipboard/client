@@ -22,7 +22,8 @@ function checkUsername(btn: ILoadingButton) {
       username: form.username
     })
     .then((res) => {
-      userNameExists.value = res.exists;
+      console.log(res);
+      userNameExists.value = res.exists || false;
     })
     .catch(alertRequestError)
     .finally(btn.stopLoading);
@@ -82,7 +83,7 @@ function login(btn: ILoadingButton) {
             </div>
           </template>
 
-          <template v-else-if="userNameExists === true">
+          <template v-else-if="userNameExists">
             <div class="p-3 bg-gray-700 rounded-sm border-l-2 border-green-300">
               Welcome <strong class="text-green-300">{{ form.username }}</strong
               >, Login to continue.
