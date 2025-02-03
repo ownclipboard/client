@@ -81,31 +81,22 @@ onMounted(getFolders);
 // setTimeout(configureFolder, 500);
 </script>
 <template>
-  <section class="space-x-3 space-y-3 lg:px-4 my-5 lg:my-10">
-    <div class="text-gray-400 text-sm font-medium uppercase">
-      <span class="mr-2">Folders:</span>
-      <a
-        @click.prevent="configureFolder"
-        href="#"
-        class=" text-yellow-300 opacity-50 hover:opacity-90"
-      >
-        <i class="fa fa-cog mr-1"></i>
-        Configure ({{ currentTab }})
-      </a>
-    </div>
+  <section class="flex flex-wrap  items-center gap-3 mt-5 mb-3 lg:mt-10 overflow-x-auto">
+
     <template v-for="folder in folders" :key="folder.slug">
       <LoadingButton
         :click="openFolder"
         :data="folder"
         icon="fa fa-slash fa-spin mr-3"
         :message="`Opening (${folder.name})`"
-        class="btn -px px-3 gray border text-gray-400 hover:text-green-300 border-gray-500 rounded-md text-sm"
+        class="btn -px px-3 gray border text-gray-400 hover:text-green-300 border-gray-500 rounded-md text-xs lg:text-sm"
       >
         <i :class="visibilityIcon(folder.visibility)" class="fa"></i>
         <span class="mx-1 font-medium">{{ folder.name }}</span>
         <span class="text-yellow-300 font-medium">({{ folder.contents }})</span>
       </LoadingButton>
     </template>
+
 
     <form v-if="showAddFolderForm" class="inline-block space-x-4">
       <input
@@ -138,6 +129,18 @@ onMounted(getFolders);
       <i class="fa fa-folder-plus mr-1"></i> Add
     </button>
   </section>
+
+  <div class="text-gray-400 text-xs lg:text-sm font-medium ">
+
+    <a
+      @click.prevent="configureFolder"
+      href="#"
+      class=" text-yellow-300 lg:opacity-50 lg:hover:opacity-90"
+    >
+      <i class="fa fa-cog mr-1"></i>
+      Folder Settings
+    </a>
+  </div>
 
   <!--  Configure Folder Modal -->
   <Modal v-if="configuringFolder" max-size="max-w-md" @closeModal="configuringFolder = undefined">
