@@ -8,8 +8,8 @@ import {
   MenuItem,
   MenuItems
 } from "@headlessui/vue";
-import { SearchIcon } from "@heroicons/vue/solid";
-import { BellIcon, MenuIcon, XIcon } from "@heroicons/vue/outline";
+import { MagnifyingGlassIcon } from "@heroicons/vue/24/solid";
+import { BellIcon, Bars3Icon, XMarkIcon } from "@heroicons/vue/24/outline";
 import config from "../config";
 import { $localStorage, $sessionStorage } from "../stores/native";
 import LoadingButton from "../../node_modules/revue-components/vues/LoadingButton.vue";
@@ -61,7 +61,7 @@ function signOut() {
               <div
                 class="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center"
               >
-                <SearchIcon class="h-5 w-5 text-gray-400" aria-hidden="true" />
+                <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" aria-hidden="true" />
               </div>
               <input
                 id="search"
@@ -79,8 +79,8 @@ function signOut() {
             class="rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
           >
             <span class="sr-only">Open menu</span>
-            <MenuIcon v-if="!open" class="block h-6 w-6" aria-hidden="true" />
-            <XIcon v-else class="block h-6 w-6" aria-hidden="true" />
+            <Bars3Icon v-if="!open" class="block h-6 w-6" aria-hidden="true" />
+            <XMarkIcon v-else class="block h-6 w-6" aria-hidden="true" />
           </DisclosureButton>
         </div>
         <div class="hidden lg:relative lg:z-10 lg:ml-4 lg:flex lg:items-center">

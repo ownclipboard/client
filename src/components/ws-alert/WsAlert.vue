@@ -31,5 +31,5 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "./ws-alert.scss";
+@use "./ws-alert.scss";
 </style>

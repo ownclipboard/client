@@ -82,12 +82,12 @@ onMounted(getFolders);
 </script>
 <template>
   <section class="space-x-3 space-y-3 lg:px-4 my-5 lg:my-10">
-    <div class="text-gray-400 text-xs font-medium uppercase">
+    <div class="text-gray-400 text-sm font-medium uppercase">
       <span class="mr-2">Folders:</span>
       <a
         @click.prevent="configureFolder"
         href="#"
-        class="text-xs text-yellow-300 opacity-50 hover:opacity-90"
+        class=" text-yellow-300 opacity-50 hover:opacity-90"
       >
         <i class="fa fa-cog mr-1"></i>
         Configure ({{ currentTab }})
@@ -99,7 +99,7 @@ onMounted(getFolders);
         :data="folder"
         icon="fa fa-slash fa-spin mr-3"
         :message="`Opening (${folder.name})`"
-        class="btn -px px-3 gray border text-gray-400 hover:text-green-300 border-gray-500 rounded-md text-xs"
+        class="btn -px px-3 gray border text-gray-400 hover:text-green-300 border-gray-500 rounded-md text-sm"
       >
         <i :class="visibilityIcon(folder.visibility)" class="fa"></i>
         <span class="mx-1 font-medium">{{ folder.name }}</span>
