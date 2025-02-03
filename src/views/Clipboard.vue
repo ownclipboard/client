@@ -7,7 +7,7 @@ import Folders from "../components/Folders.vue";
 
 <template>
   <section class="flex">
-    <PasteBoard class="max-w-3xl w-full mx-auto pt-5 lg:pt-10" />
+    <PasteBoard class="max-w-3xl w-full mx-auto " />
   </section>
 
   <section class="my-5">

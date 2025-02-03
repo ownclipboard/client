@@ -139,7 +139,7 @@ function signOut() {
           </Menu>
         </div>
       </div>
-      <nav class="hidden lg:py-2 lg:flex lg:space-x-8" aria-label="Global">
+      <nav class="hidden lg:py-2 lg:flex justify-end lg:space-x-8" aria-label="Global">
         <a
           v-for="item in navigation"
           :key="item.name"

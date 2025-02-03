@@ -34,7 +34,8 @@ onMounted(ping);
   <section v-else-if="authenticated === true">
     <NavBar />
     <section class="container py-10">
-      <router-view />
+
+    <router-view />
     </section>
     <PasswordPrompt />
   </section>
