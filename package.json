@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "repository": "https://github.com/ownclipboard/client",
   "author": "ownclipboard",
+  "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "vite --port 3004 --host",
-    "build": "vue-tsc --noEmit && vite build",
-    "serve": "vite preview"
+    "dev": "bunx vite --port 3004 --host",
+    "build": "bunx vue-tsc --noEmit && vite build",
+    "serve": "bunx vite preview"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
@@ -20,6 +21,7 @@
     "axios": "^1.7.9",
     "caniuse-lite": "^1.0.30001696",
     "crypto-js": "^4.2.0",
+
     "revue-components": "^2.0.17",
     "sass": "^1.83.4",
     "timeago.js": "^4.0.2",
@@ -40,7 +42,8 @@
     "typescript": "^5.7.3",
     "vite": "^6.0.11",
     "vite-plugin-ejs": "^1.7.0",
-    "vue-tsc": "^2.2.0"
+    "vue-tsc": "^2.2.0",
+    "npm-check-updates": "^17.1.14"
   },
   "engines": {
     "node": ">=14"
