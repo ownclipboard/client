@@ -141,11 +141,11 @@ async function pasteToServer(data: string, title?: string) {
     <section
       class="text-center mt-5 lg:mt-10 mb-5 space-x-2 text-xs md:text-sm lg:text-base"
     >
-      <LoadingButton :click="paste" class="btn gray rounded-sm shadow-lg">
+      <LoadingButton :click="paste" class="btn gray  rounded">
         <i class="fa fa-paste"></i>
         PASTE
       </LoadingButton>
-      <button class="btn gray rounded-sm shadow-lg">
+      <button class="btn gray rounded">
         <i class="fa fa-pen"></i>
         CREATE
       </button>

@@ -107,7 +107,7 @@ async function deleteFolder(btn: ILoadingButton) {
 
     <hr class="opacity-20 p-0 m-0" />
 
-    <section class="py-3 px-2">
+    <section class="py-3 px-2 pb-5">
       <!--   Group button menu     -->
       <div class="space-x-2 text-center my-3">
         <template v-for="item in configureMenu">
@@ -160,8 +160,8 @@ async function deleteFolder(btn: ILoadingButton) {
 
           <!-- Enable public paste -->
           <template v-if="folder.visibility === 'public'">
-            <div class="my-5">
-              <div class="float-left">
+            <div class="mt-5 mb-1 flex justify-between items-center">
+              <div class="flex items-center">
                 <LoadingButton
                   :click="togglePublicPaste"
                   icon="fa fa-spinner fa-spin text-yellow-400 text-lg"
@@ -178,19 +178,19 @@ async function deleteFolder(btn: ILoadingButton) {
                 <span class="text-sm font-medium">Public Paste</span>
               </div>
 
-              <div class="float-right">
+              <div>
                 <a
                   @click.prevent="copyPublicPasteUrl"
                   href="#"
                   v-if="folder.publicPaste"
-                  class="text-xs text-green-300 ml-3 float-right"
+                  class="text-sm text-green-300 ml-3 float-right"
                 >{{ copied ? '#copied' : 'Copy Public Paste Url' }}</a>
               </div>
-              <div class="clear-both"></div>
-              <small
-                class="text-gray-300 text-xs font-light"
-              >With public paste enabled, anyone with your public paste url can paste into this folder.</small>
             </div>
+
+            <h6
+              class="text-gray-300 text-sm font-light"
+            >With public paste enabled, anyone with your public paste url can paste into this folder.</h6>
           </template>
         </template>
 
