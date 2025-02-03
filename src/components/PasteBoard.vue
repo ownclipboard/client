@@ -10,6 +10,9 @@ import { checkFolderPassword } from "../services/clips.services";
 import { aesEncrypt } from "../functions/crypto";
 import { nanoid } from "nanoid";
 
+type Todo = "paste" | "create";
+const todo = ref<Todo>("create");
+
 const hasClickedPasteboard = ref(false);
 
 function clickPasteBoard(val: boolean = true) {
@@ -33,8 +36,6 @@ async function getPasteItem() {
     if (pasteItems && pasteItems.length) {
       const item = pasteItems[0];
 
-      console.log(item.types);
-
       if (item.types.includes("text/plain")) {
         const blob = await item.getType("text/plain");
         data = await blob.text();
@@ -54,19 +55,24 @@ async function getPasteItem() {
 
 // onMounted(getPasteItem);
 
-async function paste(btn: ILoadingButton) {
+async function pasteFromBtn(btn: ILoadingButton) {
+  await paste();
+  btn.stopLoading();
+}
+
+async function paste() {
   clickPasteBoard(false);
 
   let [type, pasteData] = await getPasteItem();
 
-  if (!pasteData) return btn.stopLoading();
+  if (!pasteData) return;
 
   if (type === "text") {
     // trim whitespace
     pasteData = pasteData.trim();
 
     // If there is no data, return
-    if (!pasteData.length) return btn.stopLoading();
+    if (!pasteData.length) return;
 
     // Get folder data from store
     const folder = foldersAsObject.value[currentTab.value!];
@@ -75,31 +81,29 @@ async function paste(btn: ILoadingButton) {
 
       if (!password) {
         $alert.warning(`Password required to paste in folder: '${folder.name}'`);
-        return btn.stopLoading();
+        return;
       }
 
       // check if clip belongs to an encrypted folder
       if (!(await checkFolderPassword(folder.slug, password))) {
         $alert.error(`Incorrect password for folder: '${folder.name}'`);
-        return btn.stopLoading();
+        return;
       }
 
       // Encrypt clip
       pasteData = aesEncrypt(pasteData, password);
-
-      // delete password from memory
-      password = "";
     }
 
     // Send data to server
-    return pasteToServer(pasteData).finally(btn.stopLoading);
+    await pasteToServer(pasteData);
+
   } else if (type === "image") {
     // Send data to server
     const file = pasteData as File;
     console.log(file);
   }
 
-  return btn.stopLoading();
+  return;
 }
 
 async function pasteToServer(data: string, title?: string) {
@@ -114,41 +118,56 @@ async function pasteToServer(data: string, title?: string) {
     })
     .then(getFolders);
 }
+
+function switchTodo(val: Todo) {
+  todo.value = val;
+}
 </script>
 
 <template>
-  <section
-    @click.prevent="clickPasteBoard(true)"
-    @mouseleave="clickPasteBoard(false)"
-    @focusout="clickPasteBoard(false)"
-    :class="[hasClickedPasteboard ? 'bg-gray-200' : 'bg-gray-900']"
-    class="rounded shadow-md"
-  >
-    <h6
-      v-if="currentTab && foldersAsObject[currentTab]"
-      class="text-center text-gray-500 mb-1"
-    >
-      Paste in
-      <span class="text-gray-300">{{ foldersAsObject[currentTab].name }}</span>
-    </h6>
-
-    <h1 class="text-4xl hidden lg:block text-center text-gray-500 font-mono">
-      <template v-if="!hasClickedPasteboard">click</template>
-      <small v-if="!hasClickedPasteboard" class="mx-3 font-sans text-gray-300">&</small>
-      <span>ctrl+v</span>
-    </h1>
-
+  <keep-alive>
     <section
-      class="text-center mt-5 lg:mt-10 mb-5 space-x-2 text-xs md:text-sm lg:text-base"
+      v-if="todo==='paste'"
+      @click.prevent="clickPasteBoard(true)"
+      @mouseleave="clickPasteBoard(false)"
+      @focusout="clickPasteBoard(false)"
+      class="rounded shadow-md bg-gray-900 hover:bg-gray-950"
     >
-      <LoadingButton :click="paste" class="btn gray  rounded">
-        <i class="fa fa-paste"></i>
-        PASTE
-      </LoadingButton>
-      <button class="btn gray rounded">
-        <i class="fa fa-pen"></i>
-        CREATE
-      </button>
+      <h6
+        v-if="currentTab && foldersAsObject[currentTab]"
+        class="text-center text-gray-500 mb-1"
+      >
+        Paste in
+        <span class="text-gray-300">{{ foldersAsObject[currentTab].name }}</span>
+      </h6>
+
+      <h1 class="text-4xl hidden lg:block text-center text-gray-500 font-mono tracking-wider">
+        <template v-if="!hasClickedPasteboard">click</template>
+        <small v-if="!hasClickedPasteboard" class="mx-3 font-sans text-gray-300">&</small>
+        <span>ctrl+v</span>
+      </h1>
+
+      <section
+        class="text-center mt-5 lg:mt-10 mb-5 space-x-2 text-xs md:text-sm lg:text-base"
+      >
+        <LoadingButton :click="pasteFromBtn" class="btn gray  rounded">
+          <i class="fa fa-paste"></i>
+          PASTE
+        </LoadingButton>
+        <button class="btn gray rounded" @click="switchTodo('create')">
+          <i class="fa fa-pen"></i>
+          CREATE
+        </button>
+      </section>
     </section>
-  </section>
+    <section
+      v-else-if="todo==='create'"
+      class="rounded shadow-md bg-gray-900 hover:bg-gray-950">
+      <div class="flex justify-end px-3">
+        <button>
+          <i class="fas fa-times fa-2x"></i>
+        </button>
+      </div>
+    </section>
+  </keep-alive>
 </template>
