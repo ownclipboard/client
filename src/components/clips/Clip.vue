@@ -142,7 +142,7 @@ function deleteClip(btn: ILoadingButton, data: any) {
     <div class="block my-2 text-antiquewhite text-sm font-mono">
       <div v-if="clip.encrypted && !clip.decrypted" class="text-center">
         <LoadingButton message="Decrypting" :click="decryptClip" :data="clip">
-          <span class="text-gray-500"> <i class="fa fa-lock"></i> Encrypted </span>
+          <span class="text-gray-500"> <i class="fa fa-lock"></i> {{ clip.title ? clip.title : "Encrypted" }} </span>
           <br />
           <small>click to decrypt</small>
         </LoadingButton>

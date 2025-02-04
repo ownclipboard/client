@@ -10,6 +10,12 @@ const routes: Array<RouteRecordRaw> = [
   },
 
   {
+    path: "/paste/:pasteId",
+    name: "public-paste",
+    component: () => import("./views/PublicPaste.vue")
+  },
+
+  {
     path: "/",
     component: Authenticated,
     children: [
@@ -18,14 +24,16 @@ const routes: Array<RouteRecordRaw> = [
         name: "clipboard",
         component: () => import("./views/Clipboard.vue")
       },
+
+      {
+        name: "pricing",
+        path: "pricing",
+        component: () => import("./views/Pricing.vue")
+      }
     ]
   },
-  
-  {
-    path: "/paste/:pasteId",
-    name: "public-paste",
-    component: () => import("./views/PublicPaste.vue")
-  }
+
+
 ];
 
 const router = createRouter({

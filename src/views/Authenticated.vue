@@ -31,10 +31,16 @@ onMounted(ping);
 
 <template>
   <section v-if="authenticated === undefined">Authenticating...</section>
-  <section v-else-if="authenticated === true">
+  <section v-else-if="authenticated">
     <NavBar />
-    <section class="container py-10">
 
+    <div v-if="!authUser.plan" class="bg-teal-900 p-3 text-white text-center">
+      <h1>Hello <span>{{ authUser.username }},</span> you have not selected a subscription plan yet!
+        <RouterLink :to="{name:'pricing'}" class="text-antiquewhite">Choose plan</RouterLink>
+      </h1>
+    </div>
+
+    <section class="container py-10">
     <router-view />
     </section>
     <PasswordPrompt />

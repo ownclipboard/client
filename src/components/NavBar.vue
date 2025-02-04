@@ -22,10 +22,10 @@ const user = {
 };
 
 const navigation = [
-  { name: "Clipboard", href: "#", current: true },
-  { name: "Gallery", href: "#", current: false },
-  { name: "Devices", href: "#", current: false },
-  { name: "Settings", href: "#", current: false }
+  { name: "Clipboard", route: { name: "clipboard" } },
+  { name: "Plans", route: { name: "pricing" } }
+  // { name: "Devices", href: "#", current: false },
+  // { name: "Settings", href: "#", current: false }
 ];
 const userNavigation = [
   { name: "Your Profile", href: "#" },
@@ -124,14 +124,15 @@ function signOut() {
                       active ? 'bg-gray-100' : '',
                       'block py-2 px-4 text-sm text-gray-700'
                     ]"
-                    >{{ item.name }}</a
+                  >{{ item.name }}</a
                   >
                 </MenuItem>
                 <MenuItem>
                   <LoadingButton
                     @click.prevent="signOut"
                     class="block py-2 px-4 text-sm text-gray-700"
-                    >Sign out</LoadingButton
+                  >Sign out
+                  </LoadingButton
                   >
                 </MenuItem>
               </MenuItems>
@@ -140,19 +141,19 @@ function signOut() {
         </div>
       </div>
       <nav class="hidden lg:py-2 lg:flex justify-end lg:space-x-8" aria-label="Global">
-        <a
+        <RouterLink
           v-for="item in navigation"
           :key="item.name"
-          :href="item.href"
+          :to="item.route"
           :class="[
-            item.current
+            $route.name === item.route.name
               ? 'bg-gray-900 text-white'
               : 'text-gray-300 hover:bg-gray-700 hover:text-white',
             'rounded-md py-2 px-3 inline-flex items-center text-sm font-medium'
           ]"
-          :aria-current="item.current ? 'page' : undefined"
-          >{{ item.name }}</a
-        >
+          :aria-current="$route.name === item.route.name ? 'page' : undefined"
+        >{{ item.name }}
+        </RouterLink>
       </nav>
     </div>
 
@@ -170,7 +171,8 @@ function signOut() {
             'block rounded-md py-2 px-3 text-base font-medium'
           ]"
           :aria-current="item.current ? 'page' : undefined"
-          >{{ item.name }}</DisclosureButton
+        >{{ item.name }}
+        </DisclosureButton
         >
       </div>
       <div class="border-t border-gray-700 pt-4 pb-3">
@@ -197,7 +199,8 @@ function signOut() {
             as="a"
             :href="item.href"
             class="block rounded-md py-2 px-3 text-base font-medium text-gray-400 hover:bg-gray-700 hover:text-white"
-            >{{ item.name }}</DisclosureButton
+          >{{ item.name }}
+          </DisclosureButton
           >
         </div>
       </div>
