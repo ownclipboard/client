@@ -1,0 +1,55 @@
+
+table.table {
+  @apply min-w-full divide-y-2 divide-gray-800 rounded;
+
+  tbody {
+    @apply bg-gray-900 divide-y divide-gray-800;
+  }
+
+  thead > tr > th {
+    //@extend .text-antiquewhite-dark;
+    @apply text-gray-400;
+    @apply px-3 py-2.5 bg-gray-900 font-medium text-left text-sm tracking-wide;
+  }
+
+  tbody > tr {
+    @apply hover:bg-gray-950;
+
+    &:hover {
+      .table-numbering {
+        @apply bg-gray-900 text-amber-100 font-bold;
+      }
+    }
+
+    & > td {
+      @apply px-3 py-5 text-sm max-w-sm;
+
+      &:not(.wrap) {
+        @apply whitespace-nowrap
+      }
+
+      a:not([role="button"]) {
+        &:hover {
+          @apply font-medium;
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+}
+
+.table-container {
+  @apply overflow-x-auto;
+
+  &:not(.-curves) {
+    @apply md:rounded;
+  }
+
+  &:not(.-shadow) {
+    @apply shadow-sm;
+  }
+
+  &:not(.-border) {
+    @apply border border-gray-900;
+  }
+}

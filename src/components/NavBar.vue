@@ -23,7 +23,7 @@ const user = {
 
 const navigation = [
   { name: "Clipboard", route: { name: "clipboard" } },
-  { name: "Plans", route: { name: "pricing" } }
+  { name: "Pricing", route: { name: "pricing" } }
   // { name: "Devices", href: "#", current: false },
   // { name: "Settings", href: "#", current: false }
 ];
