@@ -13,7 +13,7 @@ import { BellIcon, Bars3Icon, XMarkIcon } from "@heroicons/vue/24/outline";
 import config from "../config";
 import { $localStorage, $sessionStorage } from "../stores/native";
 import LoadingButton from "../../node_modules/revue-components/vues/LoadingButton.vue";
-import { authUser } from "../stores/auth.store";
+
 
 const user = {
   name: "Tom Cook",
@@ -129,7 +129,7 @@ function signOut() {
                 </MenuItem>
                 <MenuItem>
                   <LoadingButton
-                    @click.prevent="signOut"
+                    :click="signOut"
                     class="block py-2 px-4 text-sm text-gray-700"
                   >Sign out
                   </LoadingButton
@@ -181,8 +181,8 @@ function signOut() {
             <img class="h-10 w-10 rounded-full" :src="user.imageUrl" />
           </div>
           <div class="ml-3">
-            <div class="text-base font-medium text-white">{{ authUser.username }}</div>
-            <div class="text-sm font-medium text-gray-400">{{ authUser.email }}</div>
+            <div class="text-base font-medium text-white">{{ AuthUser.username }}</div>
+            <div class="text-sm font-medium text-gray-400">{{ AuthUser.email }}</div>
           </div>
           <button
             type="button"

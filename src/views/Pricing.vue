@@ -75,11 +75,17 @@
     </div>
 
     <div class="mt-5 flex items-center justify-center space-x-10 text-xl font-medium">
-      <LoadingButton class="flex flex-col pl-3 bg-gray-900 hover:bg-gray-950 py-2 rounded w-full">
+      <LoadingButton
+        :click="choosePlan"
+        data="free"
+        class="flex flex-col pl-3 bg-gray-900 hover:bg-gray-950 py-2 rounded w-full">
         <span class="text-green-500">Free!</span>
         <small class="text-sm">Forever</small>
       </LoadingButton>
-      <LoadingButton class="flex flex-col pl-3 bg-gray-900 hover:bg-gray-950 py-2 rounded w-full">
+      <LoadingButton
+        :click="choosePlan"
+        data="pro"
+        class="flex flex-col pl-3 bg-gray-900 hover:bg-gray-950 py-2 rounded w-full">
         <span class="text-green-500">Try Pro</span>
         <small class="text-sm">7 Days</small>
       </LoadingButton>
@@ -88,6 +94,12 @@
 </template>
 
 <script setup lang="ts">
+import { ILoadingButton } from "revue-components/vues/component-types";
+import { $http, alertRequestError } from "../http";
+import { useRouter } from "vue-router";
+
+const $router = useRouter();
+
 const pricing = [
   {
     feature: "Unlimited Clips",
@@ -172,4 +184,16 @@ const faq = [
     question: "Do i get to keep my files if I cancel my subscription?",
     answer: "Yes, you will be able to keep your files but you will not be able to upload new files."
   }];
+
+async function choosePlan(btn: ILoadingButton<"free" | "pro">) {
+  const plan = btn.data;
+  try {
+    await $http.post("account/set-plan", {
+      plan
+    });
+    await $router.push({ name: "clipboard" });
+  } catch (res) {
+    return alertRequestError(res);
+  }
+}
 </script>

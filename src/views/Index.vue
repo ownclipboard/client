@@ -7,7 +7,10 @@ import { $localStorage } from "../stores/native";
 import { $alert } from "../components/ws-alert/ws-alert";
 import { redirect } from "../functions";
 import Intro from "../components/Intro.vue";
+import { useRouter } from "vue-router";
 
+
+const $router = useRouter();
 const userNameExists = ref<boolean>();
 const form = reactive({
   username: "ownclipboard",
@@ -22,7 +25,6 @@ function checkUsername(btn: ILoadingButton) {
       username: form.username
     })
     .then((res) => {
-      console.log(res);
       userNameExists.value = res.exists || false;
     })
     .catch(alertRequestError)
@@ -33,15 +35,22 @@ function login(btn: ILoadingButton) {
   if (!form.username || !form.password) return btn.stopLoading();
 
   return $http
-    .post<any, { token: string }>("/auth/login", {
+    .post<any, { token: string, plan: string | null }>("/auth/login", {
       username: form.username,
       password: form.password
     })
     .then((res) => {
       $alert.success("Login successful, Redirecting to your clipboard...");
       $localStorage.set("token", res.token);
+      let url: string;
 
-      redirect("/clipboard", 3000);
+      if (res.plan) {
+        url = $router.resolve({ name: "clipboard" }).href;
+      } else {
+        url = $router.resolve({ name: "pricing" }).href;
+      }
+
+      redirect(url, 3000);
     })
     .catch((e) => {
       alertRequestError(e);

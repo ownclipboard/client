@@ -21,6 +21,7 @@
     "axios": "^1.7.9",
     "caniuse-lite": "^1.0.30001696",
     "crypto-js": "^4.2.0",
+    "pinia": "^2.3.1",
     "revue-components": "^2.0.17",
     "sass": "^1.83.4",
     "timeago.js": "^4.0.2",

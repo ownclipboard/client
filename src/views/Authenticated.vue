@@ -1,49 +1,33 @@
 <script lang="ts" setup>
 import { onMounted, ref } from "vue";
-import { $localStorage } from "../stores/native";
-import { $http } from "../http";
-import { redirect } from "../functions";
 import NavBar from "../components/NavBar.vue";
-import { askForPassword } from "../components/PasswordPromptHandler";
-import { authUser } from "../stores/auth.store";
+import { useAuthUser } from "../stores/auth.store";
+import { refreshAuthData } from "../services/auth.service";
 
-const authenticated = ref<boolean>();
+const authUser = useAuthUser();
 
 async function ping() {
-  if ($localStorage.has("token")) {
-    authenticated.value = true;
-  }
-
-  try {
-    const { user } = await $http.get<any, { user: authUser }>("/ping");
-    // Update authUser
-    Object.assign(authUser, user);
-  } catch {
-    authenticated.value = false;
-    $localStorage.remove("token");
-    // Redirect to login page.
-    redirect("/", 3000);
-  }
+  return refreshAuthData(authUser);
 }
 
 onMounted(ping);
 </script>
 
 <template>
-  <section v-if="authenticated === undefined">Authenticating...</section>
-  <section v-else-if="authenticated">
+  <section v-if="!authUser.isLogged">Authenticating...</section>
+  <section v-else-if="authUser.isLogged">
     <NavBar />
 
-    <div v-if="!authUser.plan" class="bg-teal-900 p-3 text-white text-center">
-      <h1>Hello <span>{{ authUser.username }},</span> you have not selected a subscription plan yet!
+    <div v-if="!authUser.data!.plan && $route.name !='pricing'" class="bg-teal-900 p-3 text-white text-center">
+      <h1>Hello <span>{{ authUser.data!.username }},</span> you have not selected a subscription plan yet!
         <RouterLink :to="{name:'pricing'}" class="text-antiquewhite">Choose plan</RouterLink>
       </h1>
     </div>
 
     <section class="container py-10">
-    <router-view />
+      <router-view />
     </section>
     <PasswordPrompt />
   </section>
-  <section v-else-if="authenticated === false">Login Required!</section>
+  <!--  <section v-else-if="authenticated === false">Login Required!</section>-->
 </template>
