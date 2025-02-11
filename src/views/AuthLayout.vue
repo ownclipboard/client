@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onMounted, ref } from "vue";
+import { onMounted } from "vue";
 import NavBar from "../components/NavBar.vue";
 import { useAuthUser } from "../stores/auth.store";
 import { refreshAuthData } from "../services/auth.service";
@@ -15,7 +15,7 @@ onMounted(ping);
 
 <template>
   <section v-if="!authUser.isLogged">Authenticating...</section>
-  <section v-else-if="authUser.isLogged">
+  <section v-else-if="authUser.isLogged" class="pb-10">
     <NavBar />
 
     <div v-if="!authUser.data!.plan && $route.name !='pricing'" class="bg-teal-900 p-3 text-white text-center">
@@ -30,4 +30,6 @@ onMounted(ping);
     <PasswordPrompt />
   </section>
   <!--  <section v-else-if="authenticated === false">Login Required!</section>-->
+
+  <DebugDock />
 </template>

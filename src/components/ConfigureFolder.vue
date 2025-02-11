@@ -128,13 +128,13 @@ async function deleteFolder(btn: ILoadingButton) {
         <template v-if="configureTab === 'Settings'">
           <!-- If folder is encrypted but not setup i.e no password set -->
           <template v-if="folder.visibility === 'encrypted' && !folder.hasPassword">
-            <div class="text-sm bg-cyan-200 text-cyan-900 p-1 rounded-sm">
+            <div class="bg-cyan-200 text-cyan-900 p-1 rounded-sm">
               <i class="fa fa-info-circle mr-1 text-xl opacity-80"></i>
               This folder is an encrypted folder but has no password set yet!
               <strong
                 class="ml-1"
-              >Note:</strong> All encryptions are done in your
-              <strong>browser</strong> Password is required to encrypt/decrypt the folder contents.
+              >Note:</strong> Every encryption is done in your
+              <strong>Browser</strong>. The Password is required to <b>Encrypt/Decrypt</b> the folder contents.
             </div>
 
             <div class="my-5">

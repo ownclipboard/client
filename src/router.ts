@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import Index from "./views/Index.vue";
-import Authenticated from "./views/Authenticated.vue";
+import AuthLayout from "./views/AuthLayout.vue";
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -17,7 +17,7 @@ const routes: Array<RouteRecordRaw> = [
 
   {
     path: "/",
-    component: Authenticated,
+    component: AuthLayout,
     children: [
       {
         path: "clipboard",

@@ -26,6 +26,19 @@ body {
   }
 }
 
+
+.form {
+  select {
+    @apply bg-gray-800 border border-gray-600 p-2 outline-gray-900 rounded;
+    @apply text-gray-300;
+  }
+}
+
+
+button:disabled {
+  @apply cursor-not-allowed opacity-50
+}
+
 .text-antiquewhite {
   color: antiquewhite;
 }

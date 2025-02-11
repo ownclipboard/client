@@ -20,3 +20,24 @@ export type OwnFolder = {
   publicPaste?: { id: string; date: string };
   hasPassword?: boolean;
 };
+
+
+export interface Subscription {
+  _id: string;
+  type: "trial" | "monthly" | "yearly";
+  createdAt: Date;
+  userId: string;
+  plan: "pro";
+  amount: number;
+  status: "pending" | "active" | "cancelled";
+  duration: number;
+  expiresAt: Date;
+}
+
+export type SubStat = {
+  type: Subscription["type"];
+  status: Subscription["status"];
+  duration: Subscription["duration"];
+  expiresAt: Subscription["expiresAt"];
+  expired: boolean;
+}

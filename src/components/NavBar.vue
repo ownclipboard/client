@@ -11,9 +11,9 @@ import {
 import { MagnifyingGlassIcon } from "@heroicons/vue/24/solid";
 import { BellIcon, Bars3Icon, XMarkIcon } from "@heroicons/vue/24/outline";
 import config from "../config";
-import { $localStorage, $sessionStorage } from "../stores/native";
-import LoadingButton from "../../node_modules/revue-components/vues/LoadingButton.vue";
+import { useAuthUser } from "../stores/auth.store";
 
+const authUser = useAuthUser();
 
 const user = {
   name: "Tom Cook",
@@ -24,22 +24,14 @@ const user = {
 const navigation = [
   { name: "Clipboard", route: { name: "clipboard" } },
   { name: "Pricing", route: { name: "pricing" } }
-  // { name: "Devices", href: "#", current: false },
-  // { name: "Settings", href: "#", current: false }
 ];
+
 const userNavigation = [
   { name: "Your Profile", href: "#" },
   { name: "Settings", href: "#" }
 ];
 
-// remove token from local storage on signout.
-function signOut() {
-  $localStorage.remove("token");
-  $localStorage.remove("tabs");
-  $sessionStorage.remove("currentTab");
 
-  window.location.href = "/";
-}
 </script>
 
 <template>
@@ -47,10 +39,10 @@ function signOut() {
     <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:divide-y lg:divide-gray-700 lg:px-8">
       <div class="relative h-16 flex justify-between">
         <div class="relative z-10 px-2 flex lg:px-0">
-          <div class="flex-shrink-0 flex items-center">
+          <router-link :to="{name: 'clipboard'}" class="flex-shrink-0 flex items-center">
             <img class="block h-8 w-auto mr-1" src="/logo.png" alt="Workflow" />
             <span class="font-light hidden md:block">{{ config.name }}</span>
-          </div>
+          </router-link>
         </div>
         <div
           class="relative z-0 flex-1 px-2 flex items-center justify-center sm:absolute sm:inset-0"
@@ -129,7 +121,7 @@ function signOut() {
                 </MenuItem>
                 <MenuItem>
                   <LoadingButton
-                    :click="signOut"
+                    :click="authUser.signOut"
                     class="block py-2 px-4 text-sm text-gray-700"
                   >Sign out
                   </LoadingButton
@@ -140,7 +132,7 @@ function signOut() {
           </Menu>
         </div>
       </div>
-      <nav class="hidden lg:py-2 lg:flex justify-end lg:space-x-8" aria-label="Global">
+      <nav class="hidden lg:py-2 lg:flex justify-end lg:space-x-3" aria-label="Global">
         <RouterLink
           v-for="item in navigation"
           :key="item.name"
@@ -159,20 +151,19 @@ function signOut() {
 
     <DisclosurePanel as="nav" class="lg:hidden" aria-label="Global">
       <div class="pt-2 pb-3 px-2 space-y-1">
-        <DisclosureButton
+        <RouterLink
           v-for="item in navigation"
           :key="item.name"
-          as="a"
-          :href="item.href"
+          :to="item.route"
           :class="[
-            item.current
+            $route.name === item.route.name
               ? 'bg-gray-900 text-white'
               : 'text-gray-300 hover:bg-gray-700 hover:text-white',
             'block rounded-md py-2 px-3 text-base font-medium'
           ]"
-          :aria-current="item.current ? 'page' : undefined"
+          :aria-current="$route.name === item.route.name ? 'page' : undefined"
         >{{ item.name }}
-        </DisclosureButton
+        </RouterLink
         >
       </div>
       <div class="border-t border-gray-700 pt-4 pb-3">
@@ -181,8 +172,8 @@ function signOut() {
             <img class="h-10 w-10 rounded-full" :src="user.imageUrl" />
           </div>
           <div class="ml-3">
-            <div class="text-base font-medium text-white">{{ AuthUser.username }}</div>
-            <div class="text-sm font-medium text-gray-400">{{ AuthUser.email }}</div>
+            <div class="text-base font-medium text-white">{{ authUser.data!.username }}</div>
+            <div class="text-sm font-medium text-gray-400">{{ authUser.data!.email }}</div>
           </div>
           <button
             type="button"
