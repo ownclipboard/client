@@ -9,17 +9,20 @@ import Modal from "../components/Modal.vue";
 
 const $router = useRouter();
 const authUser = useAuthUser();
-const showPaymentModal = ref(true);
+const showPaymentModal = ref(false);
+const MONTHLY_PRICE = 2;
+const YEARLY_PRICE = 20;
 
 const subscribeForm = reactive({
   type: "yearly" as "monthly" | "yearly",
   duration: 1
 });
+
 const hasActiveSubscription = computed(() => authUser.subscription && !authUser.subscription.expired);
 
 
 const computedPrice = computed(() => {
-  const price = subscribeForm.type === "monthly" ? 1 : 10;
+  const price = subscribeForm.type === "monthly" ? MONTHLY_PRICE : YEARLY_PRICE;
   return price * subscribeForm.duration;
 });
 
@@ -113,6 +116,11 @@ function closePaymentModal() {
 }
 
 async function choosePlan(btn: ILoadingButton<"free" | "pro">) {
+  if (authUser.subscription) {
+    showPaymentModal.value = true;
+    return;
+  }
+
   const plan = btn.data;
   try {
     await $http.post("account/set-plan", { plan });
@@ -165,9 +173,9 @@ async function choosePlan(btn: ILoadingButton<"free" | "pro">) {
             <b class="text-lg">FREE</b>
           </td>
           <td>
-            <b class="text-lg">$1/month</b>
+            <b class="text-lg">${{ MONTHLY_PRICE }}/month</b>
             <br>
-            <b class="text-green-500 text-lg">$10/Year</b>
+            <b class="text-green-500 text-lg">${{ YEARLY_PRICE }}/Year</b>
           </td>
         </tr>
         <tr v-for="item in pricing" :key="item.feature">
@@ -208,9 +216,9 @@ async function choosePlan(btn: ILoadingButton<"free" | "pro">) {
             <b class="text-lg">FREE</b>
           </td>
           <td>
-            <b class="text-lg">$1/month</b>
+            <b class="text-lg">${{ MONTHLY_PRICE }}/month</b>
             <br>
-            <b class="text-green-500 text-lg">$10/Year</b>
+            <b class="text-green-500 text-lg">${{ YEARLY_PRICE }}/Year</b>
           </td>
         </tr>
         </tbody>
