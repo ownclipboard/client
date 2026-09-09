@@ -61,8 +61,8 @@ async function deleteClip(btn: ILoadingButton, [clip, index]: [OwnClip, number])
   }
 
   try {
-    await $http.post(`/clip/${clip.uuid}/delete`, { password });
-    clips.value.data = clips.value.data.filter((c) => c.uuid !== clip.uuid);
+    await $http.post(`/clip/${clip.publicId}/delete`, { password });
+    clips.value.data = clips.value.data.filter((c) => c.publicId !== clip.publicId);
   } catch (e) {
     alertRequestError(e);
   } finally {
@@ -82,7 +82,7 @@ $events.on(
     <template
       v-if="clips.data.length"
       v-for="(clip, index) in clips.data"
-      :key="clip.uuid"
+      :key="clip.publicId"
     >
       <Clip :index="index" :clip="clip" can-delete />
     </template>
@@ -94,4 +94,6 @@ $events.on(
   </section>
 
   <Paginator @on-page-change="loadClips" class="mt-5" :data="clips" />
+
+  <debug :data="{clips}" class="mt-5" />
 </template>

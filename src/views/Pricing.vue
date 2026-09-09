@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ILoadingButton } from "revue-components/vues/component-types";
+import type { ILoadingButton } from "revue-components/vues/component-types";
 import { $http, alertRequestError } from "../http";
 import { useRouter } from "vue-router";
 import { useAuthUser } from "../stores/auth.store";

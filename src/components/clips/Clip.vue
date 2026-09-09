@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useClipboard } from "@vueuse/core";
 import type { ILoadingButton } from "revue-components/vues/component-types";
-import { PropType, provide, ref, toRefs } from "vue";
+import { PropType, provide, Ref, ref, toRefs } from "vue";
 import { $events } from "../../events";
 import { aesDecrypt, aesEncrypt } from "../../functions/crypto";
 import { $http, alertRequestError } from "../../http";
@@ -26,7 +26,7 @@ const props = defineProps({
   }
 });
 
-const { clip, canDelete } = toRefs(props);
+const { clip, canDelete }: { clip: Ref<OwnClip>; canDelete: Ref<boolean> } = toRefs(props);
 provide("clip", clip);
 
 const { copy } = useClipboard();
@@ -37,8 +37,8 @@ function copyClip(btn: ILoadingButton, clip: OwnClip) {
   // copy clip to clipboard
   copy(clip.context);
 
-  // update copied message uuid
-  copied.value = clip.uuid;
+  // update copied message publicId
+  copied.value = clip.publicId;
 
   // Stop loading button
   btn.stopLoading();
@@ -105,7 +105,7 @@ async function encryptClip(btn: ILoadingButton, clip: OwnClip) {
   password = "";
 
   try {
-    await $http.post(`/clip/${clip.uuid}/update`, {
+    await $http.post(`/clip/${clip.publicId}/update`, {
       encrypted: true,
       content: encryptedData
     });
@@ -142,7 +142,9 @@ function deleteClip(btn: ILoadingButton, data: any) {
     <div class="block my-2 text-antiquewhite text-sm font-mono">
       <div v-if="clip.encrypted && !clip.decrypted" class="text-center">
         <LoadingButton message="Decrypting" :click="decryptClip" :data="clip">
-          <span class="text-gray-500"> <i class="fa fa-lock"></i> {{ clip.title ? clip.title : "Encrypted" }} </span>
+          <span class="text-gray-500">
+            <i class="fa fa-lock"></i> {{ clip.title ? clip.title : "Encrypted" }}
+          </span>
           <br />
           <small>click to decrypt</small>
         </LoadingButton>
@@ -169,7 +171,7 @@ function deleteClip(btn: ILoadingButton, data: any) {
         class="text-green-300 hover:text-green-500"
       >
         <i class="fa fa-copy"></i>
-        {{ copied === clip.uuid ? "#Copied!" : "Copy" }}
+        {{ copied === clip.publicId ? "#Copied!" : "Copy" }}
       </LoadingButton>
 
       <LoadingButton
@@ -191,7 +193,7 @@ function deleteClip(btn: ILoadingButton, data: any) {
         class="text-green-300 hover:text-green-500"
       >
         <i class="fa fa-copy"></i>
-        {{ copied === clip.uuid ? "#Copied!" : "Copy Encrypted Text" }}
+        {{ copied === clip.publicId ? "#Copied!" : "Copy Encrypted Text" }}
       </LoadingButton>
     </div>
   </div>

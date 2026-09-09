@@ -1,6 +1,6 @@
 
 export type OwnClip = {
-  uuid: string;
+  publicId: string;
   title: string;
   type: "text";
   folder: string;

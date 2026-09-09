@@ -21,12 +21,12 @@ const thisDeviceClips = $localStorage.persistedReactive<thisDeviceClips>(
   {}
 );
 
-// Add clip uuid to this device's clips if not exists
-function addToThisDeviceClips(clipUuid: string) {
+// Add clip publicId to this device's clips if not exists
+function addToThisDeviceClips(clipPublicId: string) {
   if (!thisDeviceClips[pasteId.value]) thisDeviceClips[pasteId.value] = [];
 
-  if (!thisDeviceClips[pasteId.value].includes(clipUuid)) {
-    thisDeviceClips[pasteId.value].push(clipUuid);
+  if (!thisDeviceClips[pasteId.value].includes(clipPublicId)) {
+    thisDeviceClips[pasteId.value].push(clipPublicId);
   }
 }
 
@@ -87,7 +87,7 @@ async function paste() {
       }
     );
 
-    addToThisDeviceClips(clip.uuid);
+    addToThisDeviceClips(clip.publicId);
     await loadThisDeviceClips();
   } catch (e) {
     alertRequestError(e);
@@ -131,7 +131,7 @@ async function paste() {
 
       <div class="flex mt-5">
         <div class="w-full max-w-4xl mx-auto space-y-3">
-          <template v-for="(clip, index) in clips.data" :key="clip.uuid">
+          <template v-for="(clip, index) in clips.data" :key="clip.publicId">
             <Clip :clip="clip" :index="index" />
           </template>
 
