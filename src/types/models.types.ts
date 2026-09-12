@@ -34,10 +34,36 @@ export interface Subscription {
   expiresAt: Date;
 }
 
+export type InvoiceStatus =
+  | "pending"
+  | "waiting"
+  | "confirming"
+  | "confirmed"
+  | "sending"
+  | "partially_paid"
+  | "finished"
+  | "failed"
+  | "refunded"
+  | "expired";
+
+export type SubInvoice = {
+  provider: "nowpayments";
+  id: string;
+  url?: string;
+  status: InvoiceStatus;
+  updatedAt?: string;
+};
+
 export type SubStat = {
+  publicId: string;
+  plan: Subscription["plan"];
   type: Subscription["type"];
   status: Subscription["status"];
+  amount: number; // USD
   duration: Subscription["duration"];
-  expiresAt: Subscription["expiresAt"];
+  createdAt: string;
+  startsAt?: string;
+  expiresAt?: string;
   expired: boolean;
-}
+  invoice?: SubInvoice;
+};

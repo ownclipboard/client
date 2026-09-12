@@ -6,8 +6,8 @@ import Folders from "../components/Folders.vue";
 </script>
 
 <template>
-  <section class="flex">
-    <PasteBoard class="max-w-3xl w-full mx-auto " />
+  <section>
+    <PasteBoard />
   </section>
 
   <section class="my-5">

@@ -1,8 +1,10 @@
 <script lang="ts" setup>
 import { useClipboard } from "@vueuse/core";
 import type { ILoadingButton } from "revue-components/vues/component-types";
-import { PropType, provide, Ref, ref, toRefs } from "vue";
+import { computed, PropType, provide, reactive, Ref, ref, toRefs } from "vue";
 import { $events } from "../../events";
+import { useAuthUser } from "../../stores/auth.store";
+import { refreshAuthData } from "../../services/auth.service";
 import { aesDecrypt, aesEncrypt } from "../../functions/crypto";
 import { $http, alertRequestError } from "../../http";
 import { checkFolderPassword } from "../../services/clips.services";
@@ -31,6 +33,78 @@ provide("clip", clip);
 
 const { copy } = useClipboard();
 const copied = ref("");
+
+const authUser = useAuthUser();
+const isPro = computed(() => authUser.data?.plan === "pro");
+
+/* ---------------- Edit clip (Pro only) ---------------- */
+
+const isEditing = ref(false);
+const editForm = reactive({ title: "", content: "" });
+
+function startEditing() {
+  editForm.title = clip.value.title || "";
+  editForm.content = clip.value.context;
+  isEditing.value = true;
+}
+
+function cancelEditing() {
+  isEditing.value = false;
+}
+
+async function saveClip(btn: ILoadingButton) {
+  const content = editForm.content.trim();
+  const title = editForm.title.trim();
+
+  if (!content.length) {
+    $alert.error("Content cannot be empty");
+    return btn.stopLoading();
+  }
+
+  const data: { title?: string; content?: string } = {};
+  if (title !== (clip.value.title || "")) data.title = title;
+
+  let contentToSend = content;
+
+  if (content !== clip.value.context) {
+    // Encrypted clips are shown decrypted while editing, re-encrypt with the folder password.
+    if (clip.value.encrypted) {
+      let password = await askForPassword("Enter password to save encrypted clip:");
+      if (!password) return btn.stopLoading();
+
+      if (!(await checkFolderPassword(clip.value.folder, password))) {
+        $alert.error(`Incorrect password for folder: '${clip.value.folder}'`);
+        password = "";
+        return btn.stopLoading();
+      }
+
+      contentToSend = aesEncrypt(content, password);
+      password = "";
+    }
+
+    data.content = contentToSend;
+  }
+
+  if (!Object.keys(data).length) {
+    isEditing.value = false;
+    return btn.stopLoading();
+  }
+
+  try {
+    await $http.post(`/clip/${clip.value.publicId}/update`, data);
+
+    if (data.title !== undefined) clip.value.title = title;
+    if (data.content !== undefined) clip.value.context = content;
+    clip.value.updatedAt = new Date().toISOString();
+    isEditing.value = false;
+  } catch (e: any) {
+    alertRequestError(e);
+    // A 403 means the plan changed server side (e.g. subscription expired), sync it.
+    if (e?.response?.status === 403) await refreshAuthData(authUser);
+  } finally {
+    btn.stopLoading();
+  }
+}
 
 // Copy clip to clipboard
 function copyClip(btn: ILoadingButton, clip: OwnClip) {
@@ -140,6 +214,9 @@ function deleteClip(btn: ILoadingButton, data: any) {
     </div>
 
     <div class="block my-2 text-antiquewhite text-sm font-mono">
+      <div v-if="clip.title && !isEditing && (!clip.encrypted || clip.decrypted)" class="font-sans font-medium text-gray-300 mb-1">
+        {{ clip.title }}
+      </div>
       <div v-if="clip.encrypted && !clip.decrypted" class="text-center">
         <LoadingButton message="Decrypting" :click="decryptClip" :data="clip">
           <span class="text-gray-500">
@@ -149,10 +226,37 @@ function deleteClip(btn: ILoadingButton, data: any) {
           <small>click to decrypt</small>
         </LoadingButton>
       </div>
+      <div v-else-if="isEditing" class="edit-clip">
+        <input
+          v-model="editForm.title"
+          type="text"
+          placeholder="Title (optional)"
+          class="bg-gray-950 rounded placeholder:opacity-30 hover:placeholder:opacity-100 font-medium px-3 py-2 w-full focus:outline-none"
+        />
+        <textarea
+          v-model="editForm.content"
+          rows="6"
+          placeholder="Clip content.."
+          class="bg-gray-950 rounded px-3 py-2 w-full focus:outline-none mt-2"
+        ></textarea>
+        <div class="flex justify-end space-x-3 mt-2 text-xs font-sans">
+          <button type="button" @click="cancelEditing" class="text-gray-400 hover:text-gray-200">
+            <i class="fa fa-times"></i> Cancel
+          </button>
+          <LoadingButton
+            message="Saving"
+            :click="saveClip"
+            icon="fa fa-slash fa-spin mr-1"
+            class="text-green-300 hover:text-green-500 font-medium"
+          >
+            <i class="fa fa-save"></i> Save
+          </LoadingButton>
+        </div>
+      </div>
       <ClipContent v-else />
     </div>
 
-    <div class="actions" v-if="!clip.encrypted || (clip.encrypted && clip.decrypted)">
+    <div class="actions" v-if="!isEditing && (!clip.encrypted || (clip.encrypted && clip.decrypted))">
       <!-- <template v-if="belongsToEncryptedFolderButNotEncrypted(clip)">
                 <LoadingButton
                     message="Encrypting"
@@ -173,6 +277,23 @@ function deleteClip(btn: ILoadingButton, data: any) {
         <i class="fa fa-copy"></i>
         {{ copied === clip.publicId ? "#Copied!" : "Copy" }}
       </LoadingButton>
+
+      <button
+        v-if="isPro"
+        type="button"
+        @click="startEditing"
+        class="text-yellow-300 hover:text-yellow-500 font-medium"
+      >
+        <i class="fa fa-pencil"></i> Edit
+      </button>
+      <RouterLink
+        v-else
+        :to="{ name: 'pricing' }"
+        title="Editing clips is a Pro feature"
+        class="text-gray-500 hover:text-yellow-300"
+      >
+        <i class="fa fa-lock"></i> Edit
+      </RouterLink>
 
       <LoadingButton
         v-if="canDelete"

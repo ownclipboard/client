@@ -14,6 +14,8 @@ export const useAuthUser = defineStore("authUser", () => {
   const data = ref<AuthUser>();
   const isLogged = computed(() => !!data.value);
   const subscription = ref<SubStat>();
+  // Pending (unpaid) subscriptions, newest first. Filled by the Pricing page.
+  const pending = ref<SubStat[]>([]);
 
 
   function signOut() {
@@ -24,7 +26,7 @@ export const useAuthUser = defineStore("authUser", () => {
     window.location.href = "/";
   }
 
-  return { data, isLogged, subscription, signOut };
+  return { data, isLogged, subscription, pending, signOut };
 });
 
 export type AuthUserStore = ReturnType<typeof useAuthUser>;

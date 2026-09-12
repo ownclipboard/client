@@ -18,12 +18,6 @@ const createForm = reactive({
   content: "" as string
 });
 
-const hasClickedPasteboard = ref(false);
-
-function clickPasteBoard(val: boolean = true) {
-  hasClickedPasteboard.value = val;
-}
-
 function blobToFile(blob: Blob, fileName: string): File {
   return new File([blob], fileName, {
     lastModified: new Date().getTime(),
@@ -71,8 +65,6 @@ async function pasteFromBtn(btn: ILoadingButton) {
 }
 
 async function paste() {
-  clickPasteBoard(false);
-
   let type: "text" | "image" = "text";
   let pasteData: any;
   let title: string | undefined;
@@ -173,41 +165,23 @@ async function createContent(btn: ILoadingButton) {
   <keep-alive>
     <section
       v-if="todo==='paste'"
-      @click.prevent="clickPasteBoard(true)"
-      @mouseleave="clickPasteBoard(false)"
-      @focusout="clickPasteBoard(false)"
-      class="rounded shadow-md bg-gray-900 hover:bg-gray-950 py-5 md:pt-8 lg:pt-10"
+      class="flex flex-wrap items-center justify-end space-x-2 text-xs md:text-sm lg:text-base"
     >
-      <h6
-        v-if="currentTab && foldersAsObject[currentTab]"
-        class="text-center text-gray-500 mb-1"
-      >
-        Paste in
-        <span class="text-gray-300">{{ foldersAsObject[currentTab].name }}</span>
-      </h6>
-
-      <h1 class="text-4xl hidden lg:block text-center text-gray-500 font-mono tracking-wider">
-        <template v-if="!hasClickedPasteboard">click</template>
-        <small v-if="!hasClickedPasteboard" class="mx-3 font-sans text-gray-300">&</small>
-        <span>ctrl+v</span>
-      </h1>
-
-      <section
-        class="text-center mt-5 lg:mt-10 mb-5 space-x-2 text-xs md:text-sm lg:text-base"
-      >
-        <LoadingButton :click="pasteFromBtn" class="btn gray  rounded">
-          <i class="fa fa-paste"></i>
-          PASTE
-        </LoadingButton>
-        <button class="btn gray rounded" @click="switchTodo('create')">
-          <i class="fa fa-pen"></i>
-          CREATE
-        </button>
-      </section>
+      <LoadingButton :click="pasteFromBtn" message="Pasting" class="btn rounded shadow-md bg-gray-900 hover:bg-gray-950 border border-gray-700">
+        <i class="fa fa-paste"></i>
+        Paste
+        <template v-if="currentTab && foldersAsObject[currentTab]">
+          in <span class="text-green-300 font-medium">{{ foldersAsObject[currentTab].name }}</span>
+        </template>
+      </LoadingButton>
+      <button class="btn rounded shadow-md bg-gray-900 hover:bg-gray-950 border border-gray-700" @click="switchTodo('create')">
+        <i class="fa fa-pen"></i>
+        Create
+      </button>
     </section>
     <section
       v-else-if="todo==='create'"
-      class="rounded shadow-md bg-gray-900 hover:bg-gray-950">
+      class="rounded shadow-md bg-gray-900 hover:bg-gray-950 max-w-3xl ml-auto">
       <div class="flex py-2 border-gray-800">
         <div class="w-full">
           <input
