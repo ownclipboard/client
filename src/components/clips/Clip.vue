@@ -4,7 +4,8 @@ import type { ILoadingButton } from "revue-components/vues/component-types";
 import { computed, PropType, provide, reactive, Ref, ref, toRefs } from "vue";
 import { $events } from "../../events";
 import { useAuthUser } from "../../stores/auth.store";
-import { foldersAsObject } from "../../stores/tabs.store";
+import { foldersAsObject, getFolders } from "../../stores/tabs.store";
+import { askForFolder } from "../FolderPickerHandler";
 import { refreshAuthData } from "../../services/auth.service";
 import { aesDecrypt, aesEncrypt } from "../../functions/crypto";
 import { $http, alertRequestError } from "../../http";
@@ -101,7 +102,10 @@ async function saveClip(btn: ILoadingButton) {
     await $http.post(`/clip/${clip.value.publicId}/update`, data);
 
     if (data.title !== undefined) clip.value.title = title;
-    if (data.content !== undefined) clip.value.context = content;
+    if (data.content !== undefined) {
+      clip.value.context = content;
+      if (clip.value.encrypted) encryptedContext.value = contentToSend;
+    }
     clip.value.updatedAt = new Date().toISOString();
     isEditing.value = false;
   } catch (e: any) {
@@ -130,6 +134,20 @@ function copyClip(btn: ILoadingButton, clip: OwnClip) {
   }, 3000);
 }
 
+// Ciphertext kept aside while a clip is shown decrypted, so it can be hidden again.
+const encryptedContext = ref<string | null>(null);
+
+/**
+ * Hide a decrypted clip: restore the ciphertext and lock it again.
+ */
+function hideDecrypted() {
+  if (encryptedContext.value === null) return;
+  clip.value.context = encryptedContext.value;
+  clip.value.decrypted = false;
+  encryptedContext.value = null;
+  isEditing.value = false;
+}
+
 /**
  * Decrypt clip
  */
@@ -146,6 +164,8 @@ async function decryptClip(btn: ILoadingButton, clip: OwnClip) {
   try {
     // Decrypt clip with password
     const decryptedData = aesDecrypt(clip.context, password);
+    if (!decryptedData) throw new Error("Could not decrypt clip, wrong password?");
+    encryptedContext.value = clip.context;
     clip.decrypted = true;
     clip.context = decryptedData;
   } catch (e: any) {
@@ -198,6 +218,51 @@ async function encryptClip(btn: ILoadingButton, clip: OwnClip) {
     return btn.stopLoading();
   }
 }
+
+/* ---------------- Move / Copy to folder ---------------- */
+
+type TransferResponse = {
+  folder: string;
+  moved?: { id: string }[];
+  copied?: { id: string; copyId: string }[];
+  merged: string[];
+  skipped: { id: string; reason: "encrypted" | "not_found" | "same_folder" }[];
+  message: string;
+};
+
+const SKIP_REASONS: Record<TransferResponse["skipped"][number]["reason"], string> = {
+  encrypted: "Encrypted clips cannot be moved or copied.",
+  not_found: "Clip no longer exists.",
+  same_folder: "Clip is already in that folder."
+};
+
+async function transferClip(btn: ILoadingButton, action: "move" | "copy") {
+  const verb = action === "move" ? "Move" : "Copy";
+  const folder = await askForFolder(`${verb} clip to:`, [clip.value.folder]);
+  if (!folder) return btn.stopLoading();
+
+  try {
+    const res = await $http.post<any, TransferResponse>(`/clips/${action}`, {
+      ids: [clip.value.publicId],
+      folder: folder.slug
+    });
+
+    const skipped = res.skipped?.[0];
+    if (skipped) $alert.warning(SKIP_REASONS[skipped.reason] || "Clip was skipped.");
+
+    // Update folder counters; on move also drop the clip from the current list.
+    await getFolders();
+    if (action === "move" && !skipped) $events.emit("refreshClips");
+  } catch (e: any) {
+    alertRequestError(e);
+    if (e?.response?.status === 403) await refreshAuthData(authUser);
+  } finally {
+    btn.stopLoading();
+  }
+}
+
+const moveClip = (btn: ILoadingButton) => transferClip(btn, "move");
+const copyClipToFolder = (btn: ILoadingButton) => transferClip(btn, "copy");
 
 function deleteClip(btn: ILoadingButton, data: any) {
   if (!canDelete.value) return;
@@ -288,6 +353,43 @@ function deleteClip(btn: ILoadingButton, data: any) {
         <i class="fa fa-copy"></i>
         {{ copied === clip.publicId ? "#Copied!" : "Copy" }}
       </LoadingButton>
+
+      <button
+        v-if="clip.encrypted && clip.decrypted"
+        type="button"
+        @click="hideDecrypted"
+        title="Hide decrypted content"
+        class="text-gray-400 hover:text-gray-200 font-medium"
+      >
+        <i class="fa fa-lock"></i> Hide
+      </button>
+
+      <template v-if="!clip.encrypted">
+        <LoadingButton
+          message="Moving"
+          :click="moveClip"
+          class="text-blue-300 hover:text-blue-500"
+        >
+          <i class="fa fa-folder-open"></i> Move
+        </LoadingButton>
+
+        <LoadingButton
+          v-if="isPro"
+          message="Copying"
+          :click="copyClipToFolder"
+          class="text-blue-300 hover:text-blue-500"
+        >
+          <i class="fa fa-clone"></i> Copy to
+        </LoadingButton>
+        <RouterLink
+          v-else
+          :to="{ name: 'pricing' }"
+          title="Copying clips to other folders is a Pro feature"
+          class="text-gray-500 hover:text-blue-300"
+        >
+          <i class="fa fa-lock"></i> Copy to
+        </RouterLink>
+      </template>
 
       <button
         v-if="isPro"

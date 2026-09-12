@@ -87,9 +87,9 @@ const pricing = [
   },
   {
     feature: "Transfer Clips",
-    desc: "Transfer clips between folders",
-    free: false,
-    pro: true,
+    desc: "Move clips between folders, or copy them to keep a version in both",
+    free: "Move",
+    pro: "Move & Copy",
     icon: "far fa-exchange"
   },
   {

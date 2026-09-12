@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { onMounted } from "vue";
 import NavBar from "../components/NavBar.vue";
+import FolderPicker from "../components/FolderPicker.vue";
 import { useAuthUser } from "../stores/auth.store";
 import { refreshAuthData } from "../services/auth.service";
 
@@ -28,6 +29,7 @@ onMounted(ping);
       <router-view />
     </section>
     <PasswordPrompt />
+    <FolderPicker />
   </section>
   <!--  <section v-else-if="authenticated === false">Login Required!</section>-->
 

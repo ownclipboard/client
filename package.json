@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "bunx vite --port 3004 --host",
     "build": "bunx vue-tsc --noEmit && vite build",
-    "serve": "bunx vite preview"
+    "serve": "bunx vite preview",
+    "pull-api": "bash bash/pull-api.sh"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
