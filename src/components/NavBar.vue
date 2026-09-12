@@ -8,7 +8,6 @@ import {
   MenuItem,
   MenuItems
 } from "@headlessui/vue";
-import { MagnifyingGlassIcon } from "@heroicons/vue/24/solid";
 import { BellIcon, Bars3Icon, XMarkIcon } from "@heroicons/vue/24/outline";
 import config from "../config";
 import { useAuthUser } from "../stores/auth.store";
@@ -36,34 +35,14 @@ const userNavigation = [
 
 <template>
   <Disclosure as="header" class="bg-gray-800" v-slot="{ open }">
-    <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:divide-y lg:divide-gray-700 lg:px-8">
+    <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
       <div class="relative h-16 flex justify-between">
         <div class="relative z-10 px-2 flex lg:px-0">
           <router-link :to="{name: 'clipboard'}" class="flex-shrink-0 flex items-center">
             <img class="block h-8 w-auto mr-1" src="/logo.png" alt="Workflow" />
             <span class="font-light hidden md:block">{{ config.name }}</span>
           </router-link>
-        </div>
-        <div
-          class="relative z-0 flex-1 px-2 flex items-center justify-center sm:absolute sm:inset-0"
-        >
-          <div class="w-full sm:max-w-xs">
-            <label for="search" class="sr-only">Search</label>
-            <div class="relative">
-              <div
-                class="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center"
-              >
-                <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" aria-hidden="true" />
-              </div>
-              <input
-                id="search"
-                :name="`${String($route.name)}-search`"
-                class="block w-full bg-gray-700 border border-transparent rounded-md py-2 pl-10 pr-3 text-sm placeholder-gray-400 focus:outline-none focus:bg-white focus:border-white focus:ring-white focus:text-gray-900 focus:placeholder-gray-500 sm:text-sm"
-                placeholder="Search"
-                type="search"
-              />
-            </div>
-          </div>
+
         </div>
         <div class="relative z-10 flex items-center lg:hidden">
           <!-- Mobile menu button -->
@@ -76,6 +55,21 @@ const userNavigation = [
           </DisclosureButton>
         </div>
         <div class="hidden lg:relative lg:z-10 lg:ml-4 lg:flex lg:items-center">
+          <nav class="hidden lg:flex lg:items-center lg:space-x-3 lg:mr-6" aria-label="Global">
+            <RouterLink
+              v-for="item in navigation"
+              :key="item.name"
+              :to="item.route"
+              :class="[
+                $route.name === item.route.name
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                'rounded-md py-2 px-3 inline-flex items-center text-sm font-medium'
+              ]"
+              :aria-current="$route.name === item.route.name ? 'page' : undefined"
+            >{{ item.name }}
+            </RouterLink>
+          </nav>
           <button
             type="button"
             class="bg-gray-800 flex-shrink-0 rounded-full p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white"
@@ -132,21 +126,6 @@ const userNavigation = [
           </Menu>
         </div>
       </div>
-      <nav class="hidden lg:py-2 lg:flex justify-end lg:space-x-3" aria-label="Global">
-        <RouterLink
-          v-for="item in navigation"
-          :key="item.name"
-          :to="item.route"
-          :class="[
-            $route.name === item.route.name
-              ? 'bg-gray-900 text-white'
-              : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-            'rounded-md py-2 px-3 inline-flex items-center text-sm font-medium'
-          ]"
-          :aria-current="$route.name === item.route.name ? 'page' : undefined"
-        >{{ item.name }}
-        </RouterLink>
-      </nav>
     </div>
 
     <DisclosurePanel as="nav" class="lg:hidden" aria-label="Global">

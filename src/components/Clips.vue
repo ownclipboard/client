@@ -8,8 +8,9 @@ import { askForPassword } from "./PasswordPromptHandler";
 import { $events } from "../events";
 import { useClipboard } from "@vueuse/core";
 import Paginator, { Pagination } from "./paginator/Paginator.vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import Clip from "./clips/Clip.vue";
+import { searchQuery, searchAllFolders } from "../stores/search.store";
 
 // Paginated Clips
 type PaginatedClips = Pagination<OwnClip>;
@@ -18,24 +19,47 @@ type PaginatedClips = Pagination<OwnClip>;
 const { copy } = useClipboard();
 const copied = ref("");
 const $route = useRoute();
+const $router = useRouter();
 const clips = ref(Pagination<OwnClip>());
 const clipsCache: Record<string, PaginatedClips> = {};
+const isSearching = ref(false);
+// Incremented per request so a slow response can't overwrite a newer one.
+let requestId = 0;
 
 async function loadClips() {
   const tab = currentTab.value!;
+  const q = searchQuery.value;
+  const id = ++requestId;
 
-  // if we have clips cached for this tab,
-  // use them while we're loading updated data from server
-  if (clipsCache[tab]) {
-    clips.value = clipsCache[tab];
+  try {
+    if (q) {
+      isSearching.value = true;
+      const response = await $http.get<any, { clips: PaginatedClips; query: string }>("/clips/search", {
+        params: { ...$route.query, q, folder: searchAllFolders.value ? undefined : tab }
+      });
+      if (id !== requestId) return;
+      clips.value = response.clips;
+      return;
+    }
+
+    // if we have clips cached for this tab,
+    // use them while we're loading updated data from server
+    if (clipsCache[tab]) {
+      clips.value = clipsCache[tab];
+    }
+
+    const response = await $http.get<any, { clips: PaginatedClips }>(`/clips/${tab}`, {
+      params: $route.query
+    });
+    if (id !== requestId) return;
+
+    clips.value = response.clips;
+    clipsCache[tab] = response.clips;
+  } catch (e) {
+    alertRequestError(e);
+  } finally {
+    if (id === requestId) isSearching.value = false;
   }
-
-  const response = await $http.get<any, { clips: typeof clips.value }>(`/clips/${tab}`, {
-    params: $route.query
-  });
-
-  clips.value = response.clips;
-  clipsCache[tab] = response.clips;
 }
 
 // Register refresh clips event
@@ -43,6 +67,17 @@ $events.on("refreshClips", loadClips);
 
 // Load clips on currentTab change.
 watch(currentTab, loadClips);
+
+// Reload when the search query or scope changes, starting from page 1.
+watch([searchQuery, searchAllFolders], async ([query], [previousQuery]) => {
+  // Scope toggled while not searching: nothing to reload.
+  if (!query && !previousQuery) return;
+  if ($route.query.page) {
+    const { page: _page, ...query } = $route.query;
+    await $router.replace({ query });
+  }
+  await loadClips();
+});
 // Load clips on first mount.
 onMounted(loadClips);
 
@@ -84,11 +119,14 @@ $events.on(
       v-for="(clip, index) in clips.data"
       :key="clip.publicId"
     >
-      <Clip :index="index" :clip="clip" can-delete />
+      <Clip :index="index" :clip="clip" :show-folder="!!searchQuery && searchAllFolders" can-delete />
     </template>
     <template v-else>
       <div class="text-center my-5">
-        <p class="text-gray-400">No clips yet.</p>
+        <p v-if="searchQuery" class="text-gray-400">
+          {{ isSearching ? "Searching..." : `No clips match "${searchQuery}"` }}
+        </p>
+        <p v-else class="text-gray-400">No clips yet.</p>
       </div>
     </template>
   </section>

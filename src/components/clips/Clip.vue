@@ -4,6 +4,7 @@ import type { ILoadingButton } from "revue-components/vues/component-types";
 import { computed, PropType, provide, reactive, Ref, ref, toRefs } from "vue";
 import { $events } from "../../events";
 import { useAuthUser } from "../../stores/auth.store";
+import { foldersAsObject } from "../../stores/tabs.store";
 import { refreshAuthData } from "../../services/auth.service";
 import { aesDecrypt, aesEncrypt } from "../../functions/crypto";
 import { $http, alertRequestError } from "../../http";
@@ -25,6 +26,11 @@ const props = defineProps({
   canDelete: {
     type: Boolean as PropType<boolean>,
     default: false
+  },
+  // Show the folder the clip belongs to (used for cross-folder search results)
+  showFolder: {
+    type: Boolean as PropType<boolean>,
+    default: false
   }
 });
 
@@ -36,6 +42,7 @@ const copied = ref("");
 
 const authUser = useAuthUser();
 const isPro = computed(() => authUser.data?.plan === "pro");
+const folderName = computed(() => foldersAsObject.value[clip.value.folder]?.name || clip.value.folder);
 
 /* ---------------- Edit clip (Pro only) ---------------- */
 
@@ -206,6 +213,9 @@ function deleteClip(btn: ILoadingButton, data: any) {
           class="bg-gray-700 text-gray-200 p-1 rounded uppercase font-medium shadow"
           >{{ clip.type }}</small
         >
+        <small v-if="showFolder" class="ml-2 text-gray-400">
+          <i class="far fa-folder mr-1"></i>{{ folderName }}
+        </small>
       </div>
       <div class="float-right">
         <TimeAgo :date="clip.updatedAt" />
@@ -226,7 +236,7 @@ function deleteClip(btn: ILoadingButton, data: any) {
           <small>click to decrypt</small>
         </LoadingButton>
       </div>
-      <div v-else-if="isEditing" class="edit-clip">
+      <div v-else-if="isEditing" class="edit-clip" @keydown.esc.prevent="cancelEditing">
         <input
           v-model="editForm.title"
           type="text"
@@ -235,6 +245,7 @@ function deleteClip(btn: ILoadingButton, data: any) {
         />
         <textarea
           v-model="editForm.content"
+          autofocus
           rows="6"
           placeholder="Clip content.."
           class="bg-gray-950 rounded px-3 py-2 w-full focus:outline-none mt-2"

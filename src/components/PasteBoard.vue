@@ -9,6 +9,7 @@ import { $alert } from "./ws-alert/ws-alert";
 import { checkFolderPassword } from "../services/clips.services";
 import { aesEncrypt } from "../functions/crypto";
 import { nanoid } from "nanoid";
+import ClipsSearch from "./ClipsSearch.vue";
 
 type Todo = "paste" | "create";
 const todo = ref<Todo>("paste");
@@ -165,8 +166,11 @@ async function createContent(btn: ILoadingButton) {
   <keep-alive>
     <section
       v-if="todo==='paste'"
-      class="flex flex-wrap items-center justify-end space-x-2 text-xs md:text-sm lg:text-base"
+      class="flex flex-wrap items-center justify-between gap-2 text-xs md:text-sm lg:text-base"
     >
+      <ClipsSearch class="w-full sm:max-w-md" />
+
+      <div class="flex items-center space-x-2 ml-auto">
       <LoadingButton :click="pasteFromBtn" message="Pasting" class="btn rounded shadow-md bg-gray-900 hover:bg-gray-950 border border-gray-700">
         <i class="fa fa-paste"></i>
         Paste
@@ -178,6 +182,7 @@ async function createContent(btn: ILoadingButton) {
         <i class="fa fa-pen"></i>
         Create
       </button>
+      </div>
     </section>
     <section
       v-else-if="todo==='create'"
