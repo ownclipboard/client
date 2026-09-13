@@ -10,8 +10,17 @@ export async function refreshAuthData(st: AuthUserStore) {
     st.data = user;
     st.subscription = subscription;
   } catch {
-    st.signOut();
+    // The token is no longer good, so there is no session left to end server side.
+    st.clearSession();
   }
+}
+
+/**
+ * End the session server side. The jwt carries a login token that the API
+ * replaces here, so every token issued so far stops working, on every device.
+ */
+export function logout() {
+  return $http.post<any, components["schemas"]["MessageResponse"]>("/auth/logout", undefined, { timeout: 10_000 });
 }
 
 /** Whether a username is already taken. */

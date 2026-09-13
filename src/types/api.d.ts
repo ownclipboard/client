@@ -199,7 +199,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/old/validate": {
+    "/api/legacy/validate": {
         parameters: {
             query?: never;
             header?: never;
@@ -246,7 +246,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/old/connect": {
+    "/api/legacy/connect": {
         parameters: {
             query?: never;
             header?: never;
@@ -313,7 +313,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/old/all": {
+    "/api/legacy/all": {
         parameters: {
             query?: never;
             header?: never;
@@ -367,7 +367,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/old/add": {
+    "/api/legacy/add": {
         parameters: {
             query?: never;
             header?: never;
@@ -430,7 +430,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/old/delete": {
+    "/api/legacy/delete": {
         parameters: {
             query?: never;
             header?: never;
