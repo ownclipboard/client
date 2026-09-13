@@ -32,8 +32,10 @@ const loading = ref(true);
 const formOpen = ref(false);
 const editing = ref<Device | null>(null);
 
-// The key is held only long enough to show it once.
+// The key is held only long enough to show it once. `issuedOpen` is separate so
+// the dialog keeps its content while it animates out.
 const issued = ref<CreateDeviceResponse | null>(null);
+const issuedOpen = ref(false);
 const issuedIsRotation = ref(false);
 
 const limitReached = computed(() => limit.value.max !== null && limit.value.used >= limit.value.max);
@@ -69,8 +71,7 @@ function onCreated(res: CreateDeviceResponse) {
   formOpen.value = false;
   devices.value = [res.device, ...devices.value];
   limit.value = { ...limit.value, used: limit.value.used + 1 };
-  issuedIsRotation.value = false;
-  issued.value = res;
+  showKey(res, false);
 }
 
 function onSaved(device: Device) {
@@ -80,13 +81,26 @@ function onSaved(device: Device) {
 
 function onRotated(res: CreateDeviceResponse) {
   replace(res.device);
-  issuedIsRotation.value = true;
-  issued.value = res;
+  showKey(res, true);
 }
 
 function onDeleted(publicId: string) {
   devices.value = devices.value.filter((d) => d.publicId !== publicId);
   limit.value = { ...limit.value, used: Math.max(0, limit.value.used - 1) };
+}
+
+function showKey(res: CreateDeviceResponse, rotated: boolean) {
+  issuedIsRotation.value = rotated;
+  issued.value = res;
+  issuedOpen.value = true;
+}
+
+function closeKey() {
+  issuedOpen.value = false;
+  // Drop the key once the dialog has finished animating out.
+  setTimeout(() => {
+    if (!issuedOpen.value) issued.value = null;
+  }, 300);
 }
 
 function replace(device: Device) {
@@ -179,12 +193,12 @@ function replace(device: Device) {
     />
 
     <ApiKeyDialog
-      :open="!!issued"
+      :open="issuedOpen"
       :api-key="issued?.apiKey || ''"
       :device-name="issued?.device.name || ''"
       :folder="issued?.device.folder || ''"
       :rotated="issuedIsRotation"
-      @close="issued = null"
+      @close="closeKey"
     />
   </div>
 </template>

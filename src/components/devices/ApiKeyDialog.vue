@@ -3,7 +3,7 @@
  * Shows an api key exactly once, right after a device is created or its key is
  * rotated. The server only keeps a hash, so a key that is not saved here is gone.
  */
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useClipboard } from "@vueuse/core";
 import { CheckIcon, ClipboardDocumentIcon, ExclamationTriangleIcon, EyeIcon, EyeSlashIcon } from "@heroicons/vue/20/solid";
 import config from "../../config";
@@ -25,14 +25,22 @@ const emit = defineEmits<{ (e: "close"): void }>();
 const { copy, copied } = useClipboard({ copiedDuring: 2000 });
 const revealed = ref(false);
 
-const masked = computed(() => "•".repeat(48));
+// Every key starts hidden, including the second one shown in a session.
+watch(() => props.open, (open) => open && (revealed.value = false));
 
-const connectSnippet = computed(
-  () => `curl -X POST ${config.apiOrigin}/api/old/connect \\
-  -H "oc-key: ${props.apiKey}" \\
+const masked = computed(() => "\u2022".repeat(48));
+
+/** The real command, always copied. */
+const connectSnippet = computed(() => snippet(props.apiKey));
+/** What is drawn: hiding the key has to hide it here too. */
+const shownSnippet = computed(() => snippet(revealed.value ? props.apiKey : masked.value));
+
+function snippet(key: string) {
+  return `curl -X POST ${config.apiOrigin}/api/old/connect \\
+  -H "oc-key: ${key}" \\
   -H "Content-Type: application/json" \\
-  -d '{"device_id":"${slugId(props.deviceName)}"}'`
-);
+  -d '{"device_id":"${slugId(props.deviceName)}"}'`;
+}
 
 function slugId(name: string) {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-app";
@@ -81,7 +89,7 @@ function slugId(name: string) {
           an <code class="font-mono text-[13px] text-fg">api_key</code> query param or an <code class="font-mono text-[13px] text-fg">api_key</code> body field.
         </p>
         <div class="relative rounded-md border border-line bg-sunken">
-          <pre class="scroll-thin overflow-x-auto px-3 py-2.5 font-mono text-[12px] leading-5 text-fg">{{ connectSnippet }}</pre>
+          <pre class="scroll-thin overflow-x-auto px-3 py-2.5 pr-11 font-mono text-[12px] leading-5 text-fg">{{ shownSnippet }}</pre>
           <IconButton class="absolute right-1.5 top-1.5" size="sm" label="Copy command" @click="copy(connectSnippet)">
             <ClipboardDocumentIcon />
           </IconButton>
