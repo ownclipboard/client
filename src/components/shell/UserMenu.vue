@@ -11,11 +11,11 @@ const authUser = useAuthUser();
 </script>
 
 <template>
-  <DropdownMenu align="left" width="w-56">
+  <DropdownMenu align="left" width="w-full" placement="top" block>
     <template #trigger>
       <button
         type="button"
-        class="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left hover:bg-raised"
+        class="flex w-full items-center gap-2.5 rounded-md border border-transparent px-2 py-1.5 text-left transition-colors hover:border-line hover:bg-raised"
         aria-label="Account menu"
       >
         <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-info text-[11px] font-semibold uppercase text-white">
