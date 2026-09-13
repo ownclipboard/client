@@ -27,7 +27,9 @@ export async function login(username: string, password: string) {
   return res.plan;
 }
 
-/** Create an account. The caller logs in afterwards. */
-export function signup(username: string, password: string) {
-  return $http.post<any, components["schemas"]["MessageResponse"]>("/auth/signup", { username, password });
+/** Create an account. Email is optional and only used for password resets. The caller logs in afterwards. */
+export function signup(username: string, password: string, email?: string) {
+  const body: components["schemas"]["SignupBody"] = { username, password };
+  if (email) body.email = email;
+  return $http.post<any, components["schemas"]["MessageResponse"]>("/auth/signup", body);
 }

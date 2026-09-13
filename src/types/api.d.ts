@@ -326,6 +326,7 @@ export interface paths {
         /**
          * Sign up
          * @description Creates an account with the default `Clipboard` and `Encrypted` folders.
+         *     `email` is optional, must be unique, and is kept for password resets.
          */
         post: {
             parameters: {
@@ -339,7 +340,8 @@ export interface paths {
                     /**
                      * @example {
                      *       "username": "alice",
-                     *       "password": "secret123"
+                     *       "password": "secret123",
+                     *       "email": "alice@example.com"
                      *     }
                      */
                     "application/json": components["schemas"]["SignupBody"];
@@ -355,7 +357,7 @@ export interface paths {
                         "application/json": components["schemas"]["MessageResponse"];
                     };
                 };
-                /** @description Validation error or username already taken. */
+                /** @description Validation error, username already taken, or email already in use. */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2318,7 +2320,14 @@ export interface components {
             /** @enum {string|null} */
             plan: "free" | "pro" | null;
         };
-        SignupBody: components["schemas"]["LoginBody"];
+        SignupBody: {
+            /** @description 3 to 250 alphanumeric characters. */
+            username: string;
+            /** @description 6 to 500 characters. */
+            password: string;
+            /** @description Optional. Must be unique; stored trimmed and lower-cased. Used for password resets. */
+            email?: string;
+        };
         CheckUsernameBody: {
             username: string;
         };

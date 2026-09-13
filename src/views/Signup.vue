@@ -21,6 +21,7 @@ const $route = useRoute();
 
 const form = reactive({
   username: String($route.query.username || ""),
+  email: "",
   password: "",
   confirm: ""
 });
@@ -34,6 +35,13 @@ const usernameError = computed(() => {
   if (!USERNAME_RE.test(u)) return "3 to 250 letters or numbers, no spaces or symbols.";
   if (availability.value === "taken") return "That username is taken.";
   return "";
+});
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const emailError = computed(() => {
+  const e = form.email.trim();
+  if (!e) return "";
+  return EMAIL_RE.test(e) ? "" : "That doesn't look like an email address.";
 });
 
 const passwordError = computed(() => {
@@ -74,6 +82,7 @@ const canSubmit = computed(
   () =>
     USERNAME_RE.test(form.username.trim()) &&
     availability.value !== "taken" &&
+    !emailError.value &&
     form.password.length >= 6 &&
     form.confirm === form.password
 );
@@ -83,7 +92,7 @@ async function createAccount(btn: ILoadingButton) {
   const username = form.username.trim();
 
   try {
-    await signup(username, form.password);
+    await signup(username, form.password, form.email.trim() || undefined);
     await login(username, form.password);
     // Full reload so the axios instance picks up the token; new accounts choose a plan first.
     redirect($router.resolve({ name: "pricing" }).href, 300);
@@ -97,7 +106,7 @@ async function createAccount(btn: ILoadingButton) {
 <template>
   <AuthPanel>
     <h2 class="text-2xl font-semibold tracking-tight text-fg">Create your account</h2>
-    <p class="mt-1 text-sm text-muted">A username and a password is all it takes.</p>
+    <p class="mt-1 text-sm text-muted">A username and a password is all it takes. Add an email if you want to be able to reset it.</p>
 
     <form class="mt-8 space-y-4" @submit.prevent>
       <Input
@@ -114,6 +123,15 @@ async function createAccount(btn: ILoadingButton) {
           <CheckCircleIcon v-else-if="availability === 'available' && !usernameError" class="mr-1 h-4 w-4 text-accent" aria-label="Available" />
         </template>
       </Input>
+      <Input
+        v-model="form.email"
+        type="email"
+        label="Email (optional)"
+        autocomplete="email"
+        spellcheck="false"
+        :error="emailError"
+        hint="Only used to reset your password. Never shown to anyone."
+      />
       <Input v-model="form.password" type="password" label="Password" autocomplete="new-password" :error="passwordError" hint="At least 6 characters." />
       <Input v-model="form.confirm" type="password" label="Confirm password" autocomplete="new-password" :error="confirmError" />
 
