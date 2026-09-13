@@ -744,6 +744,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client/v1/folder/{folder}/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rename folder
+         * @description Renames a folder. The slug is derived from the new name, and every clip and file in
+         *     the folder is moved to the new slug, so the client must use the returned `slug` from
+         *     now on. The default `clipboard` and `encrypted` folders cannot be renamed.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Current folder slug. */
+                    folder: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "name": "Work notes"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["RenameFolderBody"];
+                };
+            };
+            responses: {
+                /** @description The renamed folder. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Folder"];
+                    };
+                };
+                /** @description Validation error, protected folder, or a folder with that name already exists. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Folder not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/client/v1/folder/{folder}/check-password": {
         parameters: {
             query?: never;
@@ -1046,7 +1117,7 @@ export interface paths {
          * @description Step 1 of 3. Requires a connected owns3 server. Creates a pending file record and
          *     returns a presigned url. Step 2: `PUT` the raw file body to `upload.url` with the returned
          *     headers (no api key needed). Step 3: call confirm. Encrypted folders are refused.
-         *     The clip's title is `title` when given, otherwise the file name; its content is always the file name.
+         *     The clip's title is `title` when given, otherwise the file name; its content is always "File Clip".
          */
         post: {
             parameters: {
@@ -1126,7 +1197,7 @@ export interface paths {
         /**
          * Confirm an upload
          * @description Step 3 of 3. Verifies the object exists on owns3, records its real size and type, and
-         *     creates a clip of type `file` whose `file` field holds the file id and extension. Calling it again
+         *     creates a clip of type `file` (content "File Clip") whose `file` field holds the file id and extension. Calling it again
          *     returns the existing clip with `info`.
          */
         post: {
@@ -2094,9 +2165,9 @@ export interface components {
             type: "text" | "url" | "html" | "file";
             /** @description Slug of the folder the clip is in. */
             folder: string;
-            /** @description The clip content. Ciphertext when `encrypted` is true. The file name for file clips. */
+            /** @description The clip content. Ciphertext when `encrypted` is true. Always "File Clip" for file clips. */
             context: string;
-            /** @description Present on file clips (`type` is `file`). Name is in `context`, size in the clip's size. */
+            /** @description Present on file clips (`type` is `file`). The file name is the default title; size is on the clip. */
             file?: components["schemas"]["FileSummary"];
             locked?: boolean | null;
             favorite?: boolean | null;
@@ -2216,6 +2287,10 @@ export interface components {
         };
         CreateFolderBody: {
             /** @description Folder name, must be unique per user. The slug is derived from it. */
+            name: string;
+        };
+        RenameFolderBody: {
+            /** @description New folder name, up to 100 characters. The slug is derived from it. */
             name: string;
         };
         FolderPasswordBody: {

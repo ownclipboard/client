@@ -97,9 +97,7 @@ function download() {
           <span class="text-faint">·</span>
           <TimeAgo :date="clip.updatedAt" class="font-mono" />
         </div>
-        <h2 v-if="clip.title || isFile" class="mt-1 truncate text-[15px] font-semibold text-fg">
-          {{ clip.title || clip.context }}
-        </h2>
+        <h2 v-if="clip.title" class="mt-1 truncate text-[15px] font-semibold text-fg">{{ clip.title }}</h2>
       </div>
     </template>
 
@@ -108,7 +106,7 @@ function download() {
         <div v-if="loadingUrl" class="flex items-center justify-center gap-2 py-16 text-sm text-muted"><Spinner size="sm" /> Preparing preview</div>
 
         <template v-else-if="fileUrl && !mediaError">
-          <img v-if="fileKind === 'image'" :src="fileUrl" :alt="clip.context" class="mx-auto max-h-[60vh] max-w-full rounded-md" @error="mediaError = true" />
+          <img v-if="fileKind === 'image'" :src="fileUrl" :alt="clip.title || fileLabel" class="mx-auto max-h-[60vh] max-w-full rounded-md" @error="mediaError = true" />
           <video v-else-if="fileKind === 'video'" :src="fileUrl" controls class="mx-auto max-h-[60vh] max-w-full rounded-md" @error="mediaError = true"></video>
           <audio v-else-if="fileKind === 'audio'" :src="fileUrl" controls class="w-full" @error="mediaError = true"></audio>
           <iframe v-else-if="fileKind === 'pdf'" :src="fileUrl" class="h-[60vh] w-full rounded-md bg-white" title="PDF preview"></iframe>

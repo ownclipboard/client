@@ -12,7 +12,8 @@ import { md5 } from "../../functions/crypto";
 import { $http, alertRequestError } from "../../http";
 import config from "../../config";
 import { currentTab, foldersAsObject, getFolders } from "../../stores/tabs.store";
-import { closeFolderSettings, folderSettingsSlug } from "../../stores/folder-settings.store";
+import { closeFolderSettings, folderSettingsSlug, openFolderSettings } from "../../stores/folder-settings.store";
+import type { components } from "../../types/api";
 import { $alert } from "../ws-alert/ws-alert";
 import { redirect } from "../../functions";
 import Dialog from "../ui/Dialog.vue";
@@ -27,6 +28,7 @@ const folder = computed(() => (folderSettingsSlug.value ? foldersAsObject.value[
 
 const password = ref("");
 const deleteName = ref("");
+const newName = ref("");
 const publicPaste = ref(false);
 const togglingPublic = ref(false);
 
@@ -34,7 +36,37 @@ watch(folder, (f) => {
   publicPaste.value = !!f?.publicPaste;
   password.value = "";
   deleteName.value = "";
+  newName.value = f?.name || "";
 }, { immediate: true });
+
+// The default folders cannot be renamed or deleted.
+const PROTECTED = ["clipboard", "encrypted"];
+const isProtected = computed(() => !!folder.value && PROTECTED.includes(folder.value.slug));
+const canRename = computed(() => !!folder.value && newName.value.trim().length > 0 && newName.value.trim() !== folder.value.name);
+
+/**
+ * Rename the folder. The slug is derived from the name, so the current tab and
+ * the open dialog follow the folder to its new slug.
+ */
+async function renameFolder(btn: ILoadingButton) {
+  if (!folder.value || !canRename.value) return btn.stopLoading();
+  const oldSlug = folder.value.slug;
+
+  try {
+    const renamed = await $http.post<any, components["schemas"]["Folder"]>(`/folder/${oldSlug}/rename`, {
+      name: newName.value.trim()
+    });
+    // Point at the new slug before refreshing, otherwise the refresh sees the old slug as gone.
+    if (currentTab.value === oldSlug) currentTab.value = renamed.slug;
+    openFolderSettings(renamed.slug);
+    await getFolders();
+    $alert.success(`Folder renamed to "${renamed.name}".`);
+  } catch (e) {
+    alertRequestError(e);
+  } finally {
+    btn.stopLoading();
+  }
+}
 
 const VISIBILITY = {
   public: { icon: FolderIcon, label: "Public folder", variant: "neutral" as const },
@@ -100,7 +132,7 @@ async function deleteFolder(btn: ILoadingButton) {
 </script>
 
 <template>
-  <Dialog :open="open && !!folder" :title="folder?.name || ''" size="md" @close="closeFolderSettings">
+  <Dialog :open="open" :title="folder?.name || ''" size="md" @close="closeFolderSettings">
     <template v-if="folder">
       <div class="space-y-6">
         <div class="flex items-center gap-2 text-sm text-muted">
@@ -110,6 +142,15 @@ async function deleteFolder(btn: ILoadingButton) {
           </Badge>
           <span class="font-mono text-xs">{{ folder.contents }} clips</span>
         </div>
+
+        <!-- Rename -->
+        <section v-if="!isProtected" class="space-y-2">
+          <form class="flex items-end gap-2" @submit.prevent>
+            <Input v-model="newName" label="Name" placeholder="Folder name" class="flex-1" maxlength="100" autocomplete="off" />
+            <Button type="submit" :click="renameFolder" message="Renaming" :disabled="!canRename">Rename</Button>
+          </form>
+          <p class="text-xs text-faint">Renaming changes the folder's link, so public paste and bookmarked links update with it.</p>
+        </section>
 
         <!-- Encrypted folder without a password yet -->
         <section v-if="folder.visibility === 'encrypted' && !folder.hasPassword" class="space-y-3">
@@ -143,7 +184,7 @@ async function deleteFolder(btn: ILoadingButton) {
         </section>
 
         <!-- Delete -->
-        <section v-if="folder.slug !== 'clipboard'" class="space-y-3 border-t border-line pt-5">
+        <section v-if="!isProtected" class="space-y-3 border-t border-line pt-5">
           <div>
             <h3 class="text-sm font-medium text-fg">Delete folder</h3>
             <p class="mt-0.5 text-sm text-muted">Deletes the folder and every clip in it. Type <span class="font-medium text-fg">{{ folder.name }}</span> to confirm.</p>

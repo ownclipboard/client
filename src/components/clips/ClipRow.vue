@@ -290,7 +290,6 @@ function remove() {
         </template>
         <template v-else>
           <span v-if="clip.title" class="truncate font-medium text-fg">{{ clip.title }}</span>
-          <span v-else-if="isFile" class="truncate font-medium text-fg">{{ clip.context }}</span>
         </template>
         <Badge variant="outline" uppercase>{{ isLocked ? "encrypted" : clip.type }}</Badge>
         <Badge v-if="showFolder" variant="neutral">{{ folderName }}</Badge>

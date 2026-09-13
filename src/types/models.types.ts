@@ -4,7 +4,7 @@ export type OwnClip = {
   title: string;
   type: "text" | "url" | "html" | "file";
   folder: string;
-  /** The clip content. Ciphertext when encrypted. The file name for file clips. */
+  /** The clip content. Ciphertext when encrypted. Always "File Clip" for file clips (the title holds the file name). */
   context: string;
   /** Present on file clips. */
   file?: { publicId: string; ext: string };
