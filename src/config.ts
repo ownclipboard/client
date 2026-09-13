@@ -25,7 +25,8 @@ function resolveServerUrl(): string {
   }
 }
 
-const serverUrl = `${resolveServerUrl()}/client/v1`;
+const apiOrigin = resolveServerUrl();
+const serverUrl = `${apiOrigin}/client/v1`;
 
 // Export config
 export default {
@@ -34,5 +35,7 @@ export default {
   name: (import.meta.env.VITE_APP_NAME || "OwnClipboard") as string,
   domain: `${hostname}${port ? ":" + port : ""}`,
   baseUrl,
+  /** Origin of the API, without any version prefix. Apps talk to `${apiOrigin}/api/old`. */
+  apiOrigin,
   serverUrl
 };

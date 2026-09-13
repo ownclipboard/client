@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowRightStartOnRectangleIcon, ChevronUpDownIcon, Cog6ToothIcon, CreditCardIcon, MoonIcon, SunIcon } from "@heroicons/vue/20/solid";
+import { ArrowRightStartOnRectangleIcon, ChevronUpDownIcon, Cog6ToothIcon, CpuChipIcon, CreditCardIcon, MoonIcon, SunIcon } from "@heroicons/vue/20/solid";
 import { useAuthUser } from "../../stores/auth.store";
 import { isDark, toggleTheme } from "../../stores/theme.store";
 import DropdownMenu from "../ui/DropdownMenu.vue";
@@ -31,6 +31,7 @@ const authUser = useAuthUser();
     </template>
 
     <DropdownItem :to="{ name: 'settings' }"><template #icon><Cog6ToothIcon /></template>Settings</DropdownItem>
+    <DropdownItem :to="{ name: 'devices' }"><template #icon><CpuChipIcon /></template>Devices</DropdownItem>
     <DropdownItem :to="{ name: 'pricing' }"><template #icon><CreditCardIcon /></template>Plan and billing</DropdownItem>
     <DropdownItem @click="toggleTheme">
       <template #icon><SunIcon v-if="isDark" /><MoonIcon v-else /></template>

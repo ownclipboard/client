@@ -199,6 +199,307 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/old/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate that this host is an OwnClipboard server
+         * @description Legacy api. Needs no api key: apps call it to confirm an endpoint belongs to
+         *     OwnClipboard before asking the user for a key.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description This is an OwnClipboard server. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @example 200 */
+                            status?: number;
+                            data?: {
+                                /** @example true */
+                                allowPublicValidation?: boolean;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/old/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Connect an api key (one time)
+         * @description Legacy api. A key has to be connected once before any other endpoint accepts it.
+         *     The app may send a `device_id` to tie the key to itself. The key is echoed back.
+         *     Send the key as the `oc-key` header, an `api_key` query param or an `api_key` body field.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        api_key?: string;
+                        /** @description Identifier of the app or machine. */
+                        device_id?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Connected. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @example 200 */
+                            status?: number;
+                            data?: {
+                                name?: string;
+                                api_key?: string;
+                                hits?: number;
+                                used_by?: string | null;
+                            };
+                        };
+                    };
+                };
+                /** @description `api_key_not_found` or `api_key_not_valid`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LegacyErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/old/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get or search clips
+         * @description Legacy api. Returns the clips of the device's folder, newest first, 20 per page.
+         *     `search` matches the clip text and is ignored when shorter than 2 characters.
+         *     File clips are never returned.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    api_key?: string;
+                    page?: number;
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of clips. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LegacyClipsResponse"];
+                    };
+                };
+                /** @description `api_key_not_found`, `api_key_not_valid` or `api_key_not_connected`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LegacyErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/old/add": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a clip
+         * @description Legacy api. Adds a clip to the device's folder. Identical text already in that folder
+         *     is not duplicated: the existing clip is returned with `exists: true`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        api_key?: string;
+                        content: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description The created or existing clip. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @example 200 */
+                            status?: number;
+                            data?: {
+                                content?: components["schemas"]["LegacyClip"];
+                                exists?: boolean;
+                            };
+                        };
+                    };
+                };
+                /** @description `empty_content`. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LegacyErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/old/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a clip
+         * @description Legacy api. `clip` is the `code` of the clip, sent as a query param or a body field.
+         *     Only clips in the device's folder can be deleted.
+         */
+        delete: {
+            parameters: {
+                query?: {
+                    api_key?: string;
+                    /** @description Clip code. */
+                    clip?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @example 200 */
+                            status?: number;
+                            data?: {
+                                /** @example true */
+                                deleted?: boolean;
+                                code?: string;
+                            };
+                        };
+                    };
+                };
+                /** @description `clip_not_valid`. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LegacyErrorResponse"];
+                    };
+                };
+                /** @description `clip_not_found`, no clip in the request. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LegacyErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/client/v1/ping": {
         parameters: {
             query?: never;
@@ -408,6 +709,65 @@ export interface paths {
                 };
                 /** @description Invalid username. */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Log out
+         * @description Ends every session of the account, on every device. The jwt carries a login token
+         *     that is compared on each request, and this endpoint replaces it, so all tokens
+         *     issued so far stop working. The client should discard its own token as well.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Logged out. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Invalid or already ended session. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing `oc_token`. */
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1427,6 +1787,438 @@ export interface paths {
             };
         };
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List devices
+         * @description Every device of the user, newest first, with how many of the plan's devices are used.
+         *     Api keys are never returned, only the last characters of each key (`keyHint`).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Devices. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeviceListResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc_token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create a device
+         * @description Creates a device and returns its api key. The key is shown **once**: only its hash is
+         *     stored, so a lost key has to be rotated. Free accounts may have 3 devices, Pro unlimited.
+         *     The device reads and writes clips in one folder, `clipboard` by default. Encrypted
+         *     folders are refused.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "name": "My Laptop",
+                     *       "folder": "clipboard"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CreateDeviceBody"];
+                };
+            };
+            responses: {
+                /** @description Device created, with its api key. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CreateDeviceResponse"];
+                    };
+                };
+                /** @description Validation error or encrypted folder. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Device limit of the plan reached. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/device/{device}/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rename a device */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Device publicId. */
+                    device: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "name": "Work Laptop"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["RenameDeviceBody"];
+                };
+            };
+            responses: {
+                /** @description Renamed. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeviceResponse"];
+                    };
+                };
+                /** @description Device not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/device/{device}/folder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change the device folder
+         * @description Sets the folder the device reads from and writes to through the legacy api.
+         *     Encrypted folders are refused. Clips already created stay where they are.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Device publicId. */
+                    device: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "folder": "work"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SetDeviceFolderBody"];
+                };
+            };
+            responses: {
+                /** @description Folder changed. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeviceResponse"];
+                    };
+                };
+                /** @description Unknown or encrypted folder. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Device not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/device/{device}/rotate-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate the api key
+         * @description Replaces the device's api key and returns the new one **once**. The old key stops
+         *     working immediately, and the app has to call the legacy `connect` endpoint again.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Device publicId. */
+                    device: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description New api key. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CreateDeviceResponse"];
+                    };
+                };
+                /** @description Device not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/device/{device}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enable a device */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Device publicId. */
+                    device: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Enabled. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeviceResponse"];
+                    };
+                };
+                /** @description Device not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/device/{device}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disable a device
+         * @description A disabled key is refused by the legacy api exactly like an unknown one.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Device publicId. */
+                    device: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Disabled. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeviceResponse"];
+                    };
+                };
+                /** @description Device not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/device/{device}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a device
+         * @description The api key stops working. Clips the device created stay.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Device publicId. */
+                    device: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Device not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -2518,6 +3310,96 @@ export interface components {
             /** @constant */
             method: "GET";
             expiresIn: number;
+        };
+        /** @description Public view of a device. The api key is never included. */
+        Device: {
+            publicId: string;
+            name: string;
+            /** @description Slug of the folder the device reads from and writes to. */
+            folder: string;
+            /** @description A disabled device's key is refused by the legacy api. */
+            enabled: boolean;
+            /** @description Number of legacy api calls made with this key. */
+            hits: number;
+            /** @description Last characters of the api key, to tell devices apart. */
+            keyHint: string;
+            /** @description Whether the key has been connected through the legacy `connect` endpoint. */
+            connected: boolean;
+            /** @description `device_id` the app sent when it connected. */
+            usedBy?: string;
+            lastUsedAt?: string | null;
+            createdAt: string;
+        };
+        DeviceListResponse: {
+            devices: components["schemas"]["Device"][];
+            limit: {
+                /** @description Devices allowed on the current plan. `null` means unlimited. */
+                max: number | null;
+                used: number;
+            };
+        };
+        CreateDeviceBody: {
+            /** @description 2 to 50 characters. */
+            name: string;
+            /** @description Folder name or slug the device uses. Defaults to clipboard. Encrypted folders are refused. */
+            folder?: string;
+        };
+        /** @description The api key is only ever returned here, when created or rotated. */
+        CreateDeviceResponse: {
+            device: components["schemas"]["Device"];
+            /** @description 100 character api key. Shown once, only its hash is stored. */
+            apiKey: string;
+            message: string;
+        };
+        RenameDeviceBody: {
+            name: string;
+        };
+        SetDeviceFolderBody: {
+            /** @description Folder name or slug. */
+            folder: string;
+        };
+        DeviceResponse: {
+            device: components["schemas"]["Device"];
+            message: string;
+        };
+        /** @description A clip as the first OwnClipboard platform returned it. */
+        LegacyClip: {
+            /** @description Clip id, called `code` on the old platform. */
+            code: string;
+            /** @enum {string} */
+            type: "text" | "url";
+            content: string;
+            /** @description 0 or 1, as the old sqlite rows had it. */
+            locked: number;
+            /** @description 0 or 1, as the old sqlite rows had it. */
+            favorite: number;
+            /** @description `YYYY-MM-DD HH:MM:SS`, UTC. */
+            created_at: string | null;
+            /** @description Content with html entities escaped and newlines turned into `<br>`. */
+            html_formatted: string;
+        };
+        LegacyClipsResponse: {
+            status: number;
+            data: {
+                /** @description Echo of the `search` query, absent when none was sent. */
+                search?: string;
+                clips: {
+                    total: number;
+                    perPage: number;
+                    page: number;
+                    lastPage: number;
+                    data: components["schemas"]["LegacyClip"][];
+                };
+            };
+        };
+        /** @description Error envelope of the legacy api. */
+        LegacyErrorResponse: {
+            status: number;
+            error: {
+                /** @description `api_key_not_found`, `api_key_not_valid`, `api_key_not_connected`, `clip_not_found`, `clip_not_valid`, `empty_content` or `404`. */
+                type: string;
+                message: string;
+            };
         };
     };
     responses: never;
