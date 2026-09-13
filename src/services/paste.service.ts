@@ -2,7 +2,7 @@ import { nanoid } from "nanoid";
 import { $http } from "../http";
 import { $events } from "../events";
 import { aesEncrypt } from "../functions/crypto";
-import { currentTab, foldersAsObject, getFolders } from "../stores/tabs.store";
+import { currentTab, folderNeedsPassword, foldersAsObject, getFolders } from "../stores/tabs.store";
 import { askForPassword } from "../components/PasswordPromptHandler";
 import { $alert } from "../components/ws-alert/ws-alert";
 import { checkFolderPassword } from "./clips.services";
@@ -16,6 +16,14 @@ export async function pasteText(text: string, title?: string): Promise<boolean> 
   if (!content.length) return false;
 
   const folder = foldersAsObject.value[currentTab.value];
+
+  // Without a password there is no key, and the clip would land in an encrypted
+  // folder as plain text. Refuse instead of storing it in the clear.
+  if (folderNeedsPassword(folder)) {
+    $alert.warning(`"${folder.name}" has no encryption password yet. Set one in the folder settings before adding clips.`);
+    return false;
+  }
+
   if (folder && folder.hasPassword) {
     let password = await askForPassword(`Enter the password for "${folder.name}" to encrypt this clip.`);
     if (!password) {

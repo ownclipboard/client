@@ -2,11 +2,12 @@
 /** The paginated list of clips for the current folder, or search results. */
 import { onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { MagnifyingGlassIcon, ClipboardIcon } from "@heroicons/vue/24/outline";
+import { MagnifyingGlassIcon, ClipboardIcon, LockClosedIcon } from "@heroicons/vue/24/outline";
 import type { ILoadingButton } from "revue-components/vues/component-types";
-import { currentTab, currentFolder, foldersAsObject } from "../../stores/tabs.store";
+import { currentTab, currentFolder, currentFolderNeedsPassword, foldersAsObject } from "../../stores/tabs.store";
 import { searchQuery, searchAllFolders, clearSearch } from "../../stores/search.store";
 import { composerOpen, openComposer } from "../../stores/composer.store";
+import { openFolderSettings } from "../../stores/folder-settings.store";
 import { $http, alertRequestError } from "../../http";
 import { $events } from "../../events";
 import { askForPassword } from "../PasswordPromptHandler";
@@ -116,7 +117,7 @@ $events.on("delete-clip", ({ btn, data }: { btn: ILoadingButton; data: [OwnClip,
 
 <template>
   <div class="space-y-2">
-    <ClipComposer v-if="composerOpen" />
+    <ClipComposer v-if="composerOpen && !currentFolderNeedsPassword" />
 
     <template v-if="loading && !clips.data.length">
       <div v-for="i in 4" :key="i" class="rounded-lg border border-line bg-surface px-4 py-3">
@@ -147,6 +148,15 @@ $events.on("delete-clip", ({ btn, data }: { btn: ILoadingButton; data: [OwnClip,
       <template #icon><MagnifyingGlassIcon /></template>
       <Button v-if="!searchAllFolders" size="sm" @click="searchAllFolders = true">Search all folders</Button>
       <Button size="sm" variant="ghost" @click="clearSearch">Clear search</Button>
+    </EmptyState>
+
+    <EmptyState
+      v-else-if="currentFolderNeedsPassword"
+      title="This folder needs a password first"
+      description="Clips here are encrypted in your browser with a password only you know. Until one is set, nothing can be added."
+    >
+      <template #icon><LockClosedIcon /></template>
+      <Button size="sm" variant="primary" @click="openFolderSettings(currentTab)">Set a password</Button>
     </EmptyState>
 
     <EmptyState

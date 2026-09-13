@@ -24,6 +24,17 @@ export const foldersAsObject = computed(() => {
 
 export const currentFolder = computed(() => foldersAsObject.value[currentTab.value]);
 
+/**
+ * An encrypted folder holds nothing but ciphertext, and the password that makes
+ * it is never stored. Until one is set there is nothing to encrypt a new clip
+ * with, so the folder cannot take writes.
+ */
+export function folderNeedsPassword(folder?: OwnFolder) {
+  return !!folder && folder.visibility === "encrypted" && !folder.hasPassword;
+}
+
+export const currentFolderNeedsPassword = computed(() => folderNeedsPassword(currentFolder.value));
+
 // Get folders
 export async function getFolders() {
   folders.value = await $http.get<any, OwnFolder[]>("/folders");

@@ -4,10 +4,11 @@
  * Upload actions. Also owns the upload flow and the global paste shortcut.
  */
 import { computed, ref, onMounted, onBeforeUnmount } from "vue";
-import { ClipboardIcon, CloudArrowUpIcon, PencilSquareIcon } from "@heroicons/vue/20/solid";
+import { ClipboardIcon, CloudArrowUpIcon, LockClosedIcon, PencilSquareIcon } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
-import { currentFolder, currentTab, getFolders } from "../../stores/tabs.store";
+import { currentFolder, currentFolderNeedsPassword, currentTab, getFolders } from "../../stores/tabs.store";
 import { composerOpen, openComposer } from "../../stores/composer.store";
+import { openFolderSettings } from "../../stores/folder-settings.store";
 import { searchQuery, searchAllFolders } from "../../stores/search.store";
 import { pasteText, readPasteEvent, readSystemClipboard } from "../../services/paste.service";
 import { StorageUploadBlockedError, uploadFile } from "../../services/files.service";
@@ -47,7 +48,7 @@ function isEditable(el: EventTarget | null) {
 
 // Cmd/Ctrl+V anywhere on the page (outside inputs) pastes into the current folder.
 async function onWindowPaste(e: ClipboardEvent) {
-  if (isEditable(e.target) || composerOpen.value) return;
+  if (isEditable(e.target) || composerOpen.value || currentFolderNeedsPassword.value) return;
   const item = readPasteEvent(e);
   if (!item) return;
   e.preventDefault();
@@ -60,6 +61,7 @@ async function onWindowPaste(e: ClipboardEvent) {
 
 // `n` opens the composer.
 function onKeydown(e: KeyboardEvent) {
+  if (currentFolderNeedsPassword.value) return;
   if (e.key === "n" && !e.metaKey && !e.ctrlKey && !e.altKey && !isEditable(e.target) && !composerOpen.value) {
     e.preventDefault();
     openComposer();
@@ -178,6 +180,7 @@ async function confirmUpload(items: UploadItem[]) {
 }
 
 const isSearching = computed(() => !!searchQuery.value);
+const needsPassword = computed(() => currentFolderNeedsPassword.value);
 </script>
 
 <template>
@@ -191,6 +194,11 @@ const isSearching = computed(() => !!searchQuery.value);
       <div class="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
         <ClipsSearch class="w-full sm:w-64 lg:w-72" />
         <div class="flex items-center gap-2">
+        <Button v-if="needsPassword" variant="primary" @click="openFolderSettings(currentTab)">
+          <LockClosedIcon class="h-4 w-4" />
+          Set a password
+        </Button>
+        <template v-else>
         <Button variant="primary" :click="pasteFromButton" message="Pasting">
           <ClipboardIcon class="h-4 w-4" />
           Paste
@@ -204,9 +212,16 @@ const isSearching = computed(() => !!searchQuery.value);
           <CloudArrowUpIcon class="h-4 w-4" />
           Upload
         </Button>
+        </template>
         <input ref="fileInput" type="file" multiple class="hidden" @change="onFilePicked" />
         </div>
       </div>
+    </div>
+
+    <!-- Encrypted folder that cannot take clips yet -->
+    <div v-if="needsPassword" class="flex items-start gap-2.5 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
+      <LockClosedIcon class="mt-px h-4 w-4 shrink-0" />
+      <p>Clips in this folder are encrypted in your browser, and it has no password yet. Set one before adding clips, or they would be stored unencrypted.</p>
     </div>
 
     <!-- Search scope, only while searching -->
