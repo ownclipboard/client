@@ -3,8 +3,7 @@ import { nanoid } from "nanoid";
 
 export type WS_Alert = {
   id: string;
-  type: string;
-  icon: string;
+  type: "success" | "info" | "warning" | "error";
   message: string;
   timeout?: number | false;
 };
@@ -42,7 +41,6 @@ export const $alert = {
   success(message: string, options?: WS_Alert) {
     alert({
       type: "success",
-      icon: "fa fa-check-circle",
       message,
       ...(options || {})
     });
@@ -52,7 +50,6 @@ export const $alert = {
   info(message: string, options?: WS_Alert) {
     alert({
       type: "info",
-      icon: "fa fa-info-circle",
       message,
       ...(options || {})
     });
@@ -62,7 +59,6 @@ export const $alert = {
   warning(message: string, options?: WS_Alert) {
     alert({
       type: "warning",
-      icon: "fa fa-exclamation-triangle",
       message,
       ...(options || {})
     });
@@ -73,7 +69,6 @@ export const $alert = {
   error(message: string, options?: WS_Alert) {
     alert({
       type: "error",
-      icon: "fa fa-bomb",
       message,
       ...(options || {})
     });

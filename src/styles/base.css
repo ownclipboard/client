@@ -1,0 +1,44 @@
+/* Base styles. Colors come from ./tokens.css through Tailwind utilities. */
+
+html {
+  @apply antialiased;
+}
+
+body {
+  @apply bg-bg text-fg font-sans text-[15px] leading-normal;
+}
+
+::selection {
+  @apply bg-accent/25;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  @apply cursor-not-allowed opacity-50;
+}
+
+/* Visible keyboard focus everywhere, no ring for mouse users. */
+:focus-visible {
+  @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-bg;
+}
+
+/* Spinner used by LoadingButton while a request is running. */
+i.spinner {
+  @apply inline-block h-[1em] w-[1em] rounded-full border-2 border-current border-r-transparent align-[-0.15em] animate-spin;
+}
+
+/* Thin scrollbars inside panels. */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--line-strong)) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
