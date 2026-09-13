@@ -265,25 +265,22 @@ function remove() {
   >
     <!-- Content -->
     <div class="min-w-0">
-      <!-- Title row -->
+      <!-- Title row: the type badge always comes first so it lines up across rows -->
       <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-        <template v-if="isEditing">
-          <input
-            ref="editTitle"
-            v-model="editForm.title"
-            type="text"
-            placeholder="Title (optional)"
-            class="h-8 min-w-0 flex-1 rounded-md border border-line bg-surface px-2.5 text-sm font-medium text-fg placeholder:text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-          />
-        </template>
-        <template v-else>
-          <span v-if="clip.title" class="truncate font-medium text-fg">{{ clip.title }}</span>
-        </template>
         <Badge :variant="isLocked ? 'warn' : isFile ? 'info' : 'outline'" uppercase>
           <LockClosedIcon v-if="isLocked" class="h-3 w-3" />
           <component v-else :is="TYPE_ICON[clip.type] || Bars3BottomLeftIcon" class="h-3 w-3" />
           {{ isLocked ? "encrypted" : clip.type }}
         </Badge>
+        <input
+          v-if="isEditing"
+          ref="editTitle"
+          v-model="editForm.title"
+          type="text"
+          placeholder="Title (optional)"
+          class="h-8 min-w-0 flex-1 rounded-md border border-line bg-surface px-2.5 text-sm font-medium text-fg placeholder:text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+        />
+        <span v-else-if="clip.title" class="truncate font-medium text-fg">{{ clip.title }}</span>
         <Badge v-if="showFolder" variant="neutral">{{ folderName }}</Badge>
       </div>
 
