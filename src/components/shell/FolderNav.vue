@@ -114,10 +114,12 @@ function createFolder(btn: ILoadingButton) {
       </div>
     </template>
 
-    <form v-if="adding" class="mt-1 flex items-center gap-1 px-1" @submit.prevent @keydown.esc="cancelAdding">
-      <Input ref="nameInput" v-model="newName" size="sm" placeholder="Folder name" class="flex-1" />
-      <Button size="sm" variant="primary" type="submit" :click="createFolder" message="">Add</Button>
-      <Button size="sm" variant="ghost" @click="cancelAdding">Cancel</Button>
+    <form v-if="adding" class="mt-1 space-y-2 px-1" @submit.prevent @keydown.esc="cancelAdding">
+      <Input ref="nameInput" v-model="newName" size="sm" placeholder="Folder name" />
+      <div class="flex items-center justify-end gap-1">
+        <Button size="sm" variant="ghost" @click="cancelAdding">Cancel</Button>
+        <Button size="sm" variant="primary" type="submit" :click="createFolder" message="">Add</Button>
+      </div>
     </form>
   </nav>
 </template>
