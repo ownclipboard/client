@@ -28,11 +28,24 @@ $http.interceptors.response.use((response) => {
   return response.data;
 });
 
+/**
+ * Show the API's error message, or a plain explanation when the request never
+ * got a response (timeout, offline, server down).
+ */
 export function alertRequestError(res: any) {
-  if (res.response) {
-    const { data } = res.response;
-    if (typeof data === "object" && data.error) {
-      $alert.error(data.error);
-    }
+  if (res?.response) {
+    const { data, status } = res.response;
+    if (typeof data === "object" && data?.error) return $alert.error(data.error);
+    return $alert.error(`Request failed (${status}).`);
+  }
+
+  if (res?.code === "ECONNABORTED" || res?.code === "ETIMEDOUT") {
+    return $alert.error("The server took too long to respond. Please try again.");
+  }
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return $alert.error("You appear to be offline.");
+  }
+  if (res?.request) {
+    return $alert.error("Could not reach the server. Please try again.");
   }
 }

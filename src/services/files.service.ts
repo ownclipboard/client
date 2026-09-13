@@ -92,9 +92,9 @@ function putToStorage(
   });
 }
 
-/** Temporary (1 hour) download url for a file clip. */
+/** Temporary (1 hour) download url for a file clip. Signed by the storage server, so allow it time. */
 export async function getFileUrl(filePublicId: string) {
-  const { url } = await $http.get<any, FileUrlResponse>(`file/${filePublicId}/url`);
+  const { url } = await $http.get<any, FileUrlResponse>(`file/${filePublicId}/url`, { timeout: 30_000 });
   return url;
 }
 
