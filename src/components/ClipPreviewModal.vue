@@ -97,8 +97,8 @@ function download() {
           <span class="text-faint">·</span>
           <TimeAgo :date="clip.updatedAt" class="font-mono" />
         </div>
-        <h2 class="mt-1 truncate text-[15px] font-semibold text-fg">
-          {{ clip.title || (isFile ? clip.context : "Untitled clip") }}
+        <h2 v-if="clip.title || isFile" class="mt-1 truncate text-[15px] font-semibold text-fg">
+          {{ clip.title || clip.context }}
         </h2>
       </div>
     </template>
