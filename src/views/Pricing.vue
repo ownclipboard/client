@@ -1,13 +1,38 @@
 <script setup lang="ts">
+/**
+ * Plan page: current subscription, pending NowPayments invoices, the Free and
+ * Pro plans with a comparison table, and the subscribe dialog.
+ */
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { $http, alertRequestError } from "../http";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthUser } from "../stores/auth.store";
 import { refreshAuthData } from "../services/auth.service";
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
-import Modal from "../components/Modal.vue";
 import type { InvoiceStatus, SubStat } from "../types/models.types";
 import { $alert } from "../components/ws-alert/ws-alert";
+import {
+  ArrowPathIcon,
+  ArrowsRightLeftIcon,
+  CheckIcon,
+  CloudArrowUpIcon,
+  DevicePhoneMobileIcon,
+  FolderIcon,
+  GlobeAltIcon,
+  InformationCircleIcon,
+  LockClosedIcon,
+  PencilSquareIcon,
+  PuzzlePieceIcon,
+  ShareIcon,
+  Square2StackIcon,
+  XMarkIcon
+} from "@heroicons/vue/20/solid";
+import PageHeader from "../components/ui/PageHeader.vue";
+import Card from "../components/ui/Card.vue";
+import Button from "../components/ui/Button.vue";
+import Badge from "../components/ui/Badge.vue";
+import Dialog from "../components/ui/Dialog.vue";
+import Select from "../components/ui/Select.vue";
 
 const $router = useRouter();
 const $route = useRoute();
@@ -23,7 +48,8 @@ const subscribeForm = reactive({
   duration: 1
 });
 
-const hasActiveSubscription = computed(() => authUser.subscription && !authUser.subscription.expired);
+const hasActiveSubscription = computed(() => !!authUser.subscription && !authUser.subscription.expired);
+const isPro = computed(() => authUser.data?.plan === "pro");
 
 const computedPrice = computed(() => {
   const price = subscribeForm.type === "monthly" ? MONTHLY_PRICE : YEARLY_PRICE;
@@ -31,89 +57,23 @@ const computedPrice = computed(() => {
 });
 
 const pricing = [
-  {
-    feature: "Unlimited Clips",
-    free: true,
-    pro: true,
-    icon: "far fa-clipboard"
-  },
-  {
-    feature: "Folders",
-    free: "100",
-    pro: "Unlimited",
-    icon: "far fa-folder"
-  },
-  {
-    feature: "Public Paste",
-    desc: "Share a folder publicly for anyone to paste content",
-    free: true,
-    pro: true,
-    icon: "far fa-globe"
-  },
-  {
-    feature: "Mobile App",
-    desc: "Access your clips on the go with our IOS/Android mobile app.",
-    free: true,
-    pro: true,
-    icon: "far fa-mobile"
-  },
-  {
-    feature: "Chrome Extension",
-    desc: "Quickly paste content with our Chrome Extension",
-    free: true,
-    pro: true,
-    icon: "fab fa-chrome"
-  },
-  {
-    feature: "Content Encryption",
-    desc: "Secure clips and files with 256-bit encryption",
-    free: true,
-    pro: true,
-    icon: "fas fa-lock"
-  },
-  {
-    feature: "File Upload",
-    desc: "Upload files to your own owns3 storage server, connected in Settings",
-    free: true,
-    pro: true,
-    icon: "far fa-cloud-upload"
-  },
-  {
-    feature: "Edit Clips",
-    desc: "Update your clips with our editor",
-    free: false,
-    pro: true,
-    icon: "far fa-pencil"
-  },
-  {
-    feature: "Transfer Clips",
-    desc: "Move clips between folders, or copy them to keep a version in both",
-    free: "Move",
-    pro: "Move & Copy",
-    icon: "far fa-exchange"
-  },
-  {
-    feature: "Share Clips",
-    desc: "Share clips between accounts/users",
-    free: false,
-    pro: true,
-    icon: "far fa-share"
-  }
+  { feature: "Unlimited clips", free: true, pro: true, icon: Square2StackIcon },
+  { feature: "Folders", free: "100", pro: "Unlimited", icon: FolderIcon },
+  { feature: "Public paste", desc: "Share a folder link so anyone can paste into it", free: true, pro: true, icon: GlobeAltIcon },
+  { feature: "Mobile app", desc: "iOS and Android", free: true, pro: true, icon: DevicePhoneMobileIcon },
+  { feature: "Chrome extension", desc: "Paste from any page", free: true, pro: true, icon: PuzzlePieceIcon },
+  { feature: "Encrypted folders", desc: "256-bit AES, encrypted in your browser", free: true, pro: true, icon: LockClosedIcon },
+  { feature: "File upload", desc: "To your own owns3 storage, connected in Settings", free: true, pro: true, icon: CloudArrowUpIcon },
+  { feature: "Edit clips", desc: "Change a clip's title and content after saving", free: false, pro: true, icon: PencilSquareIcon },
+  { feature: "Transfer clips", desc: "Move between folders, or copy to keep both", free: "Move", pro: "Move and copy", icon: ArrowsRightLeftIcon },
+  { feature: "Share clips", desc: "Between accounts", free: false, pro: true, icon: ShareIcon }
 ];
 
 const faq = [
-  {
-    question: "What is the payment method?",
-    answer: "We accept crypto payments (BTC, USDT and many more) through NowPayments."
-  },
-  {
-    question: "What happens when I cancel my subscription?",
-    answer: "You will be downgraded to the free plan and all your pro features will be disabled."
-  },
-  {
-    question: "Do i get to keep my files if I cancel my subscription?",
-    answer: "Yes, you will be able to keep your files but you will not be able to upload new files."
-  }];
+  { question: "How do I pay?", answer: "With crypto (BTC, USDT and many more) through NowPayments. You are redirected to their invoice page and back here when done." },
+  { question: "What happens when I cancel?", answer: "You are moved to the free plan and Pro features are disabled." },
+  { question: "Do I keep my files if I cancel?", answer: "Yes. Uploaded files stay on your own storage; you only lose the ability to upload new ones." }
+];
 
 /* ---------------- Subscription state & NowPayments ---------------- */
 
@@ -147,16 +107,11 @@ function invoiceLabel(status?: InvoiceStatus) {
   return status ? INVOICE_LABELS[status] ?? status : "Awaiting payment";
 }
 
-function isInProgress(sub: SubStat) {
-  return !!sub.invoice && IN_PROGRESS_STATUSES.includes(sub.invoice.status);
-}
-
-function isTerminal(sub: SubStat) {
-  return !!sub.invoice && TERMINAL_STATUSES.includes(sub.invoice.status);
-}
+const isInProgress = (sub: SubStat) => !!sub.invoice && IN_PROGRESS_STATUSES.includes(sub.invoice.status);
+const isTerminal = (sub: SubStat) => !!sub.invoice && TERMINAL_STATUSES.includes(sub.invoice.status);
 
 function subLabel(sub: SubStat) {
-  const unit = sub.type === "yearly" ? "Year" : "Month";
+  const unit = sub.type === "yearly" ? "year" : "month";
   return `${sub.duration} ${unit}${sub.duration > 1 ? "s" : ""}`;
 }
 
@@ -171,7 +126,6 @@ async function loadSubscription() {
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let pollStartedAt = 0;
-// publicId of the subscription we came back from NowPayments for (if any).
 let awaitingSubscription: string | null = null;
 
 function stopPolling() {
@@ -180,21 +134,14 @@ function stopPolling() {
   awaitingSubscription = null;
 }
 
-/**
- * Decide whether polling should continue after a fresh `account/subscription` result.
- * `activated` is true when the subscription we came back for is now active.
- */
 function evaluatePoll(res: SubscriptionResponse): { activated: boolean; keepPolling: boolean } {
   if (awaitingSubscription) {
     const activated = res.subscription?.publicId === awaitingSubscription && res.subscription.status === "active";
     if (activated) return { activated: true, keepPolling: false };
-
     const stillPending = res.pending.find((s) => s.publicId === awaitingSubscription);
-    // Gone from pending but not active: it was cancelled or superseded. Nothing to wait for.
     if (!stillPending) return { activated: false, keepPolling: false };
     return { activated: false, keepPolling: !isTerminal(stillPending) };
   }
-
   return { activated: false, keepPolling: res.pending.some(isInProgress) };
 }
 
@@ -204,11 +151,9 @@ function startPolling() {
 
   pollTimer = setInterval(async () => {
     if (Date.now() - pollStartedAt > POLL_MAX_MS) return stopPolling();
-
     try {
       const res = await loadSubscription();
       const { activated, keepPolling } = evaluatePoll(res);
-
       if (activated) {
         await refreshAuthData(authUser);
         paymentNotice.value = null;
@@ -222,10 +167,6 @@ function startPolling() {
 }
 
 /* ---------------- Actions ---------------- */
-
-function closePaymentModal() {
-  showPaymentModal.value = false;
-}
 
 async function choosePlan(btn: ILoadingButton<"free" | "pro">) {
   const plan = btn.data;
@@ -290,17 +231,13 @@ onMounted(async () => {
   const subscription = $route.query.subscription as string | undefined;
 
   if (payment === "success") {
-    paymentNotice.value = {
-      type: "success",
-      text: "Payment received, your subscription will activate once the network confirms it."
-    };
+    paymentNotice.value = { type: "success", text: "Payment received. Your subscription activates once the network confirms it." };
     awaitingSubscription = subscription || null;
   } else if (payment === "cancel") {
     paymentNotice.value = { type: "cancel", text: "Payment cancelled." };
   }
 
   if (payment || subscription || $route.query.NP_id) {
-    // NowPayments also appends its own NP_id param; drop all of them.
     const { payment: _p, subscription: _s, NP_id: _n, ...query } = $route.query;
     await $router.replace({ query });
   }
@@ -320,255 +257,188 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(stopPolling);
+
+const proCta = computed(() => {
+  if (hasPendingInvoice.value) return { label: "Payment pending", hint: "Complete or cancel it above" };
+  if (hasActiveSubscription.value) return { label: "Extend Pro", hint: "Added to your current expiry" };
+  if (authUser.subscription) return { label: "Subscribe to Pro", hint: MONTHLY_ENABLED ? "Monthly or yearly" : "Billed yearly" };
+  return { label: "Try Pro free", hint: "7 days, no payment" };
+});
 </script>
 
 <template>
-  <div>
-    <div class="text-4xl font-bold text-green-400 text-left mb-3">
-      Pricing
-    </div>
+  <div class="max-w-4xl">
+    <PageHeader title="Plan" description="Pick what fits. Pro adds editing, copying between folders and sharing." />
 
-    <debug :data="{subscription: authUser.subscription, pending: authUser.pending}" />
-
+    <!-- Payment notice -->
     <div
       v-if="paymentNotice"
-      class="my-4 p-3 rounded border flex items-start space-x-3"
-      :class="paymentNotice.type === 'success' ? 'border-green-700 bg-green-900/30' : 'border-gray-700 bg-gray-900'">
-      <i
-        class="mt-1"
-        :class="paymentNotice.type === 'success' ? 'fas fa-check-circle text-green-400' : 'fas fa-info-circle text-gray-400'"></i>
+      :class="[
+        'mb-5 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm',
+        paymentNotice.type === 'success' ? 'border-accent/30 bg-accent-soft text-accent' : 'border-line bg-surface text-muted'
+      ]"
+    >
+      <CheckIcon v-if="paymentNotice.type === 'success'" class="mt-0.5 h-4 w-4 shrink-0" />
+      <InformationCircleIcon v-else class="mt-0.5 h-4 w-4 shrink-0" />
       <span class="flex-1">{{ paymentNotice.text }}</span>
-      <button type="button" class="text-gray-500 hover:text-gray-300" @click="paymentNotice = null">
-        <i class="fas fa-times"></i>
+      <button type="button" class="-mr-1 rounded p-0.5 opacity-70 hover:opacity-100" aria-label="Dismiss" @click="paymentNotice = null">
+        <XMarkIcon class="h-4 w-4" />
       </button>
     </div>
 
-    <div v-if="hasActiveSubscription" class="flex flex-col my-5 text-lg">
-      <div class="space-x-2">
-        <span>Current Plan:</span>
-        <b class="uppercase text-teal-400">{{ authUser.data!.plan }}</b>
-        <span>({{ authUser.subscription!.type.toUpperCase() }})</span>
-      </div>
-
-      <template v-if="authUser.subscription">
-        <div class="space-x-2">
-          <span>{{ authUser.subscription.expired ? "Expired" : "Expires" }}:</span>
-          <TimeAgo :date="authUser.subscription.expiresAt" class="text-teal-400"></TimeAgo>
-        </div>
-      </template>
-    </div>
-
-    <div v-if="hasPendingInvoice" class="my-5">
-      <div class="text-xl font-bold text-yellow-400 mb-2">Pending payment</div>
-      <div
-        v-for="sub in pending"
-        :key="sub.publicId"
-        class="p-3 mb-3 rounded border border-gray-800 bg-gray-900 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div class="flex flex-col space-y-1">
-          <div class="space-x-2">
-            <b class="uppercase text-teal-400">{{ sub.plan }}</b>
-            <span>{{ subLabel(sub) }}</span>
-            <span class="text-gray-400">({{ sub.type }})</span>
-            <b class="text-green-400">${{ sub.amount }}</b>
-          </div>
-          <div class="text-sm space-x-2">
-            <span class="text-gray-400">Status:</span>
-            <span :class="isTerminal(sub) ? 'text-red-400' : 'text-yellow-300'">{{ invoiceLabel(sub.invoice?.status) }}</span>
-            <i v-if="isInProgress(sub)" class="fa fa-slash fa-spin text-gray-500"></i>
-          </div>
-          <div v-if="sub.invoice?.status === 'partially_paid'" class="text-sm text-gray-400">
-            Partial payments are not activated automatically. Complete the payment on the invoice page or contact support.
+    <!-- Current subscription -->
+    <Card v-if="hasActiveSubscription && authUser.subscription" class="mb-5">
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div>
+          <div class="text-[11px] font-medium uppercase tracking-wider text-faint">Current plan</div>
+          <div class="mt-0.5 flex items-center gap-2 text-lg font-semibold text-fg">
+            {{ authUser.data!.plan === "pro" ? "Pro" : "Free" }}
+            <Badge variant="accent" uppercase>{{ authUser.subscription.type }}</Badge>
           </div>
         </div>
-        <div class="flex items-center space-x-3 text-sm font-medium">
-          <a
-            v-if="sub.invoice?.url && !isTerminal(sub)"
-            :href="sub.invoice.url"
-            class="px-3 py-2 rounded bg-green-300 hover:bg-green-400 text-gray-800">
-            Continue payment
-          </a>
-          <LoadingButton
-            :click="cancelPending"
-            :data="sub.publicId"
-            message="Cancelling"
-            icon="fa fa-slash fa-spin mr-1"
-            class="px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 text-red-300">
-            Cancel
-          </LoadingButton>
+        <div>
+          <div class="text-[11px] font-medium uppercase tracking-wider text-faint">{{ authUser.subscription.expired ? "Expired" : "Renews or expires" }}</div>
+          <div class="mt-0.5 text-sm text-fg"><TimeAgo :date="authUser.subscription.expiresAt!" /></div>
+        </div>
+        <div v-if="authUser.subscription.amount">
+          <div class="text-[11px] font-medium uppercase tracking-wider text-faint">Paid</div>
+          <div class="mt-0.5 font-mono text-sm text-fg">${{ authUser.subscription.amount }}</div>
         </div>
       </div>
+    </Card>
+
+    <!-- Pending invoices -->
+    <Card v-if="hasPendingInvoice" title="Pending payment" class="mb-5" :padded="false">
+      <ul class="divide-y divide-line">
+        <li v-for="sub in pending" :key="sub.publicId" class="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2 text-sm">
+              <span class="font-semibold text-fg">Pro</span>
+              <span class="text-muted">{{ subLabel(sub) }}</span>
+              <span class="font-mono text-fg">${{ sub.amount }}</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <Badge :variant="isTerminal(sub) ? 'danger' : 'warn'">{{ invoiceLabel(sub.invoice?.status) }}</Badge>
+              <ArrowPathIcon v-if="isInProgress(sub)" class="h-3.5 w-3.5 animate-spin text-faint" />
+            </div>
+            <p v-if="sub.invoice?.status === 'partially_paid'" class="text-xs text-muted">
+              Partial payments are not activated automatically. Complete the payment on the invoice page or contact support.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <Button v-if="sub.invoice?.url && !isTerminal(sub)" variant="primary" size="sm" :href="sub.invoice.url">Continue payment</Button>
+            <Button variant="danger" size="sm" :click="cancelPending" :data="sub.publicId" message="Cancelling">Cancel</Button>
+          </div>
+        </li>
+      </ul>
+    </Card>
+
+    <!-- Plans -->
+    <div class="grid gap-4 sm:grid-cols-2">
+      <Card :padded="false" :class="!isPro ? 'ring-1 ring-accent/40' : ''">
+        <div class="p-5">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-semibold text-fg">Free</h2>
+            <Badge v-if="authUser.data?.plan === 'free'" variant="accent">Current</Badge>
+          </div>
+          <div class="mt-3 text-3xl font-semibold tracking-tight text-fg">$0</div>
+          <p class="mt-1 text-sm text-muted">Forever. Clips, folders, encryption and file uploads.</p>
+          <Button
+            v-if="!hasActiveSubscription"
+            class="mt-5"
+            block
+            :click="choosePlan"
+            data="free"
+            :disabled="authUser.data?.plan === 'free'"
+            message="Switching"
+          >
+            {{ authUser.data?.plan === "free" ? "Your current plan" : "Use the free plan" }}
+          </Button>
+        </div>
+      </Card>
+
+      <Card :padded="false" :class="isPro ? 'ring-1 ring-accent/40' : ''">
+        <div class="p-5">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-semibold text-fg">Pro</h2>
+            <Badge v-if="isPro" variant="accent">Current</Badge>
+          </div>
+          <div class="mt-3 flex items-baseline gap-1">
+            <span class="text-3xl font-semibold tracking-tight text-fg">${{ YEARLY_PRICE }}</span>
+            <span class="text-sm text-muted">/ year</span>
+            <span v-if="MONTHLY_ENABLED" class="ml-2 text-sm text-muted">or ${{ MONTHLY_PRICE }} / month</span>
+          </div>
+          <p class="mt-1 text-sm text-muted">Everything in Free, plus editing, copying between folders and sharing.</p>
+          <Button class="mt-5" variant="primary" block :click="choosePlan" data="pro" :disabled="hasPendingInvoice" message="One moment">
+            {{ proCta.label }}
+          </Button>
+          <p class="mt-2 text-center text-xs text-faint">{{ proCta.hint }}</p>
+        </div>
+      </Card>
     </div>
 
-    <div class="table-container">
-      <table class="table w-full">
+    <!-- Comparison -->
+    <div class="mt-6 overflow-x-auto rounded-lg border border-line bg-surface">
+      <table class="w-full text-sm">
         <thead>
-        <tr>
-          <th class="w-8"></th>
-          <th>Feature</th>
-          <th>Free</th>
-          <th>Pro</th>
-        </tr>
+          <tr class="text-left text-[11px] uppercase tracking-wider text-faint">
+            <th class="px-5 py-3 font-medium">Feature</th>
+            <th class="w-28 px-3 py-3 font-medium">Free</th>
+            <th class="w-28 px-3 py-3 font-medium text-accent">Pro</th>
+          </tr>
         </thead>
-        <tbody>
-        <tr>
-          <td></td>
-          <td></td>
-          <td>
-            <b class="text-lg">FREE</b>
-          </td>
-          <td>
-            <template v-if="MONTHLY_ENABLED">
-              <b class="text-lg">${{ MONTHLY_PRICE }}/month</b>
-              <br>
-            </template>
-            <b class="text-green-500 text-lg">${{ YEARLY_PRICE }}/Year</b>
-          </td>
-        </tr>
-        <tr v-for="item in pricing" :key="item.feature">
-          <td class="flex justify-center items-center w-12 px-2">
-            <i v-if="item.icon" :class="item.icon" class="far fa-2x text-antiquewhite"></i>
-          </td>
-          <td>
-            <span>{{ item.feature }}</span>
-            <template v-if="item.desc">
-              <br>
-              <span class="text-sm text-gray-400">{{ item.desc }}</span>
-            </template>
-          </td>
-          <td>
-            <template v-if="typeof item.free === 'string'">
-              <span>{{ item.free }}</span>
-            </template>
-            <template v-else>
-              <i v-if="item.free" class="fas fa-check text-green-500"></i>
-              <i v-else class="fas fa-times text-gray-500"></i>
-            </template>
-          </td>
-          <td>
-            <template v-if="typeof item.pro === 'string'">
-              <span>{{ item.pro }}</span>
-            </template>
-            <template v-else>
-              <i v-if="item.pro" class="fas fa-check text-green-500"></i>
-              <i v-else class="fas fa-times text-gray-500"></i>
-            </template>
-          </td>
-        </tr>
-
-        <tr>
-          <td></td>
-          <td></td>
-          <td>
-            <b class="text-lg">FREE</b>
-          </td>
-          <td>
-            <template v-if="MONTHLY_ENABLED">
-              <b class="text-lg">${{ MONTHLY_PRICE }}/month</b>
-              <br>
-            </template>
-            <b class="text-green-500 text-lg">${{ YEARLY_PRICE }}/Year</b>
-          </td>
-        </tr>
+        <tbody class="divide-y divide-line">
+          <tr v-for="item in pricing" :key="item.feature">
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-3">
+                <component :is="item.icon" class="h-4 w-4 shrink-0 text-faint" />
+                <div>
+                  <div class="text-fg">{{ item.feature }}</div>
+                  <div v-if="item.desc" class="text-xs text-muted">{{ item.desc }}</div>
+                </div>
+              </div>
+            </td>
+            <td v-for="col in (['free', 'pro'] as const)" :key="col" class="px-3 py-3">
+              <span v-if="typeof item[col] === 'string'" class="text-fg">{{ item[col] }}</span>
+              <CheckIcon v-else-if="item[col]" class="h-4 w-4 text-accent" aria-label="Included" />
+              <XMarkIcon v-else class="h-4 w-4 text-faint" aria-label="Not included" />
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
 
-    <div class="mt-5 flex items-center justify-center space-x-10 text-xl font-medium">
-      <LoadingButton
-        v-if="!hasActiveSubscription"
-        :click="choosePlan"
-        data="free"
-        :disabled="authUser.data!.plan === 'free'"
-        class="flex flex-col pl-3 bg-gray-900 hover:bg-gray-950 py-2 rounded w-full">
-        <span class="text-green-500">Free!</span>
-        <small class="text-sm">Forever</small>
-      </LoadingButton>
-
-      <LoadingButton
-        :click="choosePlan"
-        data="pro"
-        :disabled="hasPendingInvoice"
-        class="flex flex-col pl-3 bg-gray-900 hover:bg-gray-950 py-2 rounded w-full disabled:opacity-60 disabled:cursor-not-allowed">
-        <template v-if="hasPendingInvoice">
-          <span class="text-yellow-400">Payment pending</span>
-          <small class="text-sm">Complete or cancel it above</small>
-        </template>
-        <template v-else-if="hasActiveSubscription">
-          <span class="text-green-500">Extend Pro</span>
-          <small class="text-sm">Added to your current expiry</small>
-        </template>
-        <template v-else-if="authUser.subscription">
-          <span class="text-green-500">Pro</span>
-          <small class="text-sm">{{ MONTHLY_ENABLED ? "Monthly/Yearly" : "Yearly" }}</small>
-        </template>
-        <template v-else>
-          <span class="text-green-500">Try Pro!</span>
-          <small class="text-sm">7 Days</small>
-        </template>
-      </LoadingButton>
-    </div>
+    <!-- FAQ -->
+    <section class="mt-8 grid gap-6 sm:grid-cols-3">
+      <div v-for="item in faq" :key="item.question">
+        <h3 class="text-sm font-medium text-fg">{{ item.question }}</h3>
+        <p class="mt-1 text-sm text-muted">{{ item.answer }}</p>
+      </div>
+    </section>
   </div>
 
-  <Modal v-if="showPaymentModal" max-size="max-w-5xl" @closeModal="closePaymentModal">
-    <div>
-      <div class="text-xl p-3 border-b border-gray-800 text-green-400 font-bold">
-        Subscribe
+  <!-- Subscribe dialog -->
+  <Dialog :open="showPaymentModal" title="Subscribe to Pro" description="Paid in crypto through NowPayments. You'll be sent to their invoice page." @close="showPaymentModal = false">
+    <form class="space-y-5" @submit.prevent>
+      <div class="grid grid-cols-2 gap-3">
+        <Select v-model.number="subscribeForm.duration" label="Duration">
+          <option v-for="i in 5" :key="i" :value="i">{{ i }}</option>
+        </Select>
+        <Select v-model="subscribeForm.type" label="Billing">
+          <option v-if="MONTHLY_ENABLED" value="monthly">{{ subscribeForm.duration > 1 ? "Months" : "Month" }}</option>
+          <option value="yearly">{{ subscribeForm.duration > 1 ? "Years" : "Year" }}</option>
+        </Select>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div class="col-span-1 p-3">
-          <div>We accept payment via <a href="https://nowpayments.io" target="_blank" rel="noopener"
-                                        class="text-antiquewhite font-medium">NowPayments</a>, a payment gateway that
-            supports your favorite cryptocurrencies. You will be redirected to their secure invoice page.
-          </div>
-          <form class="form my-5" @submit.prevent>
-            <div class="flex space-x-2">
-              <div>
-                <select v-model="subscribeForm.duration" class="text-xl">
-                  <template v-for="i in 5">
-                    <option :value="i">{{ i }}</option>
-                  </template>
-                </select>
-              </div>
-
-              <div>
-                <select v-model="subscribeForm.type" class="text-xl">
-                  <option v-if="MONTHLY_ENABLED" value="monthly">{{ subscribeForm.duration > 1 ? "Months" : "Month" }}</option>
-                  <option value="yearly">{{ subscribeForm.duration > 1 ? "Years" : "Year" }}</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="mt-10 flex flex-col space-y-1">
-              <span class="text-2xl font-bold">Total: <span class="font-bold text-green-400 ml-1">${{ computedPrice
-                }}</span> </span>
-              <span class="text-sm text-gray-400">Network fee NOT included</span>
-            </div>
-
-            <div>
-              <LoadingButton
-                type="submit"
-                :click="payNow"
-                message="Creating invoice"
-                class="mt-5 font-bold text-2xl bg-green-300 hover:bg-green-400 text-gray-800 w-full p-3 rounded"
-                icon="fa fa-slash fa-spin mr-3">
-                Pay Now
-              </LoadingButton>
-            </div>
-
-          </form>
+      <div class="flex items-end justify-between rounded-md bg-sunken px-4 py-3">
+        <div>
+          <div class="text-[11px] font-medium uppercase tracking-wider text-faint">Total</div>
+          <div class="text-2xl font-semibold tracking-tight text-fg">${{ computedPrice }}</div>
         </div>
-        <div class="col-span-1 p-3">
-          <div class="text-xl font-bold text-green-400">FAQ</div>
-          <div>
-            <div v-for="item in faq" :key="item.question" class="my-2">
-              <div class="text-lg">{{ item.question }}</div>
-              <div class="text-gray-400">{{ item.answer }}</div>
-            </div>
-          </div>
-        </div>
+        <span class="text-xs text-muted">Network fee not included</span>
       </div>
-    </div>
-  </Modal>
+
+      <Button variant="primary" size="lg" block type="submit" :click="payNow" message="Creating invoice">Pay now</Button>
+    </form>
+  </Dialog>
 </template>
-
