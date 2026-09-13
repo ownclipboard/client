@@ -168,9 +168,6 @@ async function disconnect(btn: ILoadingButton) {
             </template>
           </dl>
           <div class="mt-4 flex flex-wrap gap-2">
-            <Button v-if="!status.default && status.defaultAvailable && isPro" size="sm" :click="useHosted" message="Switching">
-              <CloudIcon class="h-4 w-4" /> Switch to OwnClipboard storage
-            </Button>
             <Button size="sm" @click="showForm = 'own'">{{ status.default ? "Use my own server" : "Replace connection" }}</Button>
             <Button size="sm" variant="danger" :click="disconnect" message="Disconnecting">Disconnect</Button>
           </div>
