@@ -26,8 +26,7 @@ const navigation = [
 ];
 
 const userNavigation = [
-  { name: "Your Profile", href: "#" },
-  { name: "Settings", href: "#" }
+  { name: "Settings", route: { name: "settings" } }
 ];
 
 
@@ -104,13 +103,13 @@ const userNavigation = [
                   :key="item.name"
                   v-slot="{ active }"
                 >
-                  <a
-                    :href="item.href"
+                  <RouterLink
+                    :to="item.route"
                     :class="[
                       active ? 'bg-gray-100' : '',
                       'block py-2 px-4 text-sm text-gray-700'
                     ]"
-                  >{{ item.name }}</a
+                  >{{ item.name }}</RouterLink
                   >
                 </MenuItem>
                 <MenuItem>
@@ -163,14 +162,13 @@ const userNavigation = [
           </button>
         </div>
         <div class="mt-3 px-2 space-y-1">
-          <DisclosureButton
+          <RouterLink
             v-for="item in userNavigation"
             :key="item.name"
-            as="a"
-            :href="item.href"
+            :to="item.route"
             class="block rounded-md py-2 px-3 text-base font-medium text-gray-400 hover:bg-gray-700 hover:text-white"
           >{{ item.name }}
-          </DisclosureButton
+          </RouterLink
           >
         </div>
       </div>

@@ -2,6 +2,8 @@
 import { onMounted } from "vue";
 import NavBar from "../components/NavBar.vue";
 import FolderPicker from "../components/FolderPicker.vue";
+import StorageCorsModal from "../components/StorageCorsModal.vue";
+import ClipPreviewModal from "../components/ClipPreviewModal.vue";
 import { useAuthUser } from "../stores/auth.store";
 import { refreshAuthData } from "../services/auth.service";
 
@@ -30,6 +32,8 @@ onMounted(ping);
     </section>
     <PasswordPrompt />
     <FolderPicker />
+    <StorageCorsModal />
+    <ClipPreviewModal />
   </section>
   <!--  <section v-else-if="authenticated === false">Login Required!</section>-->
 

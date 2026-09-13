@@ -421,6 +421,164 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client/v1/account/owns3": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * owns3 connection status
+         * @description Whether the user has connected their own owns3 server (https://github.com/ownclipboard/owns3), where their files are stored. Never returns the api key.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Connection status. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Owns3Status"];
+                    };
+                };
+                /** @description Missing or invalid `oc_token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Connect an owns3 server
+         * @description Validates the endpoint and api key against owns3 `/api/v1/me`. The key must carry the
+         *     `read`, `write` and `delete` permissions. Replaces any previous connection.
+         *     The key is stored encrypted.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "endpoint": "https://owns3.example.com",
+                     *       "apiKey": "owns3_xxx"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Owns3ConnectBody"];
+                };
+            };
+            responses: {
+                /** @description Connected. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Owns3ConnectResponse"];
+                    };
+                };
+                /** @description Invalid endpoint or the key lacks a required permission. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description owns3 rejected the api key. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The owns3 endpoint could not be reached. */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/owns3/disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disconnect the owns3 server
+         * @description Removes the stored endpoint and key. Uploaded files stay on the server but cannot be downloaded or deleted until a server is connected again.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Disconnected. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Owns3DisconnectResponse"];
+                    };
+                };
+                /** @description No server connected. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/client/v1/folders": {
         parameters: {
             query?: never;
@@ -874,6 +1032,270 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client/v1/files/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request an upload slot
+         * @description Step 1 of 3. Requires a connected owns3 server. Creates a pending file record and
+         *     returns a presigned url. Step 2: `PUT` the raw file body to `upload.url` with the returned
+         *     headers (no api key needed). Step 3: call confirm. Encrypted folders are refused.
+         *     The clip's title is `title` when given, otherwise the file name; its content is always the file name.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "name": "photo.jpg",
+                     *       "title": "Holiday photo",
+                     *       "contentType": "image/jpeg",
+                     *       "size": 204800,
+                     *       "folder": "clipboard"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["FileUploadBody"];
+                };
+            };
+            responses: {
+                /** @description Upload slot. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FileUploadResponse"];
+                    };
+                };
+                /** @description No owns3 server connected, validation error, or encrypted folder. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Folder not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description owns3 could not be reached or refused the request. */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/file/{file}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm an upload
+         * @description Step 3 of 3. Verifies the object exists on owns3, records its real size and type, and
+         *     creates a clip of type `file` whose `file` field holds the file id and extension. Calling it again
+         *     returns the existing clip with `info`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description File publicId. */
+                    file: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description File confirmed and clip created. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FileConfirmResponse"];
+                    };
+                };
+                /** @description Not uploaded yet, no owns3 server connected, or the folder no longer exists. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description File not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/file/{file}/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Temporary download url
+         * @description Presigned url valid for one hour, fetched directly from the user's storage without an api key.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description File publicId. */
+                    file: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Download url. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FileUrlResponse"];
+                    };
+                };
+                /** @description Not uploaded yet or no owns3 server connected. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description File not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/file/{file}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete a file
+         * @description Deletes the object on owns3, the file record and its clip. Deleting a file clip through the clip delete endpoint does the same.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description File publicId. */
+                    file: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description No owns3 server connected. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description File not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/client/v1/clips/find": {
         parameters: {
             query?: never;
@@ -1056,73 +1478,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/client/v1/clips/upload": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Upload an image clip
-         * @description Multipart upload of an image (png, jpg, jpeg, gif, bmp, webp), max 5 MB. Work in progress.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "multipart/form-data": {
-                        /** Format: binary */
-                        content: string;
-                        title?: string;
-                        /** @default clipboard */
-                        folder?: string;
-                    };
-                };
-            };
-            responses: {
-                /** @description Uploaded. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["UploadImageResponse"];
-                    };
-                };
-                /** @description Invalid file or folder. */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Missing or invalid `oc_token`. */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/client/v1/clips": {
         parameters: {
             query?: never;
@@ -1250,6 +1605,7 @@ export interface paths {
          *     - The target folder must belong to the user and must not be encrypted.
          *     - Clips in encrypted folders are skipped (`encrypted`).
          *     - Clips already in the target folder are skipped (`same_folder`).
+         *     - File clips are skipped (`file`): owns3 has no server-side copy. Move them instead.
          *     - If the target already holds a clip with identical content it is merged:
          *       the existing clip is touched instead of creating a duplicate.
          */
@@ -1735,15 +2091,23 @@ export interface components {
             publicId: string;
             title?: string;
             /** @enum {string} */
-            type: "text" | "url" | "html" | "image";
+            type: "text" | "url" | "html" | "file";
             /** @description Slug of the folder the clip is in. */
             folder: string;
-            /** @description The clip content. Ciphertext when `encrypted` is true. */
+            /** @description The clip content. Ciphertext when `encrypted` is true. The file name for file clips. */
             context: string;
+            /** @description Present on file clips (`type` is `file`). Name is in `context`, size in the clip's size. */
+            file?: components["schemas"]["FileSummary"];
             locked?: boolean | null;
             favorite?: boolean | null;
             encrypted?: boolean | null;
             updatedAt?: string;
+        };
+        /** @description File reference embedded in a clip. */
+        FileSummary: {
+            publicId: string;
+            /** @description Lower-cased extension without the dot, empty when none. */
+            ext: string;
         };
         PaginatedClips: {
             page: number;
@@ -1764,7 +2128,7 @@ export interface components {
             folder: string;
         };
         /** @enum {string} */
-        TransferSkipReason: "not_found" | "encrypted" | "same_folder";
+        TransferSkipReason: "not_found" | "encrypted" | "same_folder" | "file";
         TransferSkipped: {
             id: string;
             reason: components["schemas"]["TransferSkipReason"];
@@ -1904,10 +2268,97 @@ export interface components {
             /** @description Required only for encrypted clips: MD5 hash of the folder password. */
             password?: string;
         };
-        UploadImageResponse: {
+        Owns3ConnectBody: {
+            /** @description Base url of the owns3 server, e.g. `https://owns3.example.com`. */
+            endpoint: string;
+            /** @description Application api key with read, write and delete permissions. */
+            apiKey: string;
+        };
+        Owns3App: {
+            id: string;
+            name: string;
+            slug: string;
+            /** @description Folder prefix the app is confined to. */
+            folder: string;
+        };
+        Owns3Status: {
+            connected: boolean;
+            endpoint?: string;
+            app?: components["schemas"]["Owns3App"];
+            permissions?: ("read" | "write" | "delete")[];
+            connectedAt?: string;
+        };
+        Owns3ConnectResponse: {
+            connected: boolean;
+            endpoint?: string;
+            app?: components["schemas"]["Owns3App"];
+            permissions?: ("read" | "write" | "delete")[];
+            connectedAt?: string;
+            bucket: string;
             message: string;
-            /** @description Raw upload result. */
-            content: Record<string, never>;
+        };
+        Owns3DisconnectResponse: {
+            /** @constant */
+            connected: false;
+            /** @description Uploaded files that stay on the server and become unavailable. */
+            files: number;
+            message: string;
+        };
+        /** @description Public view of a file record. */
+        File: {
+            publicId: string;
+            name: string;
+            /** @description Clip title, defaults to the file name. */
+            title: string;
+            /** @description Lower-cased extension without the dot, empty when none. */
+            ext: string;
+            /** @description Slug of the folder the clip lives in. */
+            folder: string;
+            /** @description Bytes. Declared size until confirmed, then the real size. */
+            size: number;
+            contentType: string;
+            /** @enum {string} */
+            status: "pending" | "uploaded";
+            createdAt: string;
+            uploadedAt?: string | null;
+        };
+        FileUploadBody: {
+            /** @description Original file name, up to 255 characters. */
+            name: string;
+            /** @description Optional clip title. Defaults to the file name. */
+            title?: string;
+            /** @description MIME type, defaults to application/octet-stream. */
+            contentType?: string;
+            /** @description Declared size in bytes, informational. */
+            size?: number;
+            /** @description Target folder name or slug. Defaults to clipboard. Encrypted folders are refused. */
+            folder?: string;
+        };
+        FileUploadResponse: {
+            file: components["schemas"]["File"];
+            upload: {
+                /** @constant */
+                method: "PUT";
+                /** @description Presigned S3 url. PUT the raw file body here with the given headers. */
+                url: string;
+                expiresIn: number;
+                headers: {
+                    "Content-Type": string;
+                };
+            };
+        };
+        FileConfirmResponse: {
+            file: components["schemas"]["File"];
+            clip?: components["schemas"]["Clip"];
+            message?: string;
+            info?: string;
+        };
+        FileUrlResponse: {
+            /** @description Presigned download url. */
+            url: string;
+            /** @constant */
+            method: "GET";
+            expiresIn: number;
         };
     };
     responses: never;

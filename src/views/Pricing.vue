@@ -73,9 +73,9 @@ const pricing = [
   },
   {
     feature: "File Upload",
-    desc: "Upload media files with 99% uptime and Backup",
-    free: false,
-    pro: "10 GB",
+    desc: "Upload files to your own owns3 storage server, connected in Settings",
+    free: true,
+    pro: true,
     icon: "far fa-cloud-upload"
   },
   {

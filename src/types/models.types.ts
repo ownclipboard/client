@@ -2,9 +2,12 @@
 export type OwnClip = {
   publicId: string;
   title: string;
-  type: "text";
+  type: "text" | "url" | "html" | "file";
   folder: string;
+  /** The clip content. Ciphertext when encrypted. The file name for file clips. */
   context: string;
+  /** Present on file clips. */
+  file?: { publicId: string; ext: string };
   locked: boolean;
   favorite: boolean;
   encrypted: boolean;

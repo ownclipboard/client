@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import type { ILoadingButton } from "revue-components/vues/component-types";
-import { $http } from "../http";
+import { $http, alertRequestError } from "../http";
 import { currentTab, foldersAsObject, getFolders } from "../stores/tabs.store";
 import { $events } from "../events";
 import { askForPassword } from "./PasswordPromptHandler";
@@ -10,6 +10,9 @@ import { checkFolderPassword } from "../services/clips.services";
 import { aesEncrypt } from "../functions/crypto";
 import { nanoid } from "nanoid";
 import ClipsSearch from "./ClipsSearch.vue";
+import { StorageUploadBlockedError, uploadFile } from "../services/files.service";
+import { showStorageCorsHelp } from "./StorageCorsHandler";
+import UploadModal, { type UploadItem, type UploadResults } from "./UploadModal.vue";
 
 type Todo = "paste" | "create";
 const todo = ref<Todo>("paste");
@@ -111,9 +114,8 @@ async function paste() {
     await pasteToServer(pasteData, title);
 
   } else if (type === "image") {
-    // Send data to server
-    const file = pasteData as File;
-    console.log(file);
+    // Pasted images go through the upload modal like picked files
+    queueFiles([pasteData as File]);
   }
 
   return;
@@ -136,6 +138,124 @@ async function pasteToServer(content: string, title?: string) {
       $events.emit("refreshClips");
     })
     .then(getFolders);
+}
+
+/* ---------------- File upload ---------------- */
+
+const fileInput = ref<HTMLInputElement>();
+// Files waiting in the upload modal for confirmation.
+const pendingFiles = ref<File[]>([]);
+const isUploading = ref(false);
+const uploadIndex = ref(-1);
+const uploadProgress = ref<number | null>(null);
+const uploadResults = ref<UploadResults>({});
+
+const currentFolderName = computed(() => foldersAsObject.value[currentTab.value!]?.name || "");
+
+function pickFile() {
+  fileInput.value?.click();
+}
+
+/**
+ * Queue files for upload: opens the modal for preview and confirmation.
+ */
+function queueFiles(files: File[]) {
+  if (!files.length) return;
+
+  const folder = foldersAsObject.value[currentTab.value!];
+  if (folder && (folder.visibility === "encrypted" || folder.hasPassword)) {
+    $alert.warning("Files cannot be uploaded into an encrypted folder.");
+    return;
+  }
+
+  pendingFiles.value = files;
+  uploadResults.value = {};
+}
+
+function onFilePicked(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const files = Array.from(input.files || []);
+  input.value = "";
+  queueFiles(files);
+}
+
+function cancelUpload() {
+  if (isUploading.value) return;
+  pendingFiles.value = [];
+  uploadResults.value = {};
+}
+
+// A row was removed in the modal: drop it and re-key the results that followed it.
+function onRemoveFile(index: number) {
+  const next: UploadResults = {};
+  for (const [k, v] of Object.entries(uploadResults.value)) {
+    const i = Number(k);
+    if (i < index) next[i] = v;
+    else if (i > index) next[i - 1] = v;
+  }
+  uploadResults.value = next;
+  pendingFiles.value = pendingFiles.value.filter((_, i) => i !== index);
+}
+
+function uploadErrorMessage(e: any) {
+  const apiError = e?.response?.data?.error;
+  if (apiError) return String(apiError);
+  return e?.message || "Upload failed.";
+}
+
+/**
+ * Upload the confirmed files one after another.
+ * The modal stays open until every file is uploaded; failed rows can be retried.
+ */
+async function confirmUpload(items: UploadItem[]) {
+  isUploading.value = true;
+  let uploaded = 0;
+  let failed = 0;
+  let blocked: StorageUploadBlockedError | null = null;
+
+  try {
+    for (const { index, file, title } of items) {
+      uploadIndex.value = index;
+      uploadProgress.value = 0;
+
+      try {
+        await uploadFile(file, {
+          folder: currentTab.value!,
+          title: title || undefined,
+          onProgress: (p) => (uploadProgress.value = p)
+        });
+        uploadResults.value = { ...uploadResults.value, [index]: true };
+        uploaded++;
+      } catch (e: any) {
+        uploadResults.value = { ...uploadResults.value, [index]: uploadErrorMessage(e) };
+        failed++;
+        if (e instanceof StorageUploadBlockedError) {
+          blocked = e;
+          break; // every file will fail the same way, stop here
+        }
+      }
+    }
+  } finally {
+    isUploading.value = false;
+    uploadIndex.value = -1;
+    uploadProgress.value = null;
+  }
+
+  if (uploaded) {
+    $events.emit("refreshClips");
+    await getFolders();
+  }
+
+  // Only close once everything went through.
+  if (!failed) {
+    pendingFiles.value = [];
+    uploadResults.value = {};
+  } else if (blocked) {
+    // Explain the bucket CORS / mixed content problem and how to fix it.
+    showStorageCorsHelp(blocked.url, blocked.kind);
+  } else {
+    $alert.error(`${failed} file(s) failed to upload. Fix the issue and retry, or close the dialog.`);
+  }
 }
 
 function switchTodo(val: Todo) {
@@ -182,6 +302,14 @@ async function createContent(btn: ILoadingButton) {
         <i class="fa fa-pen"></i>
         Create
       </button>
+      <button
+        class="btn rounded shadow-md bg-gray-900 hover:bg-gray-950 border border-gray-700"
+        :disabled="isUploading"
+        @click="pickFile">
+        <i class="fa fa-cloud-upload"></i>
+        Upload
+      </button>
+      <input ref="fileInput" type="file" multiple class="hidden" @change="onFilePicked" />
       </div>
     </section>
     <section
@@ -218,4 +346,16 @@ async function createContent(btn: ILoadingButton) {
 
     </section>
   </keep-alive>
+
+  <UploadModal
+    v-if="pendingFiles.length"
+    :files="pendingFiles"
+    :folder-name="currentFolderName"
+    :uploading="isUploading"
+    :current-index="uploadIndex"
+    :progress="uploadProgress"
+    :results="uploadResults"
+    @confirm="confirmUpload"
+    @remove="onRemoveFile"
+    @cancel="cancelUpload" />
 </template>

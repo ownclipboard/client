@@ -6,6 +6,8 @@ import { $events } from "../../events";
 import { useAuthUser } from "../../stores/auth.store";
 import { foldersAsObject, getFolders } from "../../stores/tabs.store";
 import { askForFolder } from "../FolderPickerHandler";
+import { getFileUrl } from "../../services/files.service";
+import { previewClip } from "../ClipPreviewHandler";
 import { refreshAuthData } from "../../services/auth.service";
 import { aesDecrypt, aesEncrypt } from "../../functions/crypto";
 import { $http, alertRequestError } from "../../http";
@@ -43,6 +45,7 @@ const copied = ref("");
 
 const authUser = useAuthUser();
 const isPro = computed(() => authUser.data?.plan === "pro");
+const isFile = computed(() => clip.value.type === "file" && !!clip.value.file);
 const folderName = computed(() => foldersAsObject.value[clip.value.folder]?.name || clip.value.folder);
 
 /* ---------------- Edit clip (Pro only) ---------------- */
@@ -64,7 +67,8 @@ async function saveClip(btn: ILoadingButton) {
   const content = editForm.content.trim();
   const title = editForm.title.trim();
 
-  if (!content.length) {
+  // File clips: the content is the file name and cannot change, only the title can.
+  if (!isFile.value && !content.length) {
     $alert.error("Content cannot be empty");
     return btn.stopLoading();
   }
@@ -74,7 +78,7 @@ async function saveClip(btn: ILoadingButton) {
 
   let contentToSend = content;
 
-  if (content !== clip.value.context) {
+  if (!isFile.value && content !== clip.value.context) {
     // Encrypted clips are shown decrypted while editing, re-encrypt with the folder password.
     if (clip.value.encrypted) {
       let password = await askForPassword("Enter password to save encrypted clip:");
@@ -226,14 +230,15 @@ type TransferResponse = {
   moved?: { id: string }[];
   copied?: { id: string; copyId: string }[];
   merged: string[];
-  skipped: { id: string; reason: "encrypted" | "not_found" | "same_folder" }[];
+  skipped: { id: string; reason: "encrypted" | "not_found" | "same_folder" | "file" }[];
   message: string;
 };
 
 const SKIP_REASONS: Record<TransferResponse["skipped"][number]["reason"], string> = {
   encrypted: "Encrypted clips cannot be moved or copied.",
   not_found: "Clip no longer exists.",
-  same_folder: "Clip is already in that folder."
+  same_folder: "Clip is already in that folder.",
+  file: "Files cannot be copied, move them instead."
 };
 
 async function transferClip(btn: ILoadingButton, action: "move" | "copy") {
@@ -262,6 +267,23 @@ async function transferClip(btn: ILoadingButton, action: "move" | "copy") {
 }
 
 const moveClip = (btn: ILoadingButton) => transferClip(btn, "move");
+
+/* ---------------- File download ---------------- */
+
+async function downloadFile(btn: ILoadingButton) {
+  // Open the tab first so the browser doesn't treat the async open as a popup.
+  const tab = window.open("", "_blank");
+  try {
+    const url = await getFileUrl(clip.value.file!.publicId);
+    if (tab) tab.location.href = url;
+    else window.location.href = url;
+  } catch (e) {
+    tab?.close();
+    alertRequestError(e);
+  } finally {
+    btn.stopLoading();
+  }
+}
 const copyClipToFolder = (btn: ILoadingButton) => transferClip(btn, "copy");
 
 function deleteClip(btn: ILoadingButton, data: any) {
@@ -305,10 +327,16 @@ function deleteClip(btn: ILoadingButton, data: any) {
         <input
           v-model="editForm.title"
           type="text"
+          :autofocus="isFile"
           placeholder="Title (optional)"
           class="bg-gray-950 rounded placeholder:opacity-30 hover:placeholder:opacity-100 font-medium px-3 py-2 w-full focus:outline-none"
         />
+        <div v-if="isFile" class="text-xs text-gray-500 mt-2">
+          <i class="far fa-file mr-1"></i>{{ clip.context }}
+          <span class="ml-1">(file name cannot be changed)</span>
+        </div>
         <textarea
+          v-else
           v-model="editForm.content"
           autofocus
           rows="6"
@@ -329,7 +357,9 @@ function deleteClip(btn: ILoadingButton, data: any) {
           </LoadingButton>
         </div>
       </div>
-      <ClipContent v-else />
+      <div v-else class="cursor-pointer" title="Click to preview" @click="previewClip(clip)">
+        <ClipContent />
+      </div>
     </div>
 
     <div class="actions" v-if="!isEditing && (!clip.encrypted || (clip.encrypted && clip.decrypted))">
@@ -344,7 +374,24 @@ function deleteClip(btn: ILoadingButton, data: any) {
                 </LoadingButton>
             </template> -->
 
+      <button
+        type="button"
+        @click="previewClip(clip)"
+        class="text-gray-300 hover:text-white font-medium"
+      >
+        <i class="fa fa-eye"></i> View
+      </button>
+
       <LoadingButton
+        v-if="isFile"
+        message="Preparing"
+        :click="downloadFile"
+        class="text-green-300 hover:text-green-500"
+      >
+        <i class="fa fa-download"></i> Download
+      </LoadingButton>
+      <LoadingButton
+        v-else
         message="Copying"
         :click="copyClip"
         :data="clip"
@@ -374,7 +421,7 @@ function deleteClip(btn: ILoadingButton, data: any) {
         </LoadingButton>
 
         <LoadingButton
-          v-if="isPro"
+          v-if="isPro && !isFile"
           message="Copying"
           :click="copyClipToFolder"
           class="text-blue-300 hover:text-blue-500"
@@ -382,7 +429,7 @@ function deleteClip(btn: ILoadingButton, data: any) {
           <i class="fa fa-clone"></i> Copy to
         </LoadingButton>
         <RouterLink
-          v-else
+          v-else-if="!isFile"
           :to="{ name: 'pricing' }"
           title="Copying clips to other folders is a Pro feature"
           class="text-gray-500 hover:text-blue-300"
