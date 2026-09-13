@@ -119,8 +119,7 @@ $events.on("delete-clip", ({ btn, data }: { btn: ILoadingButton; data: [OwnClip,
     <ClipComposer v-if="composerOpen" />
 
     <template v-if="loading && !clips.data.length">
-      <div v-for="i in 4" :key="i" class="grid grid-cols-[36px_1fr] gap-3 rounded-lg border border-line bg-surface px-3.5 py-3">
-        <Skeleton class="h-9 w-9" />
+      <div v-for="i in 4" :key="i" class="rounded-lg border border-line bg-surface px-4 py-3">
         <div class="space-y-2 py-0.5">
           <Skeleton class="h-3.5 w-1/3" />
           <Skeleton class="h-3 w-3/4" />

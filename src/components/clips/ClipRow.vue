@@ -257,24 +257,12 @@ function remove() {
 <template>
   <article
     :class="[
-      'group relative grid grid-cols-[36px_1fr] gap-x-3 gap-y-2 rounded-lg border bg-surface px-3.5 py-3 transition-shadow sm:grid-cols-[36px_1fr_auto]',
+      'group relative grid grid-cols-1 gap-x-3 gap-y-2 rounded-lg border bg-surface px-4 py-3 transition-shadow sm:grid-cols-[1fr_auto]',
       isEditing ? 'border-accent/40 ring-4 ring-accent/10' : 'border-line hover:border-line-strong hover:shadow-card',
       deleting || transferring ? 'opacity-50' : ''
     ]"
     @keydown.esc.prevent="isEditing && cancelEditing()"
   >
-    <!-- Type glyph -->
-    <div
-      :class="[
-        'flex h-9 w-9 items-center justify-center rounded-md border [&>svg]:h-[18px] [&>svg]:w-[18px]',
-        isLocked ? 'border-transparent bg-warn-soft text-warn' : isFile ? 'border-transparent bg-info-soft text-info' : 'border-line bg-raised text-muted'
-      ]"
-      aria-hidden="true"
-    >
-      <LockClosedIcon v-if="isLocked" />
-      <component v-else :is="TYPE_ICON[clip.type] || Bars3BottomLeftIcon" />
-    </div>
-
     <!-- Content -->
     <div class="min-w-0">
       <!-- Title row -->
@@ -291,7 +279,11 @@ function remove() {
         <template v-else>
           <span v-if="clip.title" class="truncate font-medium text-fg">{{ clip.title }}</span>
         </template>
-        <Badge variant="outline" uppercase>{{ isLocked ? "encrypted" : clip.type }}</Badge>
+        <Badge :variant="isLocked ? 'warn' : isFile ? 'info' : 'outline'" uppercase>
+          <LockClosedIcon v-if="isLocked" class="h-3 w-3" />
+          <component v-else :is="TYPE_ICON[clip.type] || Bars3BottomLeftIcon" class="h-3 w-3" />
+          {{ isLocked ? "encrypted" : clip.type }}
+        </Badge>
         <Badge v-if="showFolder" variant="neutral">{{ folderName }}</Badge>
       </div>
 
@@ -351,7 +343,7 @@ function remove() {
     <!-- Actions -->
     <div
       v-if="!isEditing"
-      class="col-start-2 flex items-center gap-0.5 sm:col-start-3 sm:self-start sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+      class="flex items-center gap-0.5 sm:self-start sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
     >
       <template v-if="isLocked">
         <Button size="sm" variant="secondary" :click="unlock" message="Unlocking">
