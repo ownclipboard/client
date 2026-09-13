@@ -4,6 +4,7 @@ import AuthLayout from "./views/AuthLayout.vue";
 
 const routes: Array<RouteRecordRaw> = [
   { path: "/", name: "index", component: Index, meta: { title: "Sign in" } },
+  { path: "/signup", name: "signup", component: () => import("./views/Signup.vue"), meta: { title: "Create account" } },
 
   {
     path: "/paste/:pasteId",
