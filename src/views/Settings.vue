@@ -16,6 +16,7 @@ import Button from "../components/ui/Button.vue";
 import Input from "../components/ui/Input.vue";
 import Badge from "../components/ui/Badge.vue";
 import Skeleton from "../components/ui/Skeleton.vue";
+import StorageSetupGuide from "../components/storage/StorageSetupGuide.vue";
 
 const authUser = useAuthUser();
 
@@ -36,6 +37,7 @@ const showForm = ref<"own" | null>(null);
 const isPro = computed(() => authUser.data?.plan === "pro");
 
 const form = reactive({ endpoint: "", apiKey: "" });
+const guideOpen = ref(false);
 
 async function loadStatus() {
   try {
@@ -192,8 +194,15 @@ async function disconnect(btn: ILoadingButton) {
               <div class="flex items-center gap-2 text-sm font-medium text-fg">
                 <ServerStackIcon class="h-4 w-4 text-faint" /> Your own owns3 server
               </div>
-              <p class="mt-1 flex-1 text-sm text-muted">Run owns3 on your own infrastructure and connect it with an application api key.</p>
-              <Button class="mt-4" size="sm" :variant="status?.defaultAvailable ? 'secondary' : 'primary'" @click="showForm = 'own'">Connect my server</Button>
+              <p class="mt-1 flex-1 text-sm text-muted">
+                Run owns3 on your own infrastructure, or on ours, and connect it with an application api key.
+              </p>
+              <div class="mt-4 flex flex-wrap items-center gap-3">
+                <Button size="sm" :variant="status?.defaultAvailable ? 'secondary' : 'primary'" @click="showForm = 'own'">Connect my server</Button>
+                <button type="button" class="text-[13px] font-medium text-accent underline underline-offset-2" @click="guideOpen = true">
+                  Show me how
+                </button>
+              </div>
             </div>
           </div>
 
@@ -216,9 +225,12 @@ async function disconnect(btn: ILoadingButton) {
               mono
               hint="Needs read, write and delete permissions. Stored encrypted and never shown again."
             />
-            <div class="flex gap-2">
+            <div class="flex flex-wrap items-center gap-2">
               <Button variant="primary" type="submit" :click="connect" message="Connecting">Connect</Button>
               <Button variant="ghost" @click="showForm = null">Cancel</Button>
+              <button type="button" class="ml-auto text-[13px] font-medium text-accent underline underline-offset-2" @click="guideOpen = true">
+                Where do I get these?
+              </button>
             </div>
           </form>
         </template>
@@ -226,9 +238,13 @@ async function disconnect(btn: ILoadingButton) {
 
       <p class="mt-4 text-xs text-faint">
         owns3 is open source:
-        <a href="https://github.com/ownclipboard/owns3" target="_blank" rel="noopener" class="text-accent underline underline-offset-2">github.com/ownclipboard/owns3</a>
+        <a href="https://github.com/ownclipboard/owns3" target="_blank" rel="noopener" class="text-accent underline underline-offset-2">github.com/ownclipboard/owns3</a>.
+        No server of your own? Use <a href="https://s3.ownclipboard.com" target="_blank" rel="noopener" class="text-accent underline underline-offset-2">s3.ownclipboard.com</a>
+        with your own bucket, or <button type="button" class="text-accent underline underline-offset-2" @click="guideOpen = true">read the setup guide</button>.
       </p>
     </Card>
+
+    <StorageSetupGuide :open="guideOpen" @close="guideOpen = false" />
 
     <Card title="Account">
       <dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
