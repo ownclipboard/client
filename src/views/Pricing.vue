@@ -23,6 +23,7 @@ import {
   LockClosedIcon,
   PencilSquareIcon,
   PuzzlePieceIcon,
+  ServerStackIcon,
   ShareIcon,
   Square2StackIcon,
   XMarkIcon
@@ -63,7 +64,8 @@ const pricing = [
   { feature: "Mobile app", desc: "iOS and Android", free: true, pro: true, icon: DevicePhoneMobileIcon },
   { feature: "Chrome extension", desc: "Paste from any page", free: true, pro: true, icon: PuzzlePieceIcon },
   { feature: "Encrypted folders", desc: "256-bit AES, encrypted in your browser", free: true, pro: true, icon: LockClosedIcon },
-  { feature: "File upload", desc: "To your own owns3 storage, connected in Settings", free: true, pro: true, icon: CloudArrowUpIcon },
+  { feature: "File upload", desc: "Upload files into any folder", free: true, pro: true, icon: CloudArrowUpIcon },
+  { feature: "File storage", desc: "Free: connect your own owns3 server. Pro: also use the storage OwnClipboard runs, with nothing to set up", free: "Own server", pro: "Own server or hosted", icon: ServerStackIcon },
   { feature: "Edit clips", desc: "Change a clip's title and content after saving", free: false, pro: true, icon: PencilSquareIcon },
   { feature: "Transfer clips", desc: "Move between folders, or copy to keep both", free: "Move", pro: "Move and copy", icon: ArrowsRightLeftIcon },
   { feature: "Share clips", desc: "Between accounts", free: false, pro: true, icon: ShareIcon }
@@ -72,7 +74,7 @@ const pricing = [
 const faq = [
   { question: "How do I pay?", answer: "With crypto (BTC, USDT and many more) through NowPayments. You are redirected to their invoice page and back here when done." },
   { question: "What happens when I cancel?", answer: "You are moved to the free plan and Pro features are disabled." },
-  { question: "Do I keep my files if I cancel?", answer: "Yes. Uploaded files stay on your own storage; you only lose the ability to upload new ones." }
+  { question: "Do I keep my files if I cancel?", answer: "Files on your own owns3 server are untouched. Files on OwnClipboard storage stay put, but uploads pause until you renew Pro or connect your own server." }
 ];
 
 /* ---------------- Subscription state & NowPayments ---------------- */
@@ -268,7 +270,7 @@ const proCta = computed(() => {
 
 <template>
   <div class="max-w-4xl">
-    <PageHeader title="Plan" description="Pick what fits. Pro adds editing, copying between folders and sharing." />
+    <PageHeader title="Plan" description="Pick what fits. Pro adds hosted file storage, editing, copying between folders and sharing." />
 
     <!-- Payment notice -->
     <div
@@ -342,7 +344,7 @@ const proCta = computed(() => {
             <Badge v-if="authUser.data?.plan === 'free'" variant="accent">Current</Badge>
           </div>
           <div class="mt-3 text-3xl font-semibold tracking-tight text-fg">$0</div>
-          <p class="mt-1 text-sm text-muted">Forever. Clips, folders, encryption and file uploads.</p>
+          <p class="mt-1 text-sm text-muted">Forever. Clips, folders, encryption, and file uploads to your own owns3 server.</p>
           <Button
             v-if="!hasActiveSubscription"
             class="mt-5"
@@ -368,7 +370,7 @@ const proCta = computed(() => {
             <span class="text-sm text-muted">/ year</span>
             <span v-if="MONTHLY_ENABLED" class="ml-2 text-sm text-muted">or ${{ MONTHLY_PRICE }} / month</span>
           </div>
-          <p class="mt-1 text-sm text-muted">Everything in Free, plus editing, copying between folders and sharing.</p>
+          <p class="mt-1 text-sm text-muted">Everything in Free, plus hosted file storage, editing, copying between folders and sharing.</p>
           <Button class="mt-5" variant="primary" block :click="choosePlan" data="pro" :disabled="hasPendingInvoice" message="One moment">
             {{ proCta.label }}
           </Button>

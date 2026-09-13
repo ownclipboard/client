@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
-import { ComputerDesktopIcon, MoonIcon, SunIcon } from "@heroicons/vue/20/solid";
+import { CloudIcon, ComputerDesktopIcon, MoonIcon, ServerStackIcon, SunIcon } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../http";
 import { $alert } from "../components/ws-alert/ws-alert";
-import { connectOwns3, disconnectOwns3, getOwns3Status, type Owns3Status } from "../services/files.service";
+import { connectOwns3, disconnectOwns3, getOwns3Status, useDefaultOwns3, type Owns3Status } from "../services/files.service";
+import { refreshAuthData } from "../services/auth.service";
+import { computed } from "vue";
 import { setTheme, themePreference, type ThemePreference } from "../stores/theme.store";
 import { useAuthUser } from "../stores/auth.store";
 import { askToConfirm } from "../components/ConfirmHandler";
@@ -29,10 +31,11 @@ const themes: { value: ThemePreference; label: string; icon: any; hint: string }
 
 const status = ref<Owns3Status | null>(null);
 const loading = ref(true);
-const showForm = ref(false);
+// Which option the user is setting up: the hosted storage (Pro) or their own owns3 server.
+const showForm = ref<"own" | null>(null);
+const isPro = computed(() => authUser.data?.plan === "pro");
 
-const DEFAULT_OWNS3_ENDPOINT = "https://s3.ownclipboard.com";
-const form = reactive({ endpoint: DEFAULT_OWNS3_ENDPOINT, apiKey: "" });
+const form = reactive({ endpoint: "", apiKey: "" });
 
 async function loadStatus() {
   try {
@@ -59,10 +62,24 @@ function connect(btn: ILoadingButton) {
     .then((res) => {
       status.value = res;
       form.apiKey = "";
-      showForm.value = false;
+      form.endpoint = "";
+      showForm.value = null;
     })
     .catch(alertRequestError)
     .finally(btn.stopLoading);
+}
+
+async function useHosted(btn: ILoadingButton) {
+  try {
+    status.value = await useDefaultOwns3();
+    showForm.value = null;
+  } catch (e: any) {
+    alertRequestError(e);
+    // 403: the plan changed server side, sync it so the page reflects that.
+    if (e?.response?.status === 403) await refreshAuthData(authUser);
+  } finally {
+    btn.stopLoading();
+  }
 }
 
 async function disconnect(btn: ILoadingButton) {
@@ -75,9 +92,7 @@ async function disconnect(btn: ILoadingButton) {
   if (!ok) return btn.stopLoading();
 
   return disconnectOwns3()
-    .then(() => {
-      status.value = { connected: false };
-    })
+    .then(() => loadStatus())
     .catch(alertRequestError)
     .finally(btn.stopLoading);
 }
@@ -107,10 +122,11 @@ async function disconnect(btn: ILoadingButton) {
       </div>
     </Card>
 
-    <Card title="File storage" description="Files you upload go to your own owns3 server. Connect it with an application api key that can read, write and delete.">
+    <Card title="File storage" description="Where uploaded files are kept. Use the storage OwnClipboard runs for you (Pro), or connect your own owns3 server.">
       <template #header>
         <Badge v-if="status?.connected" variant="accent">Connected</Badge>
-        <Badge v-else-if="!loading" variant="warn">Not connected</Badge>
+        <Badge v-else-if="status?.proRequired" variant="warn">Pro required</Badge>
+        <Badge v-else-if="!loading" variant="neutral">Not connected</Badge>
       </template>
 
       <div v-if="loading" class="space-y-2">
@@ -118,54 +134,99 @@ async function disconnect(btn: ILoadingButton) {
         <Skeleton class="h-4 w-64" />
       </div>
 
-      <template v-else-if="status?.connected && !showForm">
-        <dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
-          <dt class="text-muted">Server</dt>
-          <dd class="font-mono text-fg">{{ status.endpoint }}</dd>
-          <template v-if="status.app">
-            <dt class="text-muted">App</dt>
-            <dd class="text-fg">{{ status.app.name }}</dd>
-          </template>
-          <template v-if="status.permissions">
-            <dt class="text-muted">Permissions</dt>
-            <dd class="text-fg">{{ status.permissions.join(", ") }}</dd>
-          </template>
-          <template v-if="status.connectedAt">
-            <dt class="text-muted">Connected</dt>
-            <dd class="text-fg"><TimeAgo :date="status.connectedAt" /></dd>
-          </template>
-        </dl>
-        <div class="mt-4 flex gap-2">
-          <Button size="sm" @click="showForm = true">Replace connection</Button>
-          <Button size="sm" variant="danger" :click="disconnect" message="Disconnecting">Disconnect</Button>
+      <template v-else>
+        <!-- Pro subscription lapsed while on the hosted storage -->
+        <div v-if="status?.proRequired" class="mb-4 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
+          Your files are on OwnClipboard storage, which needs an active Pro plan. Uploads are paused until you
+          <RouterLink :to="{ name: 'pricing' }" class="font-medium underline underline-offset-2">renew Pro</RouterLink>
+          or connect your own server below.
         </div>
+
+        <!-- Current connection -->
+        <template v-if="status?.connected && !showForm">
+          <dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
+            <dt class="text-muted">Storage</dt>
+            <dd class="flex items-center gap-2 text-fg">
+              <template v-if="status.default"><CloudIcon class="h-4 w-4 text-accent" /> OwnClipboard storage</template>
+              <template v-else><ServerStackIcon class="h-4 w-4 text-faint" /> Your own owns3 server</template>
+            </dd>
+            <template v-if="!status.default && status.endpoint">
+              <dt class="text-muted">Server</dt>
+              <dd class="font-mono text-fg">{{ status.endpoint }}</dd>
+            </template>
+            <template v-if="!status.default && status.app">
+              <dt class="text-muted">App</dt>
+              <dd class="text-fg">{{ status.app.name }}</dd>
+            </template>
+            <template v-if="status.permissions">
+              <dt class="text-muted">Permissions</dt>
+              <dd class="text-fg">{{ status.permissions.join(", ") }}</dd>
+            </template>
+            <template v-if="status.connectedAt">
+              <dt class="text-muted">Connected</dt>
+              <dd class="text-fg"><TimeAgo :date="status.connectedAt" /></dd>
+            </template>
+          </dl>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <Button v-if="!status.default && status.defaultAvailable && isPro" size="sm" :click="useHosted" message="Switching">
+              <CloudIcon class="h-4 w-4" /> Switch to OwnClipboard storage
+            </Button>
+            <Button size="sm" @click="showForm = 'own'">{{ status.default ? "Use my own server" : "Replace connection" }}</Button>
+            <Button size="sm" variant="danger" :click="disconnect" message="Disconnecting">Disconnect</Button>
+          </div>
+        </template>
+
+        <!-- Choose a storage -->
+        <template v-else>
+          <div v-if="!showForm" class="grid gap-3 sm:grid-cols-2">
+            <div
+              v-if="status?.defaultAvailable"
+              class="flex flex-col rounded-md border border-line p-4"
+            >
+              <div class="flex items-center gap-2 text-sm font-medium text-fg">
+                <CloudIcon class="h-4 w-4 text-accent" /> OwnClipboard storage
+                <Badge variant="accent" uppercase class="ml-auto">Pro</Badge>
+              </div>
+              <p class="mt-1 flex-1 text-sm text-muted">Nothing to set up. Files are kept on storage we run, under your own prefix.</p>
+              <Button v-if="isPro" class="mt-4" variant="primary" size="sm" :click="useHosted" message="Connecting">Use OwnClipboard storage</Button>
+              <Button v-else class="mt-4" size="sm" :to="{ name: 'pricing' }">Upgrade to Pro</Button>
+            </div>
+            <div class="flex flex-col rounded-md border border-line p-4">
+              <div class="flex items-center gap-2 text-sm font-medium text-fg">
+                <ServerStackIcon class="h-4 w-4 text-faint" /> Your own owns3 server
+              </div>
+              <p class="mt-1 flex-1 text-sm text-muted">Run owns3 on your own infrastructure and connect it with an application api key.</p>
+              <Button class="mt-4" size="sm" :variant="status?.defaultAvailable ? 'secondary' : 'primary'" @click="showForm = 'own'">Connect my server</Button>
+            </div>
+          </div>
+
+          <form v-else class="space-y-4" @submit.prevent>
+            <Input
+              v-model="form.endpoint"
+              type="url"
+              label="Server url"
+              placeholder="https://owns3.example.com"
+              autocomplete="off"
+              mono
+              hint="The address of your owns3 instance."
+            />
+            <Input
+              v-model="form.apiKey"
+              type="password"
+              label="Application api key"
+              placeholder="owns3_…"
+              autocomplete="off"
+              mono
+              hint="Needs read, write and delete permissions. Stored encrypted and never shown again."
+            />
+            <div class="flex gap-2">
+              <Button variant="primary" type="submit" :click="connect" message="Connecting">Connect</Button>
+              <Button variant="ghost" @click="showForm = null">Cancel</Button>
+            </div>
+          </form>
+        </template>
       </template>
 
-      <form v-else class="space-y-4" @submit.prevent>
-        <p v-if="!status?.connected" class="text-sm text-warn">No owns3 server connected. File uploads are disabled until you connect one.</p>
-        <Input
-          v-model="form.endpoint"
-          type="url"
-          label="Server url"
-          :placeholder="DEFAULT_OWNS3_ENDPOINT"
-          autocomplete="off"
-          mono
-          hint="Leave as is to use the hosted server, or enter the url of your own owns3 instance."
-        />
-        <Input
-          v-model="form.apiKey"
-          type="password"
-          label="Application api key"
-          placeholder="owns3_…"
-          autocomplete="off"
-          mono
-          hint="Stored encrypted. Never shown again after connecting."
-        />
-        <div class="flex gap-2">
-          <Button variant="primary" type="submit" :click="connect" message="Connecting">Connect</Button>
-          <Button v-if="status?.connected" variant="ghost" @click="showForm = false">Cancel</Button>
-        </div>
-      </form>
       <p class="mt-4 text-xs text-faint">
         owns3 is open source:
         <a href="https://github.com/ownclipboard/owns3" target="_blank" rel="noopener" class="text-accent underline underline-offset-2">github.com/ownclipboard/owns3</a>

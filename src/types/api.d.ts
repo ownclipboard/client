@@ -430,7 +430,9 @@ export interface paths {
         };
         /**
          * owns3 connection status
-         * @description Whether the user has connected their own owns3 server (https://github.com/ownclipboard/owns3), where their files are stored. Never returns the api key.
+         * @description Whether the user has a storage connected: their own owns3 server (https://github.com/ownclipboard/owns3)
+         *     or the app's default one (`default: true`). `defaultAvailable` says whether the default option is offered.
+         *     Never returns an api key.
          */
         get: {
             parameters: {
@@ -516,6 +518,67 @@ export interface paths {
                 };
                 /** @description The owns3 endpoint could not be reached. */
                 502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/owns3/use-default": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Use the app's default storage
+         * @description Pro only. Connects the user to the owns3 storage operated by OwnClipboard, so they can
+         *     upload files without running their own server. Files are stored under the user's own
+         *     prefix. Replaces any previously connected server. Only available when the status reports
+         *     `defaultAvailable`. If the Pro subscription later expires, the status reports
+         *     `proRequired` and uploads are refused until it is renewed or an own server is connected.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Connected to the default storage. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Owns3ConnectResponse"];
+                    };
+                };
+                /** @description Not a Pro user. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The default storage is not configured or not reachable. */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2358,6 +2421,12 @@ export interface components {
         };
         Owns3Status: {
             connected: boolean;
+            /** @description True when the connected storage is the app's default one. */
+            default: boolean;
+            /** @description Whether the server offers a default storage (`POST account/owns3/use-default`, Pro only). */
+            defaultAvailable: boolean;
+            /** @description Set when the user chose the default storage but is no longer Pro: `connected` is false until they renew. */
+            proRequired?: boolean;
             endpoint?: string;
             app?: components["schemas"]["Owns3App"];
             permissions?: ("read" | "write" | "delete")[];
@@ -2365,6 +2434,12 @@ export interface components {
         };
         Owns3ConnectResponse: {
             connected: boolean;
+            /** @description True when the connected storage is the app's default one. */
+            default: boolean;
+            /** @description Whether the server offers a default storage (`POST account/owns3/use-default`, Pro only). */
+            defaultAvailable: boolean;
+            /** @description Set when the user chose the default storage but is no longer Pro: `connected` is false until they renew. */
+            proRequired?: boolean;
             endpoint?: string;
             app?: components["schemas"]["Owns3App"];
             permissions?: ("read" | "write" | "delete")[];

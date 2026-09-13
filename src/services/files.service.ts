@@ -110,6 +110,13 @@ export function connectOwns3(endpoint: string, apiKey: string) {
   );
 }
 
+/** Pro only: store files on the storage operated by OwnClipboard instead of an own server. */
+export function useDefaultOwns3() {
+  return $http.post<any, components["schemas"]["Owns3ConnectResponse"]>("account/owns3/use-default", undefined, {
+    timeout: 30_000
+  });
+}
+
 export function disconnectOwns3() {
   return $http.post<any, components["schemas"]["Owns3DisconnectResponse"]>("account/owns3/disconnect");
 }
