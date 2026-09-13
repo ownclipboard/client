@@ -13,6 +13,12 @@ defineProps({
 
 const emit = defineEmits<{ (e: "update:modelValue", value: string): void }>();
 const attrs = useAttrs();
+// `class` and `style` apply to the wrapper so callers can lay the field out; the rest goes to the field.
+const wrapperAttrs = computed(() => ({ class: attrs.class, style: attrs.style }));
+const fieldAttrs = computed(() => {
+  const { class: _c, style: _s, ...rest } = attrs;
+  return rest;
+});
 const el = ref<HTMLTextAreaElement>();
 const id = computed(() => (attrs.id as string) || `ta-${Math.random().toString(36).slice(2, 8)}`);
 
@@ -20,11 +26,11 @@ defineExpose({ focus: () => el.value?.focus() });
 </script>
 
 <template>
-  <div>
+  <div v-bind="wrapperAttrs">
     <label v-if="label" :for="id" class="mb-1.5 block text-[13px] font-medium text-fg">{{ label }}</label>
     <textarea
       ref="el"
-      v-bind="attrs"
+      v-bind="fieldAttrs"
       :id="id"
       :rows="rows"
       :value="modelValue"

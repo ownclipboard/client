@@ -188,9 +188,9 @@ const isSearching = computed(() => !!searchQuery.value);
         <p class="font-mono text-[11px] text-faint">{{ currentFolder?.contents ?? 0 }} clips</p>
       </div>
 
-      <ClipsSearch class="order-last w-full sm:order-none sm:ml-auto sm:w-72" />
-
-      <div class="flex items-center gap-2 sm:ml-0">
+      <div class="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+        <ClipsSearch class="w-full sm:w-64 lg:w-72" />
+        <div class="flex items-center gap-2">
         <Button variant="primary" :click="pasteFromButton" message="Pasting">
           <ClipboardIcon class="h-4 w-4" />
           Paste
@@ -205,6 +205,7 @@ const isSearching = computed(() => !!searchQuery.value);
           Upload
         </Button>
         <input ref="fileInput" type="file" multiple class="hidden" @change="onFilePicked" />
+        </div>
       </div>
     </div>
 

@@ -14,6 +14,12 @@ const props = defineProps({
 
 const emit = defineEmits<{ (e: "update:modelValue", value: string): void }>();
 const attrs = useAttrs();
+// `class` and `style` apply to the wrapper so callers can lay the field out; the rest goes to the field.
+const wrapperAttrs = computed(() => ({ class: attrs.class, style: attrs.style }));
+const fieldAttrs = computed(() => {
+  const { class: _c, style: _s, ...rest } = attrs;
+  return rest;
+});
 const input = ref<HTMLInputElement>();
 const id = computed(() => (attrs.id as string) || `in-${Math.random().toString(36).slice(2, 8)}`);
 
@@ -23,7 +29,7 @@ defineExpose({ focus: () => input.value?.focus(), select: () => input.value?.sel
 </script>
 
 <template>
-  <div>
+  <div v-bind="wrapperAttrs">
     <label v-if="label" :for="id" class="mb-1.5 block text-[13px] font-medium text-fg">{{ label }}</label>
     <div class="relative">
       <div v-if="$slots.leading" class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-faint [&>svg]:h-4 [&>svg]:w-4">
@@ -31,7 +37,7 @@ defineExpose({ focus: () => input.value?.focus(), select: () => input.value?.sel
       </div>
       <input
         ref="input"
-        v-bind="attrs"
+        v-bind="fieldAttrs"
         :id="id"
         :value="modelValue"
         @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
