@@ -1,85 +1,50 @@
 <script setup lang="ts">
-import Modal from "./Modal.vue";
-import { ref } from "vue";
-import {
-  PasswordPromptLabel,
-  PasswordPromptResolveFn,
-  ShowPasswordPrompt
-} from "./PasswordPromptHandler";
+import { ref, watch, nextTick } from "vue";
+import { LockClosedIcon } from "@heroicons/vue/20/solid";
+import { PasswordPromptLabel, PasswordPromptResolveFn, ShowPasswordPrompt } from "./PasswordPromptHandler";
 import { md5 } from "../functions/crypto";
+import Dialog from "./ui/Dialog.vue";
+import Input from "./ui/Input.vue";
+import Button from "./ui/Button.vue";
 
-// Password input.
 const password = ref("");
+const input = ref<InstanceType<typeof Input>>();
 
-/**
- * Confirm password
- * Send hashed password to resolve function.
- */
-function confirmPassword() {
-  let pass: string | undefined = password.value;
-
-  if (pass && pass.length > 0) {
-    // hash password with md5
-    pass = md5(pass);
-  } else {
-    pass = undefined;
+watch(ShowPasswordPrompt, async (show) => {
+  if (show) {
+    await nextTick();
+    input.value?.focus();
   }
+});
 
+/** Resolve with the md5 of the password, or undefined when empty. */
+function confirm() {
+  const pass = password.value.length ? md5(password.value) : undefined;
   ShowPasswordPrompt.value = false;
-  PasswordPromptResolveFn.value(pass || undefined);
-  // clear password
-  pass = password.value = "";
+  PasswordPromptResolveFn.value(pass);
+  password.value = "";
 }
 
-/**
- * Cancel password prompt
- * Send undefined to resolve function
- */
-function cancelPassword() {
+function cancel() {
   ShowPasswordPrompt.value = false;
   PasswordPromptResolveFn.value(undefined);
-  // clear password
   password.value = "";
 }
 </script>
 
 <template>
-  <Modal @close-modal="cancelPassword" v-if="ShowPasswordPrompt" max-size="max-w-sm">
-    <div class="p-3">
-      <form @submit.prevent="false">
-        <div>
-          <label class="text-sm font-medium" v-text="PasswordPromptLabel"></label>
-          <input v-model="password" autofocus type="password" placeholder="Password" />
-        </div>
-
-        <div class="text-center space-x-3 mt-3">
-          <button
-            @click.prevent="confirmPassword"
-            type="submit"
-            class="bg-green-300 hover:bg-green-400 text-green-900"
-          >
-            Confirm
-          </button>
-          <button
-            @click.prevent="cancelPassword"
-            class="bg-white hover:bg-gray-200 text-gray-700"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
-  </Modal>
+  <Dialog :open="ShowPasswordPrompt" size="sm" title="Folder password" @close="cancel">
+    <form class="space-y-4" @submit.prevent="confirm">
+      <p class="flex items-start gap-2 text-sm text-muted">
+        <LockClosedIcon class="mt-0.5 h-4 w-4 shrink-0 text-warn" />
+        <span>{{ PasswordPromptLabel }}</span>
+      </p>
+      <Input ref="input" v-model="password" type="password" placeholder="Password" autocomplete="current-password" />
+      <p class="text-xs text-faint">Encryption happens in your browser. The password never leaves this device unhashed.</p>
+      <div class="flex justify-end gap-2">
+        <Button variant="ghost" @click="cancel">Cancel</Button>
+        <Button variant="primary" type="submit">Continue</Button>
+      </div>
+    </form>
+  </Dialog>
 </template>
-
-<style scoped>
-input[type="password"] {
-  @apply mt-2 w-full block px-3 py-2 rounded;
-  @apply bg-gray-800 text-green-300;
-  @apply focus:outline-none focus:border-2 focus:border-gray-800;
-}
-
-button {
-  @apply px-3 py-1 rounded-sm font-medium;
-}
-</style>

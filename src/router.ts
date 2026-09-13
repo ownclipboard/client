@@ -3,11 +3,7 @@ import Index from "./views/Index.vue";
 import AuthLayout from "./views/AuthLayout.vue";
 
 const routes: Array<RouteRecordRaw> = [
-  {
-    path: "/",
-    name: "index",
-    component: Index
-  },
+  { path: "/", name: "index", component: Index, meta: { title: "Sign in" } },
 
   {
     path: "/paste/:pasteId",
@@ -19,27 +15,13 @@ const routes: Array<RouteRecordRaw> = [
     path: "/",
     component: AuthLayout,
     children: [
-      {
-        path: "clipboard",
-        name: "clipboard",
-        component: () => import("./views/Clipboard.vue")
-      },
-
-      {
-        name: "pricing",
-        path: "pricing",
-        component: () => import("./views/Pricing.vue")
-      },
-
-      {
-        name: "settings",
-        path: "settings",
-        component: () => import("./views/Settings.vue")
-      }
+      { path: "clipboard", name: "clipboard", component: () => import("./views/Clipboard.vue"), meta: { title: "Clipboard" } },
+      { path: "pricing", name: "pricing", component: () => import("./views/Pricing.vue"), meta: { title: "Plan" } },
+      { path: "settings", name: "settings", component: () => import("./views/Settings.vue"), meta: { title: "Settings" } }
     ]
   },
 
-
+  { path: "/:pathMatch(.*)*", name: "not-found", component: () => import("./views/NotFound.vue"), meta: { title: "Not found" } }
 ];
 
 const router = createRouter({
