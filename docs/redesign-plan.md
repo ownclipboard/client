@@ -10,7 +10,7 @@ A face change of the Vue 3 client into a workspace-style app with light and dark
 
 ## Visual identity
 
-- Neutrals with a slight cool bias. Light: bg #f5f6f7, surface #ffffff, border #e2e5e9, fg #15191d, muted #5d6874. Dark: bg #0f1214, surface #15191c, border #252b31, fg #e7eaed, muted #98a2ad.
+- Neutrals with a slight cool bias. Light: bg #e9ecef, surface #fafafb, border #d9dde2, fg #15191d, muted #5d6874. Dark: bg #0f1214, surface #15191c, border #252b31, fg #e7eaed, muted #98a2ad.
 - Accent stays green for continuity, refined to emerald: #0f8a5f (light) / #3ccf97 (dark). Used only for selection, primary action and success.
 - Semantic colors separate from the accent: amber (encrypted, pending), red (destructive), blue (files, info).
 - Type: IBM Plex Sans for the interface, IBM Plex Mono for clip content. Self-hosted via @fontsource.

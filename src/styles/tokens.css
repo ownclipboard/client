@@ -7,12 +7,12 @@
  * store decides which class applies (light / dark / system).
  */
 :root {
-  --bg: 245 246 247;
-  --surface: 255 255 255;
-  --raised: 255 255 255;
-  --sunken: 238 240 242;
-  --line: 226 229 233;
-  --line-strong: 207 212 218;
+  --bg: 233 236 239;
+  --surface: 250 250 251;
+  --raised: 242 244 246;
+  --sunken: 226 229 233;
+  --line: 217 221 226;
+  --line-strong: 194 200 207;
   --fg: 21 25 29;
   --muted: 93 104 116;
   --faint: 138 149 161;
