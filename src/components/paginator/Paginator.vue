@@ -7,169 +7,96 @@ export type Pagination<T = any> = {
   perPage: number;
   page: number;
   lastPage: number;
-  data: T[]
+  data: T[];
 };
 
 export function Pagination<T = any>(): Pagination<T> {
-  return {
-    total: 0,
-    page: 1,
-    perPage: 0,
-    lastPage: 1,
-    data: []
-  };
+  return { total: 0, page: 1, perPage: 0, lastPage: 1, data: [] };
 }
 
 export default defineComponent({
   emits: ["onPageChange"],
 
   props: {
-    data: {
-      type: Object as PropType<any>,
-      default: () => ({})
-    },
-    name: {
-      type: String,
-      default: "page"
-    }
+    data: { type: Object as PropType<any>, default: () => ({}) },
+    name: { type: String, default: "page" }
   },
 
   setup(props, { emit }) {
     const { data, name } = toRefs(props);
     const [$route, $router] = [useRoute(), useRouter()];
 
-    const pagesArray = computed(() => {
-      const lists: any[] = [];
-
-      let lastPage = Number(data.value.lastPage);
-      if (lastPage >= 5) lastPage = 4;
-
-      let i = 0;
-
-      while (i < lastPage) {
-        lists[i] = i + 1;
-        i++;
-      }
-
-      return lists;
+    /** Page numbers to show: first, last, and a window around the current page. */
+    const pages = computed<(number | "…")[]>(() => {
+      const last = Number(data.value.lastPage) || 1;
+      const current = Number(data.value.page) || 1;
+      const set = new Set<number>([1, last, current - 1, current, current + 1]);
+      const list = [...set].filter((p) => p >= 1 && p <= last).sort((a, b) => a - b);
+      const out: (number | "…")[] = [];
+      list.forEach((p, i) => {
+        if (i && p - (list[i - 1] as number) > 1) out.push("…");
+        out.push(p);
+      });
+      return out;
     });
 
+    const from = computed(() => (data.value.total ? (data.value.page - 1) * data.value.perPage + 1 : 0));
+    const to = computed(() => Math.min(data.value.page * data.value.perPage, data.value.total));
+
     function openPage(page: number) {
-      if (page >= 1) {
-        const query = { ...$route.query, [name.value]: page };
-        $router
-          .push({ name: $route.name!, query })
-          .then(() => emit("onPageChange", page));
-      }
+      if (page < 1 || page > data.value.lastPage) return;
+      const query = { ...$route.query, [name.value]: page };
+      $router.push({ name: $route.name!, query }).then(() => emit("onPageChange", page));
     }
 
     onMounted(() => {
-      // Check if query has name of pagination
       if ($route.query[name.value]) {
         const pageFromProp = Number(data.value.page);
         const pageFromQuery = Number($route.query[name.value] || 0);
-
-        if (!!pageFromQuery && !!pageFromProp && pageFromProp !== pageFromQuery)
-          emit("onPageChange", pageFromQuery);
+        if (!!pageFromQuery && !!pageFromProp && pageFromProp !== pageFromQuery) emit("onPageChange", pageFromQuery);
       }
     });
 
-    return { data, name, pagesArray, openPage };
+    return { data, pages, from, to, openPage };
   }
 });
 </script>
 
 <template>
-  <section class="Paginator" v-if="data.total > data.perPage">
-    <nav class="pagination" role="navigation" aria-label="pagination">
-      <div class="space-x-2 float-right">
+  <nav v-if="data.total > data.perPage" class="flex items-center justify-between gap-3 pt-2 font-mono text-xs text-muted" aria-label="Pagination">
+    <span class="tabular-nums">{{ from }}–{{ to }} of {{ data.total }}</span>
+    <div class="flex items-center gap-1">
+      <button
+        type="button"
+        class="h-7 rounded-md border border-line bg-surface px-2 hover:border-line-strong hover:text-fg disabled:opacity-40"
+        :disabled="data.page <= 1"
+        @click="openPage(data.page - 1)"
+      >
+        Prev
+      </button>
+      <template v-for="(p, i) in pages" :key="i">
+        <span v-if="p === '…'" class="px-1 text-faint">…</span>
         <button
-          title="Previous Page"
-          :disabled="data.page === 1"
-          @click.prevent="openPage(data.page - 1)"
-          class="pagination-previous"
+          v-else
+          type="button"
+          :class="[
+            'h-7 min-w-[28px] rounded-md border px-1.5 tabular-nums',
+            p === data.page ? 'border-transparent bg-accent-soft font-semibold text-accent' : 'border-line bg-surface hover:border-line-strong hover:text-fg'
+          ]"
+          :aria-current="p === data.page ? 'page' : undefined"
+          @click="openPage(p as number)"
         >
-          <svg
-            class="w-6 h-6 inline"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M7 16l-4-4m0 0l4-4m-4 4h18"
-            />
-          </svg>
+          {{ p }}
         </button>
-        <button
-          title="Next Page"
-          :disabled="data.page === data.lastPage"
-          @click.prevent="openPage(data.page + 1)"
-          class="pagination-next"
-        >
-          <svg
-            class="w-6 h-6 inline"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M17 8l4 4m0 0l-4 4m4-4H3"
-            />
-          </svg>
-        </button>
-      </div>
-      <div class="pagination-list float-left space-x-2">
-        <template v-if="data.page > 3">
-          <button @click.prevent="openPage(1)" class="pagination-link">1</button>
-          <span class="pagination-ellipsis">&hellip;</span>
-          <button
-            @click.prevent="openPage(data.page - 1)"
-            class="pagination-link"
-          >{{ data.page - 1 }}</button>
-          <template v-if="data.page !== data.lastPage">
-            <button
-              @click.prevent="openPage(data.page)"
-              class="pagination-link is-current"
-              aria-current="page"
-            >{{ data.page }}</button>
-          </template>
-          <template v-if="data.page + 1 < data.lastPage">
-            <button
-              @click.prevent="openPage(data.page + 1)"
-              class="pagination-link"
-            >{{ data.page + 1 }}</button>
-          </template>
-        </template>
-        <template v-else>
-          <template v-for="(pageIndex, pID) in pagesArray" :key="pID">
-            <button
-              @click.prevent="openPage(pageIndex)"
-              :class="'pagination-link' + (data.page === pageIndex ? ' is-current' : '')"
-              aria-label="Goto page 1"
-            >{{ pageIndex }}</button>
-          </template>
-        </template>
-        <template v-if="data.lastPage >= 5 || data.page === 4">
-          <span class="pagination-ellipsis">&hellip;</span>
-          <button
-            @click.prevent="openPage(data.lastPage)"
-            :class="
-              (
-                'pagination-link ' + (data.lastPage === data.page ? 'is-current' : '')
-              ).trim()
-            "
-          >{{ data.lastPage }}</button>
-        </template>
-      </div>
-      <div class="clear-both"></div>
-    </nav>
-  </section>
+      </template>
+      <button
+        type="button"
+        class="h-7 rounded-md border border-line bg-surface px-2 hover:border-line-strong hover:text-fg disabled:opacity-40"
+        :disabled="data.page >= data.lastPage"
+        @click="openPage(data.page + 1)"
+      >
+        Next
+      </button>
+    </div>
+  </nav>
 </template>

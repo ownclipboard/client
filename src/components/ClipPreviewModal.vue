@@ -1,11 +1,16 @@
 <script setup lang="ts">
+/** Full view of a clip: text with copy, url, or an inline file preview with download. */
 import { computed, ref, watch } from "vue";
 import { useClipboard } from "@vueuse/core";
-import Modal from "./Modal.vue";
+import { ArrowDownTrayIcon, ArrowTopRightOnSquareIcon, CheckIcon, ClipboardDocumentIcon, DocumentIcon } from "@heroicons/vue/20/solid";
 import { ClipPreviewClip, closeClipPreview, ShowClipPreview } from "./ClipPreviewHandler";
 import { getFileUrl } from "../services/files.service";
 import { alertRequestError } from "../http";
 import { foldersAsObject } from "../stores/tabs.store";
+import Dialog from "./ui/Dialog.vue";
+import Button from "./ui/Button.vue";
+import Badge from "./ui/Badge.vue";
+import Spinner from "./ui/Spinner.vue";
 
 const clip = computed(() => ClipPreviewClip.value);
 
@@ -29,8 +34,8 @@ const fileKind = computed<FileKind>(() => {
 
 const isFile = computed(() => clip.value?.type === "file" && !!clip.value.file);
 const folderName = computed(() => (clip.value ? foldersAsObject.value[clip.value.folder]?.name || clip.value.folder : ""));
+const fileLabel = computed(() => (clip.value?.file ? clip.value.file.publicId + (clip.value.file.ext ? "." + clip.value.file.ext : "") : ""));
 
-// Presigned url for file clips, fetched when the modal opens.
 const fileUrl = ref<string | null>(null);
 const loadingUrl = ref(false);
 const textBody = ref<string | null>(null);
@@ -47,7 +52,6 @@ watch(
     loadingUrl.value = true;
     try {
       fileUrl.value = await getFileUrl(c.file.publicId);
-
       // Small text files can be shown inline; this needs CORS GET on the bucket, so fall back quietly.
       if (fileKind.value === "text") {
         try {
@@ -84,105 +88,68 @@ function download() {
 </script>
 
 <template>
-  <Modal v-if="ShowClipPreview && clip" max-size="max-w-4xl" @close-modal="closeClipPreview">
-    <div @keydown.esc="closeClipPreview">
-      <div class="p-3 pr-12 border-b border-gray-800">
-        <div class="flex items-center space-x-2 text-xs text-gray-500">
-          <small class="bg-gray-700 text-gray-200 p-1 rounded uppercase font-medium">{{ clip.type }}</small>
-          <span><i class="far fa-folder mr-1"></i>{{ folderName }}</span>
-          <TimeAgo :date="clip.updatedAt" />
+  <Dialog :open="ShowClipPreview && !!clip" size="xl" flush @close="closeClipPreview">
+    <template #header>
+      <div v-if="clip" class="min-w-0">
+        <div class="flex items-center gap-2 text-xs text-muted">
+          <Badge variant="outline" uppercase>{{ clip.type }}</Badge>
+          <span>{{ folderName }}</span>
+          <span class="text-faint">·</span>
+          <TimeAgo :date="clip.updatedAt" class="font-mono" />
         </div>
-        <div class="text-lg font-bold text-green-400 mt-1 break-words">
+        <h2 class="mt-1 truncate text-[15px] font-semibold text-fg">
           {{ clip.title || (isFile ? clip.context : "Untitled clip") }}
-        </div>
+        </h2>
       </div>
+    </template>
 
-      <div class="p-3 max-h-[70vh] overflow-auto">
-        <!-- File clips -->
-        <template v-if="isFile">
-          <div v-if="loadingUrl" class="text-center text-gray-500 py-10">
-            <i class="fa fa-slash fa-spin mr-2"></i>Preparing preview...
-          </div>
+    <div v-if="clip" class="max-h-[70vh] overflow-auto scroll-thin p-5">
+      <template v-if="isFile">
+        <div v-if="loadingUrl" class="flex items-center justify-center gap-2 py-16 text-sm text-muted"><Spinner size="sm" /> Preparing preview</div>
 
-          <template v-else-if="fileUrl && !mediaError">
-            <img
-              v-if="fileKind === 'image'"
-              :src="fileUrl"
-              :alt="clip.context"
-              class="max-w-full max-h-[60vh] mx-auto rounded"
-              @error="mediaError = true" />
-            <video
-              v-else-if="fileKind === 'video'"
-              :src="fileUrl"
-              controls
-              class="max-w-full max-h-[60vh] mx-auto rounded"
-              @error="mediaError = true"></video>
-            <audio
-              v-else-if="fileKind === 'audio'"
-              :src="fileUrl"
-              controls
-              class="w-full"
-              @error="mediaError = true"></audio>
-            <iframe
-              v-else-if="fileKind === 'pdf'"
-              :src="fileUrl"
-              class="w-full h-[60vh] rounded bg-white"
-              title="PDF preview"></iframe>
-            <pre
-              v-else-if="fileKind === 'text' && textBody !== null"
-              class="bg-gray-900 rounded p-3 text-xs font-mono whitespace-pre-wrap break-words text-antiquewhite">{{ textBody }}</pre>
-            <div v-else class="text-center py-10 text-gray-400">
-              <i class="far fa-file fa-4x mb-3"></i>
-              <div class="break-all">{{ clip.context }}</div>
-              <div class="text-xs mt-1">No inline preview for this file type.</div>
-            </div>
-          </template>
-
-          <div v-else class="text-center py-10 text-gray-400">
-            <i class="far fa-file fa-4x mb-3"></i>
-            <div class="break-all">{{ clip.context }}</div>
-            <div v-if="mediaError" class="text-xs mt-1">The file could not be displayed inline. Use Download instead.</div>
+        <template v-else-if="fileUrl && !mediaError">
+          <img v-if="fileKind === 'image'" :src="fileUrl" :alt="clip.context" class="mx-auto max-h-[60vh] max-w-full rounded-md" @error="mediaError = true" />
+          <video v-else-if="fileKind === 'video'" :src="fileUrl" controls class="mx-auto max-h-[60vh] max-w-full rounded-md" @error="mediaError = true"></video>
+          <audio v-else-if="fileKind === 'audio'" :src="fileUrl" controls class="w-full" @error="mediaError = true"></audio>
+          <iframe v-else-if="fileKind === 'pdf'" :src="fileUrl" class="h-[60vh] w-full rounded-md bg-white" title="PDF preview"></iframe>
+          <pre v-else-if="fileKind === 'text' && textBody !== null" class="whitespace-pre-wrap break-words rounded-md bg-sunken p-4 font-mono text-xs leading-relaxed text-fg">{{ textBody }}</pre>
+          <div v-else class="flex flex-col items-center gap-2 py-12 text-center text-muted">
+            <DocumentIcon class="h-10 w-10 text-faint" />
+            <div class="break-all font-mono text-sm text-fg">{{ fileLabel }}</div>
+            <div class="text-xs">No inline preview for this file type.</div>
           </div>
         </template>
 
-        <!-- Text / url clips -->
-        <template v-else>
-          <a
-            v-if="clip.type === 'url'"
-            :href="clip.context"
-            target="_blank"
-            rel="noopener"
-            class="text-green-400 hover:text-green-500 break-all font-mono text-sm">{{ clip.context }}</a>
-          <pre
-            v-else
-            class="font-mono text-sm whitespace-pre-wrap break-words text-antiquewhite">{{ clip.context }}</pre>
-        </template>
-      </div>
-
-      <div class="p-3 border-t border-gray-800 flex items-center justify-between text-sm font-medium">
-        <span v-if="isFile && clip.file?.ext" class="text-xs text-gray-500 uppercase">{{ clip.file.ext }} file</span>
-        <span v-else class="text-xs text-gray-500">{{ clip.context.length }} characters</span>
-        <div class="space-x-3">
-          <button
-            v-if="isFile"
-            type="button"
-            :disabled="!fileUrl"
-            @click="download"
-            class="px-3 py-2 rounded bg-green-300 hover:bg-green-400 text-gray-800">
-            <i class="fa fa-download mr-1"></i>Download
-          </button>
-          <button
-            v-else
-            type="button"
-            @click="copyContent"
-            class="px-3 py-2 rounded bg-green-300 hover:bg-green-400 text-gray-800">
-            <i class="fa fa-copy mr-1"></i>{{ copied ? "Copied!" : "Copy" }}
-          </button>
-          <button type="button" @click="closeClipPreview" class="px-3 py-2 rounded bg-gray-800 hover:bg-gray-700">
-            Close
-          </button>
+        <div v-else class="flex flex-col items-center gap-2 py-12 text-center text-muted">
+          <DocumentIcon class="h-10 w-10 text-faint" />
+          <div class="break-all font-mono text-sm text-fg">{{ fileLabel }}</div>
+          <div v-if="mediaError" class="text-xs">The file couldn't be displayed inline. Use Download instead.</div>
         </div>
-      </div>
+      </template>
+
+      <template v-else>
+        <a
+          v-if="clip.type === 'url'"
+          :href="clip.context"
+          target="_blank"
+          rel="noopener"
+          class="inline-flex items-center gap-1.5 break-all font-mono text-sm text-accent underline decoration-accent/40 underline-offset-2"
+        >{{ clip.context }} <ArrowTopRightOnSquareIcon class="h-4 w-4 shrink-0" /></a>
+        <pre v-else class="whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed text-fg">{{ clip.context }}</pre>
+      </template>
     </div>
-  </Modal>
+
+    <template #footer>
+      <span v-if="clip" class="mr-auto font-mono text-xs text-muted">
+        <template v-if="isFile && clip.file?.ext">{{ clip.file.ext.toUpperCase() }} file</template>
+        <template v-else-if="clip">{{ clip.context.length.toLocaleString() }} characters</template>
+      </span>
+      <Button variant="ghost" @click="closeClipPreview">Close</Button>
+      <Button v-if="isFile" variant="primary" :disabled="!fileUrl" @click="download"><ArrowDownTrayIcon class="h-4 w-4" /> Download</Button>
+      <Button v-else variant="primary" @click="copyContent">
+        <CheckIcon v-if="copied" class="h-4 w-4" /><ClipboardDocumentIcon v-else class="h-4 w-4" />
+        {{ copied ? "Copied" : "Copy" }}
+      </Button>
+    </template>
+  </Dialog>
 </template>

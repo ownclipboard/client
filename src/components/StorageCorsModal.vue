@@ -1,8 +1,11 @@
 <script setup lang="ts">
+/** Explains a blocked browser upload (bucket CORS or mixed content) and how to fix it. */
 import { computed, ref } from "vue";
 import { useClipboard } from "@vueuse/core";
-import Modal from "./Modal.vue";
+import { CheckIcon, ClipboardDocumentIcon, ExclamationTriangleIcon } from "@heroicons/vue/20/solid";
 import { hideStorageCorsHelp, ShowStorageCorsHelp, StorageCorsDetails } from "./StorageCorsHandler";
+import Dialog from "./ui/Dialog.vue";
+import Button from "./ui/Button.vue";
 
 const info = computed(() => StorageCorsDetails.value);
 
@@ -22,16 +25,14 @@ const ruleJson = computed(() => {
 
   if (info.value.provider === "backblaze") {
     return JSON.stringify(
-      [
-        {
-          corsRuleName: "ownclipboard-browser-uploads",
-          allowedOrigins: origins,
-          allowedOperations: ["s3_put", "s3_get", "s3_head"],
-          allowedHeaders: ["*"],
-          exposeHeaders: ["etag"],
-          maxAgeSeconds: 3600
-        }
-      ],
+      [{
+        corsRuleName: "ownclipboard-browser-uploads",
+        allowedOrigins: origins,
+        allowedOperations: ["s3_put", "s3_get", "s3_head"],
+        allowedHeaders: ["*"],
+        exposeHeaders: ["etag"],
+        maxAgeSeconds: 3600
+      }],
       null,
       2
     );
@@ -44,7 +45,6 @@ const ruleJson = computed(() => {
     ExposeHeaders: ["ETag"],
     MaxAgeSeconds: 3600
   };
-  // AWS CLI expects the wrapper object; R2/MinIO accept the same via s3api.
   return JSON.stringify({ CORSRules: [rule] }, null, 2);
 });
 
@@ -52,7 +52,6 @@ const applyCommand = computed(() => {
   if (!info.value) return "";
   const { provider, bucket, endpoint } = info.value;
   const b = bucket || "<bucket-name>";
-
   if (provider === "backblaze") return `b2 bucket update --cors-rules "$(cat cors.json)" ${b}`;
   if (provider === "aws") return `aws s3api put-bucket-cors --bucket ${b} --cors-configuration file://cors.json`;
   return `aws s3api put-bucket-cors --bucket ${b} --cors-configuration file://cors.json --endpoint-url ${endpoint}`;
@@ -81,6 +80,17 @@ const providerNote = computed(() => {
   }
 });
 
+const steps = computed(() => [
+  { key: "rule", title: "Save this rule as cors.json", code: ruleJson.value, note: "" },
+  { key: "apply", title: "Apply it to the bucket", code: applyCommand.value, note: providerNote.value },
+  {
+    key: "verify",
+    title: "Check it took effect",
+    code: verifyCommand.value,
+    note: "A correct rule answers 200 with access-control-allow-methods containing PUT. Then retry the upload. If you open the app from another address later, add that origin to the rule too."
+  }
+]);
+
 const { copy } = useClipboard();
 const copied = ref("");
 async function copyText(key: string, text: string) {
@@ -91,75 +101,54 @@ async function copyText(key: string, text: string) {
 </script>
 
 <template>
-  <Modal v-if="ShowStorageCorsHelp && info" max-size="max-w-3xl" @close-modal="hideStorageCorsHelp">
-    <div>
-      <div class="text-xl p-3 border-b border-gray-800 text-yellow-400 font-bold">
-        <i class="fa fa-exclamation-triangle mr-2"></i>
-        {{ info.kind === "mixed-content" ? "Storage url must use https" : "Your storage bucket is blocking browser uploads" }}
+  <Dialog :open="ShowStorageCorsHelp && !!info" size="lg" @close="hideStorageCorsHelp">
+    <template #header>
+      <div class="flex items-start gap-3">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-warn-soft text-warn"><ExclamationTriangleIcon class="h-5 w-5" /></span>
+        <div>
+          <h2 class="text-[15px] font-semibold text-fg">
+            {{ info?.kind === "mixed-content" ? "Storage url must use https" : "Your storage bucket is blocking browser uploads" }}
+          </h2>
+          <p class="mt-0.5 text-sm text-muted">One-time setup on {{ providerName }}.</p>
+        </div>
       </div>
+    </template>
 
-      <div class="p-4 space-y-4 text-sm max-h-[70vh] overflow-y-auto">
-        <template v-if="info.kind === 'mixed-content'">
-          <p>
-            This page is served over <b>https</b> but your owns3 server returned an <b>http</b> storage url
-            (<span class="font-mono">{{ info.host }}</span>). Browsers refuse to send data from a secure page to an insecure address.
-          </p>
-          <p>Configure the storage endpoint in owns3 with an https url, then try the upload again.</p>
-        </template>
+    <div v-if="info" class="space-y-5 text-sm text-fg/90">
+      <template v-if="info.kind === 'mixed-content'">
+        <p>
+          This page is served over <b>https</b> but your owns3 server returned an <b>http</b> storage url
+          (<code class="font-mono text-xs">{{ info.host }}</code>). Browsers refuse to send data from a secure page to an insecure address.
+        </p>
+        <p>Configure the storage endpoint in owns3 with an https url, then try the upload again.</p>
+      </template>
 
-        <template v-else>
-          <p>
-            Files are uploaded from your browser directly to <b>{{ providerName }}</b>
-            (<span class="font-mono">{{ info.host }}</span>), bypassing our servers.
-            Before the browser sends a file to another domain it asks that domain for permission, and
-            <span class="font-mono">{{ info.bucket || "the bucket" }}</span> answered <b>no</b>.
-            This is a one time setup: the bucket needs a CORS rule that allows uploads from
-            <span class="font-mono text-green-300">{{ info.origin }}</span>.
-          </p>
+      <template v-else>
+        <p>
+          Files upload from your browser straight to <b>{{ providerName }}</b> (<code class="font-mono text-xs">{{ info.host }}</code>), bypassing our servers.
+          Before sending a file to another domain the browser asks that domain for permission, and
+          <code class="font-mono text-xs">{{ info.bucket || "the bucket" }}</code> answered no.
+          The bucket needs a CORS rule that allows uploads from <code class="font-mono text-xs text-accent">{{ info.origin }}</code>.
+        </p>
 
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <b>1. Save this rule as <span class="font-mono">cors.json</span></b>
-              <button type="button" @click="copyText('rule', ruleJson)" class="text-xs text-gray-400 hover:text-white">
-                <i class="fa fa-copy mr-1"></i>{{ copied === "rule" ? "Copied" : "Copy" }}
-              </button>
+        <ol class="space-y-4">
+          <li v-for="(step, i) in steps" :key="step.key">
+            <div class="mb-1.5 flex items-center justify-between">
+              <span class="font-medium"><span class="mr-1.5 font-mono text-xs text-faint">{{ i + 1 }}.</span>{{ step.title }}</span>
+              <Button size="xs" variant="ghost" @click="copyText(step.key, step.code)">
+                <CheckIcon v-if="copied === step.key" class="h-3.5 w-3.5 text-accent" /><ClipboardDocumentIcon v-else class="h-3.5 w-3.5" />
+                {{ copied === step.key ? "Copied" : "Copy" }}
+              </Button>
             </div>
-            <pre class="bg-gray-900 rounded p-3 text-xs overflow-x-auto font-mono text-green-300">{{ ruleJson }}</pre>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <b>2. Apply it to the bucket</b>
-              <button type="button" @click="copyText('apply', applyCommand)" class="text-xs text-gray-400 hover:text-white">
-                <i class="fa fa-copy mr-1"></i>{{ copied === "apply" ? "Copied" : "Copy" }}
-              </button>
-            </div>
-            <pre class="bg-gray-900 rounded p-3 text-xs overflow-x-auto font-mono text-green-300">{{ applyCommand }}</pre>
-            <p class="text-gray-400 mt-1">{{ providerNote }}</p>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <b>3. Check it took effect</b>
-              <button type="button" @click="copyText('verify', verifyCommand)" class="text-xs text-gray-400 hover:text-white">
-                <i class="fa fa-copy mr-1"></i>{{ copied === "verify" ? "Copied" : "Copy" }}
-              </button>
-            </div>
-            <pre class="bg-gray-900 rounded p-3 text-xs overflow-x-auto font-mono text-green-300">{{ verifyCommand }}</pre>
-            <p class="text-gray-400 mt-1">
-              A correct rule answers <span class="font-mono">200</span> with
-              <span class="font-mono">access-control-allow-methods</span> containing <span class="font-mono">PUT</span>.
-              Then retry the upload. If you open the app from another address later, add that origin to the rule too.
-            </p>
-          </div>
-        </template>
-      </div>
-
-      <div class="p-3 border-t border-gray-800 text-right">
-        <button type="button" @click="hideStorageCorsHelp" class="px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 text-sm font-medium">
-          Got it
-        </button>
-      </div>
+            <pre class="overflow-x-auto rounded-md bg-sunken p-3 font-mono text-xs leading-relaxed text-fg">{{ step.code }}</pre>
+            <p v-if="step.note" class="mt-1.5 text-xs text-muted">{{ step.note }}</p>
+          </li>
+        </ol>
+      </template>
     </div>
-  </Modal>
+
+    <template #footer>
+      <Button variant="primary" @click="hideStorageCorsHelp">Got it</Button>
+    </template>
+  </Dialog>
 </template>
