@@ -1,13 +1,16 @@
 import { $http } from "../http";
-import type { AuthUser, AuthUserStore } from "../stores/auth.store";
+import type { AuthUser, AuthUserStore, StorageSummary } from "../stores/auth.store";
 import type { SubStat } from "../types/models.types";
 import type { components } from "../types/api";
 import { $localStorage } from "../stores/native";
 
+type PingResponse = { user: AuthUser; storage: StorageSummary; subscription: SubStat };
+
 export async function refreshAuthData(st: AuthUserStore) {
   try {
-    const { user, subscription } = await $http.get<any, { user: AuthUser; subscription: SubStat }>("/ping");
+    const { user, storage, subscription } = await $http.get<any, PingResponse>("/ping");
     st.data = user;
+    st.storage = storage;
     st.subscription = subscription;
   } catch {
     // The token is no longer good, so there is no session left to end server side.

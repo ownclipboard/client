@@ -39,9 +39,23 @@ const isPro = computed(() => authUser.data?.plan === "pro");
 const form = reactive({ endpoint: "", apiKey: "" });
 const guideOpen = ref(false);
 
+/**
+ * Keep the summary `ping` gave us in step with what this page just did, so the
+ * upload button reacts without waiting for a reload.
+ */
+function setStatus(next: Owns3Status) {
+  status.value = next;
+  authUser.storage = {
+    connected: next.connected,
+    default: next.default,
+    defaultAvailable: next.defaultAvailable,
+    proRequired: next.proRequired
+  };
+}
+
 async function loadStatus() {
   try {
-    status.value = await getOwns3Status();
+    setStatus(await getOwns3Status());
   } catch (e) {
     alertRequestError(e);
   } finally {
@@ -62,7 +76,7 @@ function connect(btn: ILoadingButton) {
 
   return connectOwns3(endpoint, apiKey)
     .then((res) => {
-      status.value = res;
+      setStatus(res);
       form.apiKey = "";
       form.endpoint = "";
       showForm.value = null;
@@ -73,7 +87,7 @@ function connect(btn: ILoadingButton) {
 
 async function useHosted(btn: ILoadingButton) {
   try {
-    status.value = await useDefaultOwns3();
+    setStatus(await useDefaultOwns3());
     showForm.value = null;
   } catch (e: any) {
     alertRequestError(e);

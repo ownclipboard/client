@@ -508,8 +508,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Current user and subscription
-         * @description Returns the authenticated user's public profile and their latest active subscription.
+         * Current user, storage and subscription
+         * @description Returns the authenticated user's public profile, their latest active subscription and a
+         *     short view of their file storage, so the client can decide whether to offer uploads.
+         *     `storage.connected` is true when files can be uploaded now. `storage.default` says the
+         *     app's own storage is in use, `storage.defaultAvailable` whether it is offered at all,
+         *     and `storage.proRequired` appears when the default storage is picked but the Pro plan
+         *     has lapsed. The full connection details live at `GET /client/v1/account/owns3`.
          */
         get: {
             parameters: {
@@ -3097,8 +3102,21 @@ export interface components {
         };
         PingResponse: {
             user: components["schemas"]["AuthUser"] | null;
+            /** @description File storage of the account, for deciding whether to offer uploads. */
+            storage: components["schemas"]["StorageSummary"];
             /** @description Latest active subscription, if any. */
             subscription?: components["schemas"]["Subscription"];
+        };
+        /** @description Short view of the user's file storage. The full view is `GET account/owns3`. */
+        StorageSummary: {
+            /** @description Whether files can be uploaded right now. */
+            connected: boolean;
+            /** @description True when the storage in use is the app's default one, not the user's own server. */
+            default: boolean;
+            /** @description Whether this server offers a default storage at all. */
+            defaultAvailable: boolean;
+            /** @description Set when the user picked the default storage but is no longer Pro. `connected` is false until they renew or connect their own server. */
+            proRequired?: boolean;
         };
         LoginBody: {
             /** @description 3 to 250 alphanumeric characters. */

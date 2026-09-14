@@ -10,6 +10,7 @@ import { currentFolder, currentFolderNeedsPassword, currentTab, getFolders } fro
 import { composerOpen, openComposer } from "../../stores/composer.store";
 import { openFolderSettings } from "../../stores/folder-settings.store";
 import { searchQuery, searchAllFolders } from "../../stores/search.store";
+import { useAuthUser } from "../../stores/auth.store";
 import { pasteText, readPasteEvent, readSystemClipboard } from "../../services/paste.service";
 import { StorageUploadBlockedError, uploadFile } from "../../services/files.service";
 import { showStorageCorsHelp } from "../StorageCorsHandler";
@@ -21,6 +22,7 @@ import UploadDialog, { type UploadItem, type UploadResults } from "./UploadDialo
 import Button from "../ui/Button.vue";
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
+const authUser = useAuthUser();
 
 /* ---------------- Paste ---------------- */
 
@@ -87,11 +89,19 @@ const uploadProgress = ref<number | null>(null);
 const uploadResults = ref<UploadResults>({});
 
 function pickFile() {
+  if (!authUser.canUpload) return $alert.warning(authUser.uploadBlockedReason);
   fileInput.value?.click();
 }
 
 function queueFiles(files: File[]) {
   if (!files.length) return;
+
+  // Files go to the user's own storage. With none connected there is nowhere to put them.
+  if (!authUser.canUpload) {
+    $alert.warning(authUser.uploadBlockedReason);
+    return;
+  }
+
   const folder = currentFolder.value;
   if (folder && (folder.visibility === "encrypted" || folder.hasPassword)) {
     $alert.warning("Files can't be uploaded into an encrypted folder.");
@@ -208,9 +218,21 @@ const needsPassword = computed(() => currentFolderNeedsPassword.value);
           <PencilSquareIcon class="h-4 w-4" />
           New
         </Button>
-        <Button :disabled="isUploading" @click="pickFile">
+        <Button
+          v-if="authUser.canUpload"
+          :disabled="isUploading"
+          @click="pickFile"
+        >
           <CloudArrowUpIcon class="h-4 w-4" />
           Upload
+        </Button>
+        <Button
+          v-else
+          :to="{ name: 'settings' }"
+          :title="authUser.uploadBlockedReason"
+        >
+          <CloudArrowUpIcon class="h-4 w-4" />
+          Set up uploads
         </Button>
         </template>
         <input ref="fileInput" type="file" multiple class="hidden" @change="onFilePicked" />
