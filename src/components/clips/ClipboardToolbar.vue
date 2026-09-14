@@ -271,7 +271,7 @@ async function confirmUpload(items: UploadItem[]) {
   } else if (blocked) {
     showStorageCorsHelp(blocked.url, blocked.kind);
   } else {
-    $alert.error(`${failed} file(s) failed to upload. Fix the issue and retry, or close the dialog.`);
+    $alert.error(`${failed} ${failed === 1 ? "file" : "files"} failed to upload. Each row says why. Retry, or close the dialog.`);
   }
 }
 

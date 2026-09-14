@@ -60,7 +60,7 @@ function slugId(name: string) {
     <div class="space-y-5">
       <div class="flex items-start gap-2.5 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
         <ExclamationTriangleIcon class="mt-px h-4 w-4 shrink-0" />
-        <p>Copy this key now. Only a hash of it is stored, so it cannot be shown again. If you lose it, rotate the key.</p>
+        <p>Copy this key now. We only store a hash of it, so we can't show it again. If you lose it, rotate the key.</p>
       </div>
 
       <div>

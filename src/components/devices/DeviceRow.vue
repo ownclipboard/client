@@ -57,7 +57,7 @@ function toggleEnabled() {
 async function rotate() {
   const ok = await askToConfirm({
     title: `Rotate the key for ${props.device.name}?`,
-    message: "The current key stops working straight away and the app has to connect again with the new one.",
+    message: "The current key stops working immediately. Your app will need to connect again with the new one.",
     confirmLabel: "Rotate key",
     danger: true
   });
@@ -69,7 +69,7 @@ async function rotate() {
 async function remove() {
   const ok = await askToConfirm({
     title: `Delete ${props.device.name}?`,
-    message: "Its api key stops working immediately. Clips it created stay in your folders.",
+    message: "The api key stops working immediately. Clips the device created stay in your folders.",
     confirmLabel: "Delete",
     danger: true
   });

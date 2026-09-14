@@ -86,7 +86,7 @@ async function update(device: Device, deviceName: string) {
         placeholder="My Laptop"
         maxlength="50"
         autocomplete="off"
-        hint="How you will recognise this app in the list."
+        hint="How you'll recognise this app in the list."
       />
 
       <Select v-model="folder" label="Folder">
@@ -94,7 +94,7 @@ async function update(device: Device, deviceName: string) {
       </Select>
       <p class="-mt-2 text-xs text-muted">
         The device reads and writes clips here. Encrypted folders cannot be used.
-        <template v-if="isEdit"> Clips it already created stay where they are.</template>
+        <template v-if="isEdit"> Clips the device already created stay where they are.</template>
       </p>
     </form>
 

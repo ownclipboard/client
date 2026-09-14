@@ -20,7 +20,7 @@ export async function pasteText(text: string, title?: string): Promise<boolean> 
   // Without a password there is no key, and the clip would land in an encrypted
   // folder as plain text. Refuse instead of storing it in the clear.
   if (folderNeedsPassword(folder)) {
-    $alert.warning(`"${folder.name}" has no encryption password yet. Set one in the folder settings before adding clips.`);
+    $alert.warning(`"${folder.name}" has no encryption password yet. Set a password in the folder settings before adding clips.`);
     return false;
   }
 

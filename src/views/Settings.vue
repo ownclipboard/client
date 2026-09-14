@@ -127,7 +127,7 @@ function saveEmail(btn: ILoadingButton) {
   const email = emailForm.email.trim();
 
   if (!EMAIL_RE.test(email)) {
-    $alert.warning("That does not look like an email address.");
+    $alert.warning("That doesn't look like an email address.");
     return btn.stopLoading();
   }
   if (!emailForm.password) {
@@ -157,7 +157,7 @@ function savePassword(btn: ILoadingButton) {
     return btn.stopLoading();
   }
   if (next !== confirm) {
-    $alert.warning("The two new passwords do not match.");
+    $alert.warning("The new passwords don't match.");
     return btn.stopLoading();
   }
 
@@ -312,7 +312,7 @@ async function disconnect(btn: ILoadingButton) {
               placeholder="owns3_…"
               autocomplete="off"
               mono
-              hint="Needs read, write and delete permissions. Stored encrypted and never shown again."
+              hint="The key needs read, write and delete permissions. We store it encrypted and never show it again."
             />
             <div class="flex flex-wrap items-center gap-2">
               <Button variant="primary" type="submit" :click="connect" message="Connecting">Connect</Button>
@@ -355,13 +355,13 @@ async function disconnect(btn: ILoadingButton) {
 
     <Card
       title="Email address"
-      description="Where a password reset would be sent. Nobody else sees it, and we do not email you otherwise."
+      description="Used to reset your password if you forget it. We don't email you for anything else."
     >
       <div
         v-if="!authUser.data?.email"
         class="mb-4 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn"
       >
-        This account has no email yet, so a forgotten password cannot be recovered. Add one to be safe.
+        Without an email address you can't reset your password if you forget it.
       </div>
 
       <form class="space-y-4" @submit.prevent>
@@ -378,7 +378,7 @@ async function disconnect(btn: ILoadingButton) {
           label="Account password"
           placeholder="Your current password"
           autocomplete="current-password"
-          hint="Asked for because this address controls password resets."
+          hint="Confirms it's you, since this address can reset your password."
         />
         <Button variant="primary" type="submit" :click="saveEmail" message="Saving">
           {{ authUser.data?.email ? "Change email" : "Add email" }}
@@ -386,7 +386,7 @@ async function disconnect(btn: ILoadingButton) {
       </form>
     </Card>
 
-    <Card title="Password" description="Changing it ends your session on every other device, including this one's other tabs.">
+    <Card title="Password" description="Changing your password signs you out everywhere else, including other tabs in this browser. This tab stays signed in.">
       <form class="space-y-4" @submit.prevent>
         <Input v-model="passwordForm.current" type="password" label="Current password" autocomplete="current-password" />
         <Input

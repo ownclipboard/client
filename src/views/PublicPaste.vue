@@ -114,13 +114,13 @@ onBeforeUnmount(() => window.removeEventListener("paste", onWindowPaste));
     </header>
 
     <main class="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
-      <EmptyState v-if="notFound" title="This paste link doesn't exist" description="It may have been disabled by the folder's owner." />
+      <EmptyState v-if="notFound" title="This paste link doesn't exist" description="The folder's owner may have turned it off." />
 
       <template v-else-if="folder">
         <div class="mb-6">
           <p class="text-[11px] font-medium uppercase tracking-wider text-faint">Public paste</p>
           <h1 class="mt-1 text-2xl font-semibold tracking-tight text-fg">{{ folder.name }}</h1>
-          <p class="mt-1 text-sm text-muted">Anything you paste here lands in this folder. Only clips pasted from this browser are listed below.</p>
+          <p class="mt-1 text-sm text-muted">Anything you paste here goes into this folder. You'll only see the clips you pasted from this browser.</p>
         </div>
 
         <button

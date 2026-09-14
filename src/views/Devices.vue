@@ -110,7 +110,7 @@ function replace(device: Device) {
 
 <template>
   <div class="max-w-3xl space-y-5">
-    <PageHeader title="Devices" description="Api keys for apps that read and write your clips: the desktop app, a script, a shortcut.">
+    <PageHeader title="Devices" description="Api keys that let your apps read and write your clips.">
       <Button v-if="devices.length" variant="primary" size="sm" :disabled="limitReached" @click="openCreate">
         <PlusIcon class="h-4 w-4" />New device
       </Button>
@@ -135,7 +135,7 @@ function replace(device: Device) {
         v-else-if="!devices.length"
         class="m-5 border-0 py-10"
         title="No devices yet"
-        description="Create one to get an api key, then connect an app with it."
+        description="Create a device to get an api key, then connect your app with it."
       >
         <template #icon><CpuChipIcon /></template>
         <Button variant="primary" size="sm" @click="openCreate">
@@ -163,7 +163,7 @@ function replace(device: Device) {
       </template>
     </Card>
 
-    <Card title="How apps connect" description="The device api is the same one the desktop app and the browser extension use.">
+    <Card title="How apps connect" description="The desktop app and the browser extension use this same api.">
       <ol class="space-y-3 text-sm text-muted">
         <li class="flex gap-3">
           <span class="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-raised text-[11px] font-semibold text-fg">1</span>

@@ -298,7 +298,7 @@ const proCta = computed(() => {
 
 <template>
   <div class="max-w-4xl">
-    <PageHeader title="Plan" description="Pick what fits. Pro adds file storage we host for you, editing, copying between folders and sharing." />
+    <PageHeader title="Plan" description="Pro adds file storage we host for you, editing, copying between folders and sharing." />
 
     <!-- Payment notice -->
     <div
