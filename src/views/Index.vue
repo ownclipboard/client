@@ -110,7 +110,7 @@ const LEGACY_URL = "https://legacy.ownclipboard.com";
 
     <div class="mt-6 rounded-md border border-line bg-surface px-3.5 py-3 text-[13px] leading-relaxed text-muted">
       <p>
-        If you are looking for the old version, it is now at <a
+        If you are looking for the old version, see <a
           :href="LEGACY_URL"
           target="_blank"
           rel="noopener"
@@ -118,8 +118,8 @@ const LEGACY_URL = "https://legacy.ownclipboard.com";
         >legacy.ownclipboard.com</a>.
       </p>
       <p class="mt-2">
-        Your clips from there have already been brought over. If you carry on using it, anything you save there will stay there
-        and will not appear here, and the old version may be switched off at any time.
+        Your clips have already been imported here. New clips saved on the old site won't sync over, and it may be shut down at
+        any time.
       </p>
     </div>
   </AuthPanel>
