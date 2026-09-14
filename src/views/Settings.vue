@@ -6,7 +6,7 @@ import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../http";
 import { $alert } from "../components/ws-alert/ws-alert";
 import { connectOwns3, disconnectOwns3, getOwns3Status, useDefaultOwns3, type Owns3Status } from "../services/files.service";
-import { refreshAuthData } from "../services/auth.service";
+import { changePassword, refreshAuthData, setAccountEmail } from "../services/auth.service";
 import { computed } from "vue";
 import { setTheme, themePreference, type ThemePreference } from "../stores/theme.store";
 import { useAuthUser } from "../stores/auth.store";
@@ -114,6 +114,61 @@ async function useHosted(btn: ILoadingButton) {
   } finally {
     btn.stopLoading();
   }
+}
+
+/* ---------------- Account email & password ---------------- */
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const emailForm = reactive({ email: "", password: "" });
+const passwordForm = reactive({ current: "", next: "", confirm: "" });
+
+function saveEmail(btn: ILoadingButton) {
+  const email = emailForm.email.trim();
+
+  if (!EMAIL_RE.test(email)) {
+    $alert.warning("That does not look like an email address.");
+    return btn.stopLoading();
+  }
+  if (!emailForm.password) {
+    $alert.warning("Enter your account password to confirm the change.");
+    return btn.stopLoading();
+  }
+
+  return setAccountEmail(email, emailForm.password)
+    .then((res) => {
+      if (authUser.data) authUser.data.email = res.email;
+      emailForm.email = "";
+      emailForm.password = "";
+    })
+    .catch(alertRequestError)
+    .finally(btn.stopLoading);
+}
+
+function savePassword(btn: ILoadingButton) {
+  const { current, next, confirm } = passwordForm;
+
+  if (!current) {
+    $alert.warning("Enter your current password.");
+    return btn.stopLoading();
+  }
+  if (next.length < 6) {
+    $alert.warning("The new password needs at least 6 characters.");
+    return btn.stopLoading();
+  }
+  if (next !== confirm) {
+    $alert.warning("The two new passwords do not match.");
+    return btn.stopLoading();
+  }
+
+  return changePassword(current, next)
+    .then(() => {
+      passwordForm.current = "";
+      passwordForm.next = "";
+      passwordForm.confirm = "";
+    })
+    .catch(alertRequestError)
+    .finally(btn.stopLoading);
 }
 
 async function disconnect(btn: ILoadingButton) {
@@ -280,14 +335,13 @@ async function disconnect(btn: ILoadingButton) {
 
     <StorageSetupGuide :open="guideOpen" @close="guideOpen = false" />
 
-    <Card v-show="tab === 'account'" title="Account">
+    <div v-show="tab === 'account'" class="space-y-5">
+    <Card title="Account">
       <dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
         <dt class="text-muted">Username</dt>
         <dd class="text-fg">{{ authUser.data?.username }}</dd>
-        <template v-if="authUser.data?.email">
-          <dt class="text-muted">Email</dt>
-          <dd class="text-fg">{{ authUser.data.email }}</dd>
-        </template>
+        <dt class="text-muted">Email</dt>
+        <dd :class="authUser.data?.email ? 'text-fg' : 'text-faint'">{{ authUser.data?.email || "Not set" }}</dd>
         <dt class="text-muted">Plan</dt>
         <dd class="flex items-center gap-2 text-fg">
           <Badge :variant="authUser.data?.plan === 'pro' ? 'accent' : 'neutral'" uppercase>{{ authUser.data?.plan || "none" }}</Badge>
@@ -298,5 +352,54 @@ async function disconnect(btn: ILoadingButton) {
         <Button variant="danger" size="sm" :click="authUser.signOut" message="Signing out">Sign out</Button>
       </template>
     </Card>
+
+    <Card
+      title="Email address"
+      description="Where a password reset would be sent. Nobody else sees it, and we do not email you otherwise."
+    >
+      <div
+        v-if="!authUser.data?.email"
+        class="mb-4 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn"
+      >
+        This account has no email yet, so a forgotten password cannot be recovered. Add one to be safe.
+      </div>
+
+      <form class="space-y-4" @submit.prevent>
+        <Input
+          v-model="emailForm.email"
+          type="email"
+          label="Email address"
+          :placeholder="authUser.data?.email || 'you@example.com'"
+          autocomplete="email"
+        />
+        <Input
+          v-model="emailForm.password"
+          type="password"
+          label="Account password"
+          placeholder="Your current password"
+          autocomplete="current-password"
+          hint="Asked for because this address controls password resets."
+        />
+        <Button variant="primary" type="submit" :click="saveEmail" message="Saving">
+          {{ authUser.data?.email ? "Change email" : "Add email" }}
+        </Button>
+      </form>
+    </Card>
+
+    <Card title="Password" description="Changing it ends your session on every other device, including this one's other tabs.">
+      <form class="space-y-4" @submit.prevent>
+        <Input v-model="passwordForm.current" type="password" label="Current password" autocomplete="current-password" />
+        <Input
+          v-model="passwordForm.next"
+          type="password"
+          label="New password"
+          autocomplete="new-password"
+          hint="At least 6 characters."
+        />
+        <Input v-model="passwordForm.confirm" type="password" label="Confirm new password" autocomplete="new-password" />
+        <Button variant="primary" type="submit" :click="savePassword" message="Updating">Change password</Button>
+      </form>
+    </Card>
+    </div>
   </div>
 </template>

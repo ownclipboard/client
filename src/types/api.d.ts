@@ -2931,6 +2931,145 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client/v1/account/set-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set or change the account email
+         * @description Adds an email to an account that has none, or replaces the one it has. The account
+         *     password is required, because the address is what a future password reset is sent to.
+         *     The address is trimmed, lower-cased and must not belong to another account.
+         *     It is not verified, so treat it as unconfirmed until a verification flow exists.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "email": "alice@example.com",
+                     *       "password": "secret123"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SetEmailBody"];
+                };
+            };
+            responses: {
+                /** @description Email saved. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SetEmailResponse"];
+                    };
+                };
+                /** @description Validation error, wrong password, or the address belongs to another account. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc_token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/change-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change the account password
+         * @description Replaces the password. The current one is required. Every other session is ended,
+         *     so a new token is returned for the caller: replace the stored `oc_token` with it,
+         *     otherwise the next request fails with a session error.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "currentPassword": "secret123",
+                     *       "newPassword": "evenbetter456"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ChangePasswordBody"];
+                };
+            };
+            responses: {
+                /** @description Password changed, with a fresh token. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChangePasswordResponse"];
+                    };
+                };
+                /** @description Validation error, wrong current password, or the new password is the same. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc_token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3328,6 +3467,27 @@ export interface components {
             /** @constant */
             method: "GET";
             expiresIn: number;
+        };
+        SetEmailBody: {
+            /** @description Trimmed and lower-cased before saving. Must not belong to another account. */
+            email: string;
+            /** @description The account password. */
+            password: string;
+        };
+        SetEmailResponse: {
+            /** @description The address as stored. */
+            email: string;
+            message: string;
+        };
+        ChangePasswordBody: {
+            currentPassword: string;
+            /** @description 6 to 500 characters. */
+            newPassword: string;
+        };
+        ChangePasswordResponse: {
+            /** @description New jwt for this device. Replace the stored `oc_token` with it. */
+            token: string;
+            message: string;
         };
         /** @description Public view of a device. The api key is never included. */
         Device: {
