@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
-import { CloudIcon, ComputerDesktopIcon, MoonIcon, ServerStackIcon, SunIcon } from "@heroicons/vue/20/solid";
+import { useRoute, useRouter } from "vue-router";
+import { CloudIcon, ComputerDesktopIcon, MoonIcon, ServerStackIcon, SunIcon, SwatchIcon, UserCircleIcon } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../http";
 import { $alert } from "../components/ws-alert/ws-alert";
@@ -17,8 +18,25 @@ import Input from "../components/ui/Input.vue";
 import Badge from "../components/ui/Badge.vue";
 import Skeleton from "../components/ui/Skeleton.vue";
 import StorageSetupGuide from "../components/storage/StorageSetupGuide.vue";
+import Tabs, { type TabItem } from "../components/ui/Tabs.vue";
 
 const authUser = useAuthUser();
+const $route = useRoute();
+const $router = useRouter();
+
+/* ---------------- Sections ---------------- */
+
+const TABS: TabItem[] = [
+  { key: "appearance", label: "Appearance", icon: SwatchIcon },
+  { key: "storage", label: "Storage", icon: ServerStackIcon },
+  { key: "account", label: "Account", icon: UserCircleIcon }
+];
+
+// The tab lives in the url, so "?tab=storage" can be linked to from elsewhere.
+const tab = computed({
+  get: () => (TABS.some((t) => t.key === $route.query.tab) ? String($route.query.tab) : TABS[0].key),
+  set: (key: string) => $router.replace({ name: "settings", query: key === TABS[0].key ? {} : { tab: key } })
+});
 
 /* ---------------- Appearance ---------------- */
 
@@ -118,7 +136,9 @@ async function disconnect(btn: ILoadingButton) {
   <div class="max-w-3xl space-y-5">
     <PageHeader title="Settings" />
 
-    <Card title="Appearance" description="Choose how the app looks on this device.">
+    <Tabs v-model="tab" :tabs="TABS" label="Settings sections" />
+
+    <Card v-show="tab === 'appearance'" title="Appearance" description="Choose how the app looks on this device.">
       <div class="grid grid-cols-3 gap-2">
         <button
           v-for="t in themes"
@@ -138,7 +158,7 @@ async function disconnect(btn: ILoadingButton) {
       </div>
     </Card>
 
-    <Card title="File storage" description="Where uploaded files are kept. We host them for you (Pro), or connect your own owns3 server.">
+    <Card v-show="tab === 'storage'" title="File storage" description="Where uploaded files are kept. We host them for you (Pro), or connect your own owns3 server.">
       <template #header>
         <Badge v-if="status?.connected" variant="accent">Connected</Badge>
         <Badge v-else-if="status?.proRequired" variant="warn">Pro required</Badge>
@@ -260,7 +280,7 @@ async function disconnect(btn: ILoadingButton) {
 
     <StorageSetupGuide :open="guideOpen" @close="guideOpen = false" />
 
-    <Card title="Account">
+    <Card v-show="tab === 'account'" title="Account">
       <dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
         <dt class="text-muted">Username</dt>
         <dd class="text-fg">{{ authUser.data?.username }}</dd>

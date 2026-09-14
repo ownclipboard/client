@@ -29,13 +29,11 @@ export const useAuthUser = defineStore("authUser", () => {
   /** Files can only be uploaded once storage is connected and usable. */
   const canUpload = computed(() => !!storage.value?.connected);
 
-  /** Why uploading is unavailable, in a sentence that says what to do about it. */
+  /** Why uploading is unavailable. Callers add the pointer to settings if they are not already sending the user there. */
   const uploadBlockedReason = computed(() => {
     if (canUpload.value) return "";
-    if (storage.value?.proRequired) {
-      return "Uploads are paused because your Pro plan ended. Renew Pro, or connect your own storage in settings.";
-    }
-    return "Connect file storage in settings before uploading files.";
+    if (storage.value?.proRequired) return "Uploads are paused because your Pro plan ended.";
+    return "File storage is not connected yet.";
   });
 
   /** Drop this browser's session and go back to the sign-in page. */

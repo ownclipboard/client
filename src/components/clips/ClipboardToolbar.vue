@@ -4,6 +4,7 @@
  * Upload actions. Also owns the upload flow and the global paste shortcut.
  */
 import { computed, ref, onMounted, onBeforeUnmount } from "vue";
+import { useRouter } from "vue-router";
 import { ClipboardIcon, CloudArrowUpIcon, LockClosedIcon, PencilSquareIcon } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { currentFolder, currentFolderNeedsPassword, currentTab, getFolders } from "../../stores/tabs.store";
@@ -23,6 +24,7 @@ import Button from "../ui/Button.vue";
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 const authUser = useAuthUser();
+const $router = useRouter();
 
 /* ---------------- Paste ---------------- */
 
@@ -88,8 +90,15 @@ const uploadIndex = ref(-1);
 const uploadProgress = ref<number | null>(null);
 const uploadResults = ref<UploadResults>({});
 
+/**
+ * With no storage connected there is nowhere to put a file, so send the user to
+ * the place that fixes it rather than opening a picker that cannot finish.
+ */
 function pickFile() {
-  if (!authUser.canUpload) return $alert.warning(authUser.uploadBlockedReason);
+  if (!authUser.canUpload) {
+    $alert.warning(authUser.uploadBlockedReason);
+    return $router.push({ name: "settings", query: { tab: "storage" } });
+  }
   fileInput.value?.click();
 }
 
@@ -97,8 +106,9 @@ function queueFiles(files: File[]) {
   if (!files.length) return;
 
   // Files go to the user's own storage. With none connected there is nowhere to put them.
+  // A pasted or dropped file should not yank the page elsewhere, so only say where to look.
   if (!authUser.canUpload) {
-    $alert.warning(authUser.uploadBlockedReason);
+    $alert.warning(`${authUser.uploadBlockedReason} You can fix that in settings.`);
     return;
   }
 
@@ -219,20 +229,12 @@ const needsPassword = computed(() => currentFolderNeedsPassword.value);
           New
         </Button>
         <Button
-          v-if="authUser.canUpload"
           :disabled="isUploading"
+          :title="authUser.canUpload ? undefined : authUser.uploadBlockedReason"
           @click="pickFile"
         >
           <CloudArrowUpIcon class="h-4 w-4" />
           Upload
-        </Button>
-        <Button
-          v-else
-          :to="{ name: 'settings' }"
-          :title="authUser.uploadBlockedReason"
-        >
-          <CloudArrowUpIcon class="h-4 w-4" />
-          Set up uploads
         </Button>
         </template>
         <input ref="fileInput" type="file" multiple class="hidden" @change="onFilePicked" />
