@@ -102,7 +102,8 @@ async function deleteClip(btn: ILoadingButton, [clip]: [OwnClip, number]) {
   }
 
   try {
-    await $http.post(`/clip/${clip.publicId}/delete`, { password });
+    // A file clip takes its object out of storage too, which the default 1s cannot cover.
+    await $http.post(`/clip/${clip.publicId}/delete`, { password }, { timeout: 30_000 });
     clips.value.data = clips.value.data.filter((c) => c.publicId !== clip.publicId);
     if (folder) folder.contents = Math.max(0, folder.contents - 1);
   } catch (e) {
