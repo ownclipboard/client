@@ -321,7 +321,7 @@ const needsPassword = computed(() => currentFolderNeedsPassword.value);
     <!-- Encrypted folder that cannot take clips yet -->
     <div v-if="needsPassword" class="flex items-start gap-2.5 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
       <LockClosedIcon class="mt-px h-4 w-4 shrink-0" />
-      <p>Clips in this folder are encrypted in your browser, and it has no password yet. Set one before adding clips, or they would be stored unencrypted.</p>
+      <p>This folder encrypts its clips in your browser, so it needs a password before you can add anything.</p>
     </div>
 
     <!-- Search scope, only while searching -->

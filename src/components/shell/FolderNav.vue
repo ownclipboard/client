@@ -159,7 +159,7 @@ function createFolder(btn: ILoadingButton) {
         </button>
       </div>
       <p v-if="newEncrypted" class="px-0.5 text-[11px] leading-snug text-faint">
-        Clips are locked with a password you set next. Files can't go in one, and this can't be changed later.
+        You'll set a password next. Encrypted folders can't hold files, and the type is fixed once created.
       </p>
 
       <div class="flex items-center justify-end gap-1">

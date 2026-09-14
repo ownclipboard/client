@@ -154,7 +154,7 @@ $events.on("delete-clip", ({ btn, data }: { btn: ILoadingButton; data: [OwnClip,
     <EmptyState
       v-else-if="currentFolderNeedsPassword"
       title="This folder needs a password first"
-      description="Clips here are encrypted in your browser with a password only you know. Until one is set, nothing can be added."
+      description="Clips here are encrypted in your browser with a password only you know. Set one to start adding clips."
     >
       <template #icon><LockClosedIcon /></template>
       <Button size="sm" variant="primary" @click="openFolderSettings(currentTab)">Set a password</Button>
