@@ -35,6 +35,7 @@ import Button from "../components/ui/Button.vue";
 import Badge from "../components/ui/Badge.vue";
 import Dialog from "../components/ui/Dialog.vue";
 import Select from "../components/ui/Select.vue";
+import StorageSetupGuide from "../components/storage/StorageSetupGuide.vue";
 
 const $router = useRouter();
 const $route = useRoute();
@@ -58,7 +59,25 @@ const computedPrice = computed(() => {
   return price * subscribeForm.duration;
 });
 
-const pricing = [
+type PricingRow = {
+  feature: string;
+  /** One line, or several to put on their own lines. */
+  desc?: string | string[];
+  free: boolean | string;
+  pro: boolean | string;
+  icon: any;
+  /** Adds a link to the storage setup guide under the description. */
+  guide?: boolean;
+};
+
+const guideOpen = ref(false);
+
+function descLines(row: PricingRow) {
+  if (!row.desc) return [];
+  return Array.isArray(row.desc) ? row.desc : [row.desc];
+}
+
+const pricing: PricingRow[] = [
   { feature: "Unlimited clips", free: true, pro: true, icon: Square2StackIcon },
   { feature: "Folders", free: "100", pro: "Unlimited", icon: FolderIcon },
   { feature: "Public paste", desc: "Share a folder link so anyone can paste into it", free: true, pro: true, icon: GlobeAltIcon },
@@ -67,7 +86,14 @@ const pricing = [
   { feature: "Encrypted folders", desc: "256-bit AES, encrypted in your browser", free: true, pro: true, icon: LockClosedIcon },
   { feature: "Devices", desc: "Api keys apps use to read and write your clips", free: "3", pro: "Unlimited", icon: CpuChipIcon },
   { feature: "File upload", desc: "Upload files into any folder", free: true, pro: true, icon: CloudArrowUpIcon },
-  { feature: "File storage", desc: "Free: connect your own owns3 server. Pro: also use the storage OwnClipboard runs, with nothing to set up", free: "Own server", pro: "Own server or hosted", icon: ServerStackIcon },
+  {
+    feature: "File storage",
+    desc: ["Free: connect your own owns3 server.", "Pro: we host your files for you, nothing to set up."],
+    free: "Own server",
+    pro: "Own server or hosted",
+    icon: ServerStackIcon,
+    guide: true
+  },
   { feature: "Edit clips", desc: "Change a clip's title and content after saving", free: false, pro: true, icon: PencilSquareIcon },
   { feature: "Transfer clips", desc: "Move between folders, or copy to keep both", free: "Move", pro: "Move and copy", icon: ArrowsRightLeftIcon },
   { feature: "Share clips", desc: "Between accounts", free: false, pro: true, icon: ShareIcon }
@@ -76,7 +102,7 @@ const pricing = [
 const faq = [
   { question: "How do I pay?", answer: "With crypto (BTC, USDT and many more) through NowPayments. You are redirected to their invoice page and back here when done." },
   { question: "What happens when I cancel?", answer: "You are moved to the free plan and Pro features are disabled." },
-  { question: "Do I keep my files if I cancel?", answer: "Files on your own owns3 server are untouched. Files on OwnClipboard storage stay put, but uploads pause until you renew Pro or connect your own server." }
+  { question: "Do I keep my files if I cancel?", answer: "Files on your own owns3 server are untouched. Files we host stay put, but uploads pause until you renew Pro or connect your own server." }
 ];
 
 /* ---------------- Subscription state & NowPayments ---------------- */
@@ -272,7 +298,7 @@ const proCta = computed(() => {
 
 <template>
   <div class="max-w-4xl">
-    <PageHeader title="Plan" description="Pick what fits. Pro adds hosted file storage, editing, copying between folders and sharing." />
+    <PageHeader title="Plan" description="Pick what fits. Pro adds file storage we host for you, editing, copying between folders and sharing." />
 
     <!-- Payment notice -->
     <div
@@ -372,7 +398,7 @@ const proCta = computed(() => {
             <span class="text-sm text-muted">/ year</span>
             <span v-if="MONTHLY_ENABLED" class="ml-2 text-sm text-muted">or ${{ MONTHLY_PRICE }} / month</span>
           </div>
-          <p class="mt-1 text-sm text-muted">Everything in Free, plus hosted file storage, editing, copying between folders and sharing.</p>
+          <p class="mt-1 text-sm text-muted">Everything in Free, plus file storage we host for you, editing, copying between folders and sharing.</p>
           <Button class="mt-5" variant="primary" block :click="choosePlan" data="pro" :disabled="hasPendingInvoice" message="One moment">
             {{ proCta.label }}
           </Button>
@@ -398,7 +424,15 @@ const proCta = computed(() => {
                 <component :is="item.icon" class="h-4 w-4 shrink-0 text-faint" />
                 <div>
                   <div class="text-fg">{{ item.feature }}</div>
-                  <div v-if="item.desc" class="text-xs text-muted">{{ item.desc }}</div>
+                  <div v-for="line in descLines(item)" :key="line" class="text-xs text-muted">{{ line }}</div>
+                  <button
+                    v-if="item.guide"
+                    type="button"
+                    class="mt-0.5 text-xs font-medium text-accent underline underline-offset-2"
+                    @click="guideOpen = true"
+                  >
+                    How to connect your own storage
+                  </button>
                 </div>
               </div>
             </td>
@@ -420,6 +454,8 @@ const proCta = computed(() => {
       </div>
     </section>
   </div>
+
+  <StorageSetupGuide :open="guideOpen" @close="guideOpen = false" />
 
   <!-- Subscribe dialog -->
   <Dialog :open="showPaymentModal" title="Subscribe to Pro" description="Paid in crypto through NowPayments. You'll be sent to their invoice page." @close="showPaymentModal = false">

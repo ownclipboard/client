@@ -20,7 +20,7 @@ const OWNS3_HOSTED = "https://s3.ownclipboard.com";
     :open="open"
     size="lg"
     title="Use your own storage"
-    description="Your files go to a bucket you own. OwnClipboard never sees the keys to it."
+    description="Your files go to a bucket you own. We never see the keys to it."
     @close="emit('close')"
   >
     <div class="space-y-6 text-sm">
@@ -126,7 +126,7 @@ const OWNS3_HOSTED = "https://s3.ownclipboard.com";
           </p>
           <p class="text-muted">
             On the app's page create a key with <span class="text-fg">Read</span>, <span class="text-fg">Write</span> and
-            <span class="text-fg">Delete</span> ticked. OwnClipboard needs all three. The key starts with
+            <span class="text-fg">Delete</span> ticked. All three are needed. The key starts with
             <span class="font-mono text-[13px] text-fg">owns3_</span> and is shown once.
           </p>
         </div>
@@ -152,7 +152,7 @@ const OWNS3_HOSTED = "https://s3.ownclipboard.com";
 
       <div class="rounded-md border border-info/30 bg-info-soft px-3 py-2.5 text-[13px] text-info">
         Uploads go from your browser straight to the bucket, so the bucket has to allow this site. If the first upload is blocked,
-        OwnClipboard shows the exact rule and the command to apply it. On Backblaze that rule has to be set with the b2 command line
+        we show the exact rule and the command to apply it. On Backblaze that rule has to be set with the b2 command line
         tool, because the web interface only covers downloads.
       </div>
     </div>

@@ -124,7 +124,7 @@ async function disconnect(btn: ILoadingButton) {
       </div>
     </Card>
 
-    <Card title="File storage" description="Where uploaded files are kept. Use the storage OwnClipboard runs for you (Pro), or connect your own owns3 server.">
+    <Card title="File storage" description="Where uploaded files are kept. We host them for you (Pro), or connect your own owns3 server.">
       <template #header>
         <Badge v-if="status?.connected" variant="accent">Connected</Badge>
         <Badge v-else-if="status?.proRequired" variant="warn">Pro required</Badge>
@@ -139,7 +139,7 @@ async function disconnect(btn: ILoadingButton) {
       <template v-else>
         <!-- Pro subscription lapsed while on the hosted storage -->
         <div v-if="status?.proRequired" class="mb-4 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
-          Your files are on OwnClipboard storage, which needs an active Pro plan. Uploads are paused until you
+          Your files are on our storage, which needs an active Pro plan. Uploads are paused until you
           <RouterLink :to="{ name: 'pricing' }" class="font-medium underline underline-offset-2">renew Pro</RouterLink>
           or connect your own server below.
         </div>
@@ -149,7 +149,7 @@ async function disconnect(btn: ILoadingButton) {
           <dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
             <dt class="text-muted">Storage</dt>
             <dd class="flex items-center gap-2 text-fg">
-              <template v-if="status.default"><CloudIcon class="h-4 w-4 text-accent" /> OwnClipboard storage</template>
+              <template v-if="status.default"><CloudIcon class="h-4 w-4 text-accent" /> Hosted by us</template>
               <template v-else><ServerStackIcon class="h-4 w-4 text-faint" /> Your own owns3 server</template>
             </dd>
             <template v-if="!status.default && status.endpoint">
@@ -183,11 +183,11 @@ async function disconnect(btn: ILoadingButton) {
               class="flex flex-col rounded-md border border-line p-4"
             >
               <div class="flex items-center gap-2 text-sm font-medium text-fg">
-                <CloudIcon class="h-4 w-4 text-accent" /> OwnClipboard storage
+                <CloudIcon class="h-4 w-4 text-accent" /> We host your files
                 <Badge variant="accent" uppercase class="ml-auto">Pro</Badge>
               </div>
-              <p class="mt-1 flex-1 text-sm text-muted">Nothing to set up. Files are kept on storage we run, under your own prefix.</p>
-              <Button v-if="isPro" class="mt-4" variant="primary" size="sm" :click="useHosted" message="Connecting">Use OwnClipboard storage</Button>
+              <p class="mt-1 flex-1 text-sm text-muted">Nothing to set up, nothing to pay for elsewhere. Your files are kept on storage we run, under your own prefix.</p>
+              <Button v-if="isPro" class="mt-4" variant="primary" size="sm" :click="useHosted" message="Connecting">Host my files</Button>
               <Button v-else class="mt-4" size="sm" :to="{ name: 'pricing' }">Upgrade to Pro</Button>
             </div>
             <div class="flex flex-col rounded-md border border-line p-4">
