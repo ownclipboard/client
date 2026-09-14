@@ -24,7 +24,6 @@ const MORE_PROVIDERS = "https://www.google.com/search?q=best+s3+compatible+objec
     :open="open"
     size="lg"
     title="Store your files yourself"
-    description="Rent storage space in your own name and keep your files in it. Here is the whole thing, from nothing to done."
     @close="emit('close')"
   >
     <div class="space-y-6 text-sm">
