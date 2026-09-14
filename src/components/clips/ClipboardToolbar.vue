@@ -5,7 +5,7 @@
  */
 import { computed, ref, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
-import { ClipboardIcon, CloudArrowUpIcon, LockClosedIcon, PencilSquareIcon } from "@heroicons/vue/20/solid";
+import { ClipboardIcon, CloudArrowUpIcon, ExclamationTriangleIcon, LockClosedIcon, PencilSquareIcon } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { currentFolder, currentFolderNeedsPassword, currentTab, getFolders } from "../../stores/tabs.store";
 import { composerOpen, openComposer } from "../../stores/composer.store";
@@ -72,13 +72,24 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
+const DRAG_EVENTS = [
+  ["dragenter", onDragEnter],
+  ["dragover", onDragOver],
+  ["dragleave", onDragLeave],
+  ["drop", onDrop],
+  ["dragend", onDragEnd]
+] as const;
+
 onMounted(() => {
   window.addEventListener("paste", onWindowPaste);
   window.addEventListener("keydown", onKeydown);
+  for (const [name, fn] of DRAG_EVENTS) window.addEventListener(name, fn as EventListener);
 });
 onBeforeUnmount(() => {
   window.removeEventListener("paste", onWindowPaste);
   window.removeEventListener("keydown", onKeydown);
+  for (const [name, fn] of DRAG_EVENTS) window.removeEventListener(name, fn as EventListener);
+  hideDropTarget();
 });
 
 /* ---------------- Upload ---------------- */
@@ -102,23 +113,88 @@ function pickFile() {
   fileInput.value?.click();
 }
 
-function queueFiles(files: File[]) {
-  if (!files.length) return;
-
-  // Files go to the user's own storage. With none connected there is nowhere to put them.
-  // A pasted or dropped file should not yank the page elsewhere, so only say where to look.
-  if (!authUser.canUpload) {
-    $alert.warning(`${authUser.uploadBlockedReason} You can fix that in settings.`);
-    return;
-  }
+/**
+ * Why a file cannot be taken right now, or "" when one can. Files go to the
+ * user's own storage, and an encrypted folder has no way to encrypt them.
+ */
+const uploadIssue = computed(() => {
+  if (!authUser.canUpload) return `${authUser.uploadBlockedReason} You can fix that in settings.`;
 
   const folder = currentFolder.value;
   if (folder && (folder.visibility === "encrypted" || folder.hasPassword)) {
-    $alert.warning("Files can't be uploaded into an encrypted folder.");
+    return "Files can't be uploaded into an encrypted folder.";
+  }
+  return "";
+});
+
+function queueFiles(files: File[]) {
+  hideDropTarget();
+  if (!files.length) return;
+
+  // A pasted or dropped file should not yank the page elsewhere, so only say what is wrong.
+  if (uploadIssue.value) {
+    $alert.warning(uploadIssue.value);
     return;
   }
+
   pendingFiles.value = files;
   uploadResults.value = {};
+}
+
+/* ---------------- Drag and drop ---------------- */
+
+// dragenter and dragleave fire for every child element, so count them instead of
+// Counting dragenter against dragleave drifts out of step on a real drag and
+// leaves the overlay stuck on screen. Instead the overlay follows dragover,
+// which repeats for as long as a drag is over the page: when it stops arriving,
+// the drag is over, whatever the browser did or did not send us.
+const draggingFiles = ref(false);
+let dragTimer: ReturnType<typeof setTimeout> | undefined;
+
+function hasFiles(e: DragEvent) {
+  return Array.from(e.dataTransfer?.types || []).includes("Files");
+}
+
+function showDropTarget() {
+  draggingFiles.value = true;
+  if (dragTimer) clearTimeout(dragTimer);
+  dragTimer = setTimeout(hideDropTarget, 700);
+}
+
+function hideDropTarget() {
+  if (dragTimer) clearTimeout(dragTimer);
+  dragTimer = undefined;
+  draggingFiles.value = false;
+}
+
+function onDragEnter(e: DragEvent) {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  showDropTarget();
+}
+
+function onDragOver(e: DragEvent) {
+  if (!hasFiles(e)) return;
+  // Without this the browser refuses the drop and opens the file in a tab instead.
+  e.preventDefault();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+  showDropTarget();
+}
+
+/** Only a leave with no destination means the pointer left the window. */
+function onDragLeave(e: DragEvent) {
+  if (hasFiles(e) && !e.relatedTarget) hideDropTarget();
+}
+
+function onDrop(e: DragEvent) {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  hideDropTarget();
+  queueFiles(Array.from(e.dataTransfer?.files || []));
+}
+
+function onDragEnd() {
+  hideDropTarget();
 }
 
 function onFilePicked(event: Event) {
@@ -269,6 +345,30 @@ const needsPassword = computed(() => currentFolderNeedsPassword.value);
       </button>
     </div>
   </div>
+
+  <!-- Drop anywhere on the page while dragging files in -->
+  <Teleport to="body">
+    <div
+      v-if="draggingFiles"
+      class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-bg/80 p-6 backdrop-blur-[2px]"
+      aria-hidden="true"
+    >
+      <div
+        :class="[
+          'flex max-w-sm flex-col items-center gap-2 rounded-xl border-2 border-dashed bg-surface px-10 py-12 text-center shadow-pop',
+          uploadIssue ? 'border-warn' : 'border-accent'
+        ]"
+      >
+        <ExclamationTriangleIcon v-if="uploadIssue" class="h-9 w-9 text-warn" />
+        <CloudArrowUpIcon v-else class="h-9 w-9 text-accent" />
+
+        <p class="text-[15px] font-medium text-fg">{{ uploadIssue ? "Can't upload here" : "Drop to upload" }}</p>
+        <p class="text-sm text-muted">
+          {{ uploadIssue || `Files go into ${currentFolder?.name || "this folder"}.` }}
+        </p>
+      </div>
+    </div>
+  </Teleport>
 
   <UploadDialog
     :files="pendingFiles"
