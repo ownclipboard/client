@@ -1050,7 +1050,15 @@ export interface paths {
             };
         };
         put?: never;
-        /** Create folder */
+        /**
+         * Create folder
+         * @description Creates a folder. Pass `visibility: encrypted` for a folder whose clips the client
+         *     encrypts before sending. Visibility is fixed at creation and cannot be changed later,
+         *     because existing clips would be marked encrypted without being encrypted.
+         *     An encrypted folder needs a password before it is usable, set with
+         *     `POST /client/v1/folder/{folder}/set-password`. Files cannot be uploaded into an
+         *     encrypted folder, its clips cannot be copied or moved, and devices cannot use it.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1062,7 +1070,8 @@ export interface paths {
                 content: {
                     /**
                      * @example {
-                     *       "name": "Work"
+                     *       "name": "Secrets",
+                     *       "visibility": "encrypted"
                      *     }
                      */
                     "application/json": components["schemas"]["CreateFolderBody"];
@@ -3309,6 +3318,11 @@ export interface components {
         CreateFolderBody: {
             /** @description Folder name, must be unique per user. The slug is derived from it. */
             name: string;
+            /**
+             * @description `encrypted` marks a folder whose clips the client encrypts before sending. Fixed at creation, it cannot be changed afterwards. Defaults to `public`.
+             * @enum {string}
+             */
+            visibility?: "public" | "encrypted";
         };
         RenameFolderBody: {
             /** @description New folder name, up to 100 characters. The slug is derived from it. */

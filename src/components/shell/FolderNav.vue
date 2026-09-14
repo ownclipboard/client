@@ -11,6 +11,7 @@ import { currentTab, folders, foldersLoaded, getFolders, openFolder } from "../.
 import { openFolderSettings } from "../../stores/folder-settings.store";
 import { $http, alertRequestError } from "../../http";
 import type { OwnFolder } from "../../types/models.types";
+import type { components } from "../../types/api";
 import Skeleton from "../ui/Skeleton.vue";
 import Input from "../ui/Input.vue";
 import Button from "../ui/Button.vue";
@@ -37,9 +38,16 @@ function settings(folder: OwnFolder) {
   emit("navigate");
 }
 
+const FOLDER_TYPES = [
+  { encrypted: false, label: "Normal", icon: FolderIcon },
+  { encrypted: true, label: "Encrypted", icon: LockClosedIcon }
+];
+
 /* New folder */
 const adding = ref(false);
 const newName = ref("");
+// Fixed at creation: an existing folder cannot be turned into an encrypted one later.
+const newEncrypted = ref(false);
 const nameInput = ref<InstanceType<typeof Input>>();
 
 async function startAdding() {
@@ -51,16 +59,31 @@ async function startAdding() {
 function cancelAdding() {
   adding.value = false;
   newName.value = "";
+  newEncrypted.value = false;
 }
 
 function createFolder(btn: ILoadingButton) {
   const name = newName.value.trim();
   if (!name) return btn.stopLoading();
 
+  const body: components["schemas"]["CreateFolderBody"] = {
+    name,
+    visibility: newEncrypted.value ? "encrypted" : "public"
+  };
+
   return $http
-    .post("/folders", { name })
-    .then(getFolders)
-    .then(cancelAdding)
+    .post<any, components["schemas"]["Folder"]>("/folders", body)
+    .then(async (folder) => {
+      const encrypted = folder.visibility === "encrypted";
+      cancelAdding();
+      await getFolders();
+
+      // An encrypted folder takes no clips until it has a password, so go and set one.
+      if (encrypted) {
+        openFolderSettings(folder.slug);
+        emit("navigate");
+      }
+    })
     .catch(alertRequestError)
     .finally(btn.stopLoading);
 }
@@ -116,6 +139,29 @@ function createFolder(btn: ILoadingButton) {
 
     <form v-if="adding" class="mt-1 space-y-2 px-1" @submit.prevent @keydown.esc="cancelAdding">
       <Input ref="nameInput" v-model="newName" size="sm" placeholder="Folder name" />
+
+      <div class="flex gap-1" role="radiogroup" aria-label="Folder type">
+        <button
+          v-for="option in FOLDER_TYPES"
+          :key="String(option.encrypted)"
+          type="button"
+          role="radio"
+          :aria-checked="newEncrypted === option.encrypted"
+          :class="[
+            'flex flex-1 items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-[12px] font-medium transition-colors',
+            newEncrypted === option.encrypted
+              ? 'border-accent bg-accent-soft text-accent'
+              : 'border-line text-muted hover:border-line-strong hover:text-fg'
+          ]"
+          @click="newEncrypted = option.encrypted"
+        >
+          <component :is="option.icon" class="h-3.5 w-3.5" />{{ option.label }}
+        </button>
+      </div>
+      <p v-if="newEncrypted" class="px-0.5 text-[11px] leading-snug text-faint">
+        Clips are locked with a password you set next. Files can't go in one, and this can't be changed later.
+      </p>
+
       <div class="flex items-center justify-end gap-1">
         <Button size="sm" variant="ghost" @click="cancelAdding">Cancel</Button>
         <Button size="sm" variant="primary" type="submit" :click="createFolder" message="">Add</Button>
