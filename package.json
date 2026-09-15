@@ -32,17 +32,18 @@
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^26.5.0",
     "@types/tailwindcss": "^3.1.0",
+    "@types/web-bluetooth": "^0.0.21",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/compiler-sfc": "^3.5.42",
     "autoprefixer": "^10.5.6",
+    "npm-check-updates": "^23.1.0",
     "postcss": "^8.5.28",
     "prettier": "^3.9.6",
     "tailwindcss": "^3.0.24",
-    "typescript": "^7.0.2",
+    "typescript": "^6.0.3",
     "vite": "^8.3.0",
     "vite-plugin-ejs": "^2.0.0",
-    "vue-tsc": "^3.3.11",
-    "npm-check-updates": "^23.1.0"
+    "vue-tsc": "^3.3.11"
   },
   "engines": {
     "node": ">=14"
