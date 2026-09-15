@@ -60,7 +60,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Missing or invalid `oc_token`. */
+                /** @description Missing or invalid `oc-token`. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -117,7 +117,7 @@ export interface paths {
                         "application/json": components["schemas"]["SubscriptionStatusResponse"];
                     };
                 };
-                /** @description Missing or invalid `oc_token`. */
+                /** @description Missing or invalid `oc-token`. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -199,7 +199,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/legacy/validate": {
+    "/api/validate": {
         parameters: {
             query?: never;
             header?: never;
@@ -246,7 +246,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/legacy/connect": {
+    "/api/connect": {
         parameters: {
             query?: never;
             header?: never;
@@ -313,7 +313,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/legacy/all": {
+    "/api/all": {
         parameters: {
             query?: never;
             header?: never;
@@ -367,7 +367,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/legacy/add": {
+    "/api/add": {
         parameters: {
             query?: never;
             header?: never;
@@ -430,7 +430,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/legacy/delete": {
+    "/api/delete": {
         parameters: {
             query?: never;
             header?: never;
@@ -534,7 +534,7 @@ export interface paths {
                         "application/json": components["schemas"]["PingResponse"];
                     };
                 };
-                /** @description Missing or invalid `oc_token`. */
+                /** @description Missing or invalid `oc-token`. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -564,7 +564,7 @@ export interface paths {
         put?: never;
         /**
          * Login
-         * @description Returns a JWT. Send it as the `oc_token` header on authenticated requests.
+         * @description Returns a JWT. Send it as the `oc-token` header on authenticated requests.
          */
         post: {
             parameters: {
@@ -771,7 +771,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Missing `oc_token`. */
+                /** @description Missing `oc-token`. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -819,7 +819,7 @@ export interface paths {
                         "application/json": components["schemas"]["Owns3Status"];
                     };
                 };
-                /** @description Missing or invalid `oc_token`. */
+                /** @description Missing or invalid `oc-token`. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -1038,7 +1038,7 @@ export interface paths {
                         "application/json": components["schemas"]["Folder"][];
                     };
                 };
-                /** @description Missing or invalid `oc_token`. */
+                /** @description Missing or invalid `oc-token`. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -1096,7 +1096,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Missing or invalid `oc_token`. */
+                /** @description Missing or invalid `oc-token`. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -1836,7 +1836,7 @@ export interface paths {
                         "application/json": components["schemas"]["DeviceListResponse"];
                     };
                 };
-                /** @description Missing or invalid `oc_token`. */
+                /** @description Missing or invalid `oc-token`. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -2348,7 +2348,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Missing or invalid `oc_token`. */
+                /** @description Missing or invalid `oc-token`. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -2452,7 +2452,7 @@ export interface paths {
                         "application/json": components["schemas"]["ClipsListResponse"];
                     };
                 };
-                /** @description Missing or invalid `oc_token`. */
+                /** @description Missing or invalid `oc-token`. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -2503,7 +2503,7 @@ export interface paths {
                         "application/json": components["schemas"]["ClipsListResponse"];
                     };
                 };
-                /** @description Missing or invalid `oc_token`. */
+                /** @description Missing or invalid `oc-token`. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -2923,7 +2923,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Missing or invalid `oc_token`. */
+                /** @description Missing or invalid `oc-token`. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -2993,7 +2993,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Missing or invalid `oc_token`. */
+                /** @description Missing or invalid `oc-token`. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -3022,7 +3022,7 @@ export interface paths {
         /**
          * Change the account password
          * @description Replaces the password. The current one is required. Every other session is ended,
-         *     so a new token is returned for the caller: replace the stored `oc_token` with it,
+         *     so a new token is returned for the caller: replace the stored `oc-token` with it,
          *     otherwise the next request fails with a session error.
          */
         post: {
@@ -3062,7 +3062,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Missing or invalid `oc_token`. */
+                /** @description Missing or invalid `oc-token`. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -3273,7 +3273,7 @@ export interface components {
             password: string;
         };
         LoginResponse: {
-            /** @description JWT to send in the `oc_token` header. */
+            /** @description JWT to send in the `oc-token` header. */
             token: string;
             /** @enum {string|null} */
             plan: "free" | "pro" | null;
@@ -3499,7 +3499,7 @@ export interface components {
             newPassword: string;
         };
         ChangePasswordResponse: {
-            /** @description New jwt for this device. Replace the stored `oc_token` with it. */
+            /** @description New jwt for this device. Replace the stored `oc-token` with it. */
             token: string;
             message: string;
         };

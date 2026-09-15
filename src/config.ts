@@ -35,7 +35,7 @@ export default {
   name: (import.meta.env.VITE_APP_NAME || "OwnClipboard") as string,
   domain: `${hostname}${port ? ":" + port : ""}`,
   baseUrl,
-  /** Origin of the API, without any version prefix. Apps talk to `${apiOrigin}/api/legacy`. */
+  /** Origin of the API, without any version prefix. Apps talk to `${apiOrigin}/api`. */
   apiOrigin,
   serverUrl
 };

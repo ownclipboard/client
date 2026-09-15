@@ -171,7 +171,7 @@ function replace(device: Device) {
         </li>
         <li class="flex gap-3">
           <span class="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-raised text-[11px] font-semibold text-fg">2</span>
-          <span>The app calls <code class="font-mono text-[13px] text-fg">/api/legacy/connect</code> once to activate the key.</span>
+          <span>The app calls <code class="font-mono text-[13px] text-fg">/api/connect</code> once to activate the key.</span>
         </li>
         <li class="flex gap-3">
           <span class="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-raised text-[11px] font-semibold text-fg">3</span>

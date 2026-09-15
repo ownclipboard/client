@@ -36,7 +36,7 @@ const connectSnippet = computed(() => snippet(props.apiKey));
 const shownSnippet = computed(() => snippet(revealed.value ? props.apiKey : masked.value));
 
 function snippet(key: string) {
-  return `curl -X POST ${config.apiOrigin}/api/legacy/connect \\
+  return `curl -X POST ${config.apiOrigin}/api/connect \\
   -H "oc-key: ${key}" \\
   -H "Content-Type: application/json" \\
   -d '{"device_id":"${slugId(props.deviceName)}"}'`;
@@ -95,8 +95,8 @@ function slugId(name: string) {
           </IconButton>
         </div>
         <p class="mt-2 text-xs text-faint">
-          After that the app can read clips from <code class="font-mono">/api/legacy/all</code>, add one with
-          <code class="font-mono">/api/legacy/add</code> and remove one with <code class="font-mono">/api/legacy/delete</code>.
+          After that the app can read clips from <code class="font-mono">/api/all</code>, add one with
+          <code class="font-mono">/api/add</code> and remove one with <code class="font-mono">/api/delete</code>.
         </p>
       </div>
     </div>
