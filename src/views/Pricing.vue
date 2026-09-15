@@ -224,9 +224,7 @@ function payNow(btn: ILoadingButton) {
   return $http
     .post<any, SubscribeResponse>(
       "account/subscribe",
-      { plan: "pro", type: subscribeForm.type, duration: subscribeForm.duration },
-      // Creating the invoice calls NowPayments upstream, so allow more than the default 1s timeout.
-      { timeout: 30_000 }
+      { plan: "pro", type: subscribeForm.type, duration: subscribeForm.duration }
     )
     .then((res) => {
       if (res.invoice?.url) {

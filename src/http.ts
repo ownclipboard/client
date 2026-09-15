@@ -5,7 +5,6 @@ import { $localStorage } from "./stores/native";
 
 export const $http = axios.create({
   baseURL: config.serverUrl,
-  timeout: 1000,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",

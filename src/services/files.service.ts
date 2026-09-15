@@ -45,15 +45,12 @@ export async function uploadFile(file: File, { folder, title, onProgress }: Uplo
 
   const { file: record, upload } = await $http.post<any, FileUploadResponse>(
     "files/upload",
-    { name: file.name, title: title || undefined, contentType, size: file.size, folder },
-    { timeout: 30_000 }
+    { name: file.name, title: title || undefined, contentType, size: file.size, folder }
   );
 
   await putToStorage(upload.url, upload.method, upload.headers, file, onProgress);
 
-  const { clip } = await $http.post<any, FileConfirmResponse>(`file/${record.publicId}/confirm`, undefined, {
-    timeout: 30_000
-  });
+  const { clip } = await $http.post<any, FileConfirmResponse>(`file/${record.publicId}/confirm`);
 
   if (!clip) throw new Error("Upload confirmed but no clip was returned.");
   return clip as OwnClip;
@@ -92,9 +89,9 @@ function putToStorage(
   });
 }
 
-/** Temporary (1 hour) download url for a file clip. Signed by the storage server, so allow it time. */
+/** Temporary (1 hour) download url for a file clip. Signed by the storage server. */
 export async function getFileUrl(filePublicId: string) {
-  const { url } = await $http.get<any, FileUrlResponse>(`file/${filePublicId}/url`, { timeout: 30_000 });
+  const { url } = await $http.get<any, FileUrlResponse>(`file/${filePublicId}/url`);
   return url;
 }
 
@@ -103,18 +100,12 @@ export function getOwns3Status() {
 }
 
 export function connectOwns3(endpoint: string, apiKey: string) {
-  return $http.post<any, components["schemas"]["Owns3ConnectResponse"]>(
-    "account/owns3",
-    { endpoint, apiKey },
-    { timeout: 30_000 }
-  );
+  return $http.post<any, components["schemas"]["Owns3ConnectResponse"]>("account/owns3", { endpoint, apiKey });
 }
 
 /** Pro only: store files on the storage operated by OwnClipboard instead of an own server. */
 export function useDefaultOwns3() {
-  return $http.post<any, components["schemas"]["Owns3ConnectResponse"]>("account/owns3/use-default", undefined, {
-    timeout: 30_000
-  });
+  return $http.post<any, components["schemas"]["Owns3ConnectResponse"]>("account/owns3/use-default");
 }
 
 export function disconnectOwns3() {

@@ -23,7 +23,7 @@ export async function refreshAuthData(st: AuthUserStore) {
  * replaces here, so every token issued so far stops working, on every device.
  */
 export function logout() {
-  return $http.post<any, components["schemas"]["MessageResponse"]>("/auth/logout", undefined, { timeout: 10_000 });
+  return $http.post<any, components["schemas"]["MessageResponse"]>("/auth/logout");
 }
 
 /**

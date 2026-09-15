@@ -121,7 +121,7 @@ async function deleteFolder(btn: ILoadingButton) {
 
   try {
     // Every clip goes with the folder, and each file is removed from storage one by one.
-    await $http.delete(`/folder/${folder.value.slug}`, { timeout: 30_000 });
+    await $http.delete(`/folder/${folder.value.slug}`);
     currentTab.value = "clipboard";
     closeFolderSettings();
     redirect($router.resolve({ name: "clipboard" }).href, 1000);
