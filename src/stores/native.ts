@@ -6,8 +6,8 @@ const $localStorage = vueLocalStorage("oc");
 const $sessionStorage = vueSessionStorage("oc");
 
 // Enable base 64 encoding for both storage.
-$localStorage.enableBase64Encryption(isProd);
-$sessionStorage.enableBase64Encryption(isProd);
+// $localStorage.enableBase64Encryption(isProd);
+// $sessionStorage.enableBase64Encryption(isProd);
 
 // Export both storage.
 export { $sessionStorage, $localStorage };
