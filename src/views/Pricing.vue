@@ -290,7 +290,7 @@ const proCta = computed(() => {
   if (hasPendingInvoice.value) return { label: "Payment pending", hint: "Complete or cancel it above" };
   if (hasActiveSubscription.value) return { label: "Extend Pro", hint: "Added to your current expiry" };
   if (authUser.subscription) return { label: "Subscribe to Pro", hint: MONTHLY_ENABLED ? "Monthly or yearly" : "Billed yearly" };
-  return { label: "Try Pro free", hint: "7 days, no payment" };
+  return { label: "Try Pro free", hint: "1 month, no payment" };
 });
 </script>
 
