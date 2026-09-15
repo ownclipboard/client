@@ -1,5 +1,4 @@
 import { vueLocalStorage, vueSessionStorage } from "@trapcode/browser-storage/vue";
-import { isProd } from "../config";
 
 // Declare own local and session storage library.
 const $localStorage = vueLocalStorage("oc");
