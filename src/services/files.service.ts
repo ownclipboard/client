@@ -37,7 +37,7 @@ export type UploadOptions = {
 /**
  * Upload a file to the user's owns3 storage.
  *  1. ask the API for a presigned upload slot
- *  2. PUT the bytes straight to storage (no oc_token)
+ *  2. PUT the bytes straight to storage (no oc-token)
  *  3. confirm with the API, which creates the file clip
  */
 export async function uploadFile(file: File, { folder, title, onProgress }: UploadOptions): Promise<OwnClip> {

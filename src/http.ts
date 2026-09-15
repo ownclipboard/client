@@ -8,7 +8,7 @@ export const $http = axios.create({
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
-    oc_token: $localStorage.get("token")
+    "oc-token": $localStorage.get("token")
   }
 });
 
@@ -20,8 +20,8 @@ export const $http = axios.create({
 export function setAuthToken(token: string) {
   $localStorage.set("token", token);
   const headers = $http.defaults.headers as any;
-  headers.oc_token = token;
-  if (headers.common) headers.common.oc_token = token;
+  headers["oc-token"] = token;
+  if (headers.common) headers.common["oc-token"] = token;
 }
 
 $http.interceptors.response.use((response) => {
