@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "bunx vite --port 3004 --host",
-    "build": "bunx vue-tsc --noEmit && vite build",
+    "build": "bunx vue-tsc --noEmit && bunx vite build",
     "serve": "bunx vite preview",
     "pull-api": "bash bash/pull-api.sh"
   },
