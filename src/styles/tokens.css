@@ -1,0 +1,65 @@
+/*
+ * Design tokens. Every color in the app is one of these variables, consumed
+ * through Tailwind (bg-surface, text-muted, border-line, ...). Values are RGB
+ * triplets so Tailwind can apply opacity modifiers (bg-accent/10).
+ *
+ * Light is the default; the `dark` class on <html> switches the set. The theme
+ * store decides which class applies (light / dark / system).
+ */
+:root {
+  --bg: 233 236 239;
+  --surface: 250 250 251;
+  --raised: 242 244 246;
+  --sunken: 226 229 233;
+  --line: 217 221 226;
+  --line-strong: 194 200 207;
+  --fg: 21 25 29;
+  --muted: 93 104 116;
+  --faint: 138 149 161;
+
+  --accent: 15 138 95;
+  --accent-hover: 12 120 83;
+  --accent-soft: 227 245 236;
+  --accent-fg: 255 255 255;
+
+  --warn: 180 83 9;
+  --warn-soft: 253 241 220;
+  --danger: 194 65 12;
+  --danger-soft: 254 234 224;
+  --info: 29 99 181;
+  --info-soft: 228 238 251;
+
+  --shadow-card: 0 1px 2px rgb(20 25 30 / 0.06), 0 8px 24px -12px rgb(20 25 30 / 0.18);
+  --shadow-pop: 0 4px 12px rgb(20 25 30 / 0.08), 0 16px 40px -12px rgb(20 25 30 / 0.25);
+
+  color-scheme: light;
+}
+
+:root.dark {
+  --bg: 15 18 20;
+  --surface: 21 25 28;
+  --raised: 27 32 36;
+  --sunken: 11 13 15;
+  --line: 37 43 49;
+  --line-strong: 50 58 66;
+  --fg: 231 234 237;
+  --muted: 152 162 173;
+  --faint: 104 115 126;
+
+  --accent: 60 207 151;
+  --accent-hover: 84 220 168;
+  --accent-soft: 18 48 42;
+  --accent-fg: 6 38 27;
+
+  --warn: 243 182 74;
+  --warn-soft: 51 42 20;
+  --danger: 255 138 92;
+  --danger-soft: 58 33 23;
+  --info: 124 179 240;
+  --info-soft: 23 42 66;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -12px rgb(0 0 0 / 0.6);
+  --shadow-pop: 0 4px 12px rgb(0 0 0 / 0.5), 0 20px 48px -12px rgb(0 0 0 / 0.7);
+
+  color-scheme: dark;
+}

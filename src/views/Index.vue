@@ -1,146 +1,126 @@
 <script setup lang="ts">
-import config from "../config";
-import { reactive, ref } from "vue";
-import { $http, alertRequestError } from "../http";
+/**
+ * Sign in. Two steps against the API: check the username exists, then log in.
+ */
+import { nextTick, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
+import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
-import { $localStorage } from "../stores/native";
-import { $alert } from "../components/ws-alert/ws-alert";
+import { alertRequestError } from "../http";
+import { login, usernameExists } from "../services/auth.service";
 import { redirect } from "../functions";
-import Intro from "../components/Intro.vue";
+import AuthPanel from "../layouts/AuthPanel.vue";
+import Input from "../components/ui/Input.vue";
+import Button from "../components/ui/Button.vue";
 
-const userNameExists = ref<boolean>();
+const $router = useRouter();
+const step = ref<"username" | "password">("username");
+const usernameInput = ref<InstanceType<typeof Input>>();
+const passwordInput = ref<InstanceType<typeof Input>>();
+// Set when the username is unknown, so we can offer to create it.
+const unknownUsername = ref("");
+
+// Dev convenience only: prefill from env, never in production builds.
 const form = reactive({
-  username: "ownclipboard",
-  password: "ownclipboard"
+  username: (import.meta.env.DEV && import.meta.env.VITE_APP_DEV_USERNAME) || "",
+  password: (import.meta.env.DEV && import.meta.env.VITE_APP_DEV_PASSWORD) || ""
 });
 
-function checkUsername(btn: ILoadingButton) {
-  if (!form.username) return btn.stopLoading();
+async function checkUsername(btn: ILoadingButton) {
+  const username = form.username.trim();
+  if (!username) return btn.stopLoading(() => usernameInput.value?.focus());
 
-  return $http
-    .post<any, { exists: boolean }>("/auth/check-username", {
-      username: form.username
-    })
-    .then((res) => {
-      userNameExists.value = res.exists;
-    })
-    .catch(alertRequestError)
-    .finally(btn.stopLoading);
+  try {
+    if (!(await usernameExists(username))) {
+      unknownUsername.value = username;
+      return;
+    }
+    unknownUsername.value = "";
+    step.value = "password";
+    await nextTick();
+    passwordInput.value?.focus();
+  } catch (e) {
+    alertRequestError(e);
+  } finally {
+    btn.stopLoading();
+  }
 }
 
-function login(btn: ILoadingButton) {
-  if (!form.username || !form.password) return btn.stopLoading();
-
-  return $http
-    .post<any, { token: string }>("/auth/login", {
-      username: form.username,
-      password: form.password
-    })
-    .then((res) => {
-      $alert.success("Login successful, Redirecting to your clipboard...");
-      $localStorage.set("token", res.token);
-
-      redirect("/clipboard", 3000);
-    })
-    .catch((e) => {
-      alertRequestError(e);
-      btn.stopLoading();
-    });
+function back() {
+  step.value = "username";
+  nextTick(() => usernameInput.value?.focus());
 }
+
+async function submitLogin(btn: ILoadingButton) {
+  if (!form.password) return btn.stopLoading(() => passwordInput.value?.focus());
+
+  try {
+    const plan = await login(form.username.trim(), form.password);
+    const target = $router.resolve({ name: plan ? "clipboard" : "pricing" }).href;
+    // Full reload so the axios instance picks up the token header.
+    redirect(target, 300);
+  } catch (e) {
+    alertRequestError(e);
+    btn.stopLoading();
+  }
+}
+
+const LEGACY_URL = "https://legacy.ownclipboard.com";
 </script>
 
 <template>
-  <div class="lg:pl-5 lg:pt-5">
-    <Intro />
+  <AuthPanel>
+    <h2 class="text-2xl font-semibold tracking-tight text-fg">Sign in</h2>
+    <p class="mt-1 text-sm text-muted">
+      <template v-if="step === 'username'">Enter your username to continue.</template>
+      <template v-else>Welcome back, <span class="font-medium text-fg">{{ form.username }}</span>.</template>
+    </p>
 
-    <!-- Auth Form  -->
-    <div class="flex mt-5 lg:mt-10">
-      <div class="m-auto max-w-md w-full p-5 rounded">
-        <!-- Check Username  -->
-        <form class="space-y-3">
-          <template v-if="userNameExists === undefined">
-            <div>
-              <input
-                v-model="form.username"
-                autocomplete="off"
-                type="text"
-                id="check_username"
-                placeholder="Username"
-              />
-            </div>
+    <form v-if="step === 'username'" class="mt-8 space-y-4" @submit.prevent>
+      <Input
+        ref="usernameInput"
+        v-model="form.username"
+        label="Username"
+        autocomplete="username"
+        autofocus
+        spellcheck="false"
+        :error="unknownUsername && unknownUsername === form.username.trim() ? 'No account with that username.' : ''"
+        @update:model-value="unknownUsername = ''"
+      />
+      <Button variant="primary" size="lg" type="submit" block :click="checkUsername" message="Checking">
+        Continue <ArrowRightIcon class="h-4 w-4" />
+      </Button>
+      <p v-if="unknownUsername" class="text-sm text-muted">
+        <RouterLink :to="{ name: 'signup', query: { username: unknownUsername } }" class="font-medium text-accent underline underline-offset-4">
+          Create an account as {{ unknownUsername }}
+        </RouterLink>
+      </p>
+    </form>
 
-            <div>
-              <LoadingButton
-                type="submit"
-                message="Checking"
-                :click="checkUsername"
-                icon="fa fa-slash fa-spin mr-3"
-              >
-                <i class="fas fa-check text-green-600 mr-1"></i>
-                CHECK USERNAME
-              </LoadingButton>
-            </div>
-          </template>
+    <form v-else class="mt-8 space-y-4" @submit.prevent>
+      <Input ref="passwordInput" v-model="form.password" type="password" label="Password" autocomplete="current-password" />
+      <Button variant="primary" size="lg" type="submit" block :click="submitLogin" message="Signing in">Sign in</Button>
+      <Button variant="ghost" size="sm" @click="back"><ArrowLeftIcon class="h-4 w-4" /> Not {{ form.username }}?</Button>
+    </form>
 
-          <template v-else-if="userNameExists === true">
-            <div class="p-3 bg-gray-700 rounded-sm border-l-2 border-green-300">
-              Welcome <strong class="text-green-300">{{ form.username }}</strong
-              >, Login to continue.
-            </div>
+    <p class="mt-8 text-sm text-muted">
+      New here?
+      <RouterLink :to="{ name: 'signup' }" class="font-medium text-accent underline underline-offset-4">Create an account</RouterLink>
+    </p>
 
-            <div>
-              <label for="password">Password:</label>
-              <input
-                v-model="form.password"
-                autocomplete="off"
-                type="password"
-                id="password"
-                placeholder="Account Password"
-              />
-            </div>
-
-            <div>
-              <LoadingButton
-                type="submit"
-                message="Validating"
-                :click="login"
-                icon="fa fa-slash fa-spin mr-3"
-              >
-                <i class="fas fa-check text-green-600 mr-1"></i>
-                LOGIN
-              </LoadingButton>
-            </div>
-          </template>
-        </form>
-      </div>
+    <div class="mt-6 rounded-md border border-line bg-surface px-3.5 py-3 text-[13px] leading-relaxed text-muted">
+      <p>
+        If you are looking for the old version, see <a
+          :href="LEGACY_URL"
+          target="_blank"
+          rel="noopener"
+          class="font-medium text-accent underline underline-offset-4"
+        >legacy.ownclipboard.com</a>.
+      </p>
+      <p class="mt-2">
+        Your clips have already been imported here. New clips saved on the old site won't sync over, and it may be shut down at
+        any time.
+      </p>
     </div>
-  </div>
+  </AuthPanel>
 </template>
-
-<style scoped lang="scss">
-@use "../assets/scss/var";
-
-label {
-  @apply block;
-}
-
-input {
-  background-color: var.$darker;
-  @apply block;
-  @apply w-full;
-  @apply p-3;
-  @apply border;
-  @apply border-gray-600;
-  @apply rounded;
-  @apply outline-none;
-  @apply focus:bg-white;
-  @apply focus:text-gray-900;
-}
-
-button {
-  @apply bg-gray-300 text-black font-medium;
-  @apply p-2 w-full;
-  @apply rounded;
-  @apply hover:bg-gray-100;
-}
-</style>

@@ -1,0 +1,1 @@
+npx openapi-typescript http://localhost:3003/docs.json -o src/types/api.d.ts

@@ -13,6 +13,18 @@ export const $http = axios.create({
   }
 });
 
+/**
+ * Store the session token and use it on every following request. The instance
+ * reads the token once at startup, so anything that issues a new one mid-session
+ * has to put it here or the next request goes out with the dead one.
+ */
+export function setAuthToken(token: string) {
+  $localStorage.set("token", token);
+  const headers = $http.defaults.headers as any;
+  headers.oc_token = token;
+  if (headers.common) headers.common.oc_token = token;
+}
+
 $http.interceptors.response.use((response) => {
 
   if (response.data) {
@@ -28,11 +40,24 @@ $http.interceptors.response.use((response) => {
   return response.data;
 });
 
+/**
+ * Show the API's error message, or a plain explanation when the request never
+ * got a response (timeout, offline, server down).
+ */
 export function alertRequestError(res: any) {
-  if (res.response) {
-    const { data } = res.response;
-    if (typeof data === "object" && data.error) {
-      $alert.error(data.error);
-    }
+  if (res?.response) {
+    const { data, status } = res.response;
+    if (typeof data === "object" && data?.error) return $alert.error(data.error);
+    return $alert.error(`Request failed (${status}).`);
+  }
+
+  if (res?.code === "ECONNABORTED" || res?.code === "ETIMEDOUT") {
+    return $alert.error("The server took too long to respond. Please try again.");
+  }
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return $alert.error("You appear to be offline.");
+  }
+  if (res?.request) {
+    return $alert.error("Could not reach the server. Please try again.");
   }
 }

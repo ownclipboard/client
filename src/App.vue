@@ -6,10 +6,7 @@ import config from "./config";
 
 const route = useRoute();
 
-/**
- * Update the page title based on the route meta
- * if no meta is found, use the default title i.e. config.name
- */
+// Page title from route meta, falling back to the app name.
 watch(
   () => route.name,
   () => {
@@ -20,6 +17,6 @@ watch(
 </script>
 
 <template>
-  <WsAlert />
+  <Toaster />
   <router-view />
 </template>

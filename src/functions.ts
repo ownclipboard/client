@@ -1,3 +1,5 @@
+import { RouteLocationRaw, useRouter } from "vue-router";
+
 /**
  * Redirect function using setTimeout
  * @param url
@@ -12,6 +14,3 @@ export function redirect(url: string, after: number = 0): void {
     window.location.href = url;
   }
 }
-
-
-// export function copyAndReference

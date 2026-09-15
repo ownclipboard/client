@@ -3,17 +3,16 @@ import { computed, ref } from "vue";
 import { OwnFolder } from "../types/models.types";
 import { $http } from "../http";
 
-// Holds current tab state
+// Slug of the folder currently shown in the clipboard.
 export const currentTab = $sessionStorage.persistedRef("currentTab", "clipboard");
 
-// Holds open tabs
-export const openTabs = $localStorage.persistedReactive("tabs", [
-  { name: "Clipboard", slug: "clipboard", contents: 0 },
-  { name: "Encrypted", slug: "encrypted", contents: 0 }
-]);
+// The old "open tabs" strip is gone; drop its persisted state.
+$localStorage.remove("tabs");
 
 // Folders as an array of objects
 export const folders = ref<OwnFolder[]>([]);
+export const foldersLoaded = ref(false);
+
 // Folders as a computed object using slug as keys
 export const foldersAsObject = computed(() => {
   const data: Record<string, OwnFolder> = {};
@@ -23,24 +22,28 @@ export const foldersAsObject = computed(() => {
   return data;
 });
 
-// Update counter on open tabs
-export function updateOpenTabStats() {
-  const folders = foldersAsObject.value;
+export const currentFolder = computed(() => foldersAsObject.value[currentTab.value]);
 
-  openTabs.forEach((tab, i) => {
-    const folder = folders[tab.slug];
-
-    if (folder) {
-      tab.contents = folders[tab.slug].contents;
-    } else {
-      // delete tab if folder no longer exists
-      openTabs.splice(i, 1);
-    }
-  });
+/**
+ * An encrypted folder holds nothing but ciphertext, and the password that makes
+ * it is never stored. Until one is set there is nothing to encrypt a new clip
+ * with, so the folder cannot take writes.
+ */
+export function folderNeedsPassword(folder?: OwnFolder) {
+  return !!folder && folder.visibility === "encrypted" && !folder.hasPassword;
 }
+
+export const currentFolderNeedsPassword = computed(() => folderNeedsPassword(currentFolder.value));
 
 // Get folders
 export async function getFolders() {
   folders.value = await $http.get<any, OwnFolder[]>("/folders");
-  updateOpenTabStats();
+  foldersLoaded.value = true;
+
+  // The current folder no longer exists (deleted elsewhere): fall back to the default.
+  if (!foldersAsObject.value[currentTab.value]) currentTab.value = "clipboard";
+}
+
+export function openFolder(slug: string) {
+  currentTab.value = slug;
 }

@@ -1,24 +1,11 @@
 <script lang="ts" setup>
-import PasteBoard from "../components/PasteBoard.vue";
-import OpenFolders from "../components/OpenFolders.vue";
-import Clips from "../components/Clips.vue";
-import Folders from "../components/Folders.vue";
+import ClipboardToolbar from "../components/clips/ClipboardToolbar.vue";
+import ClipList from "../components/clips/ClipList.vue";
 </script>
 
 <template>
-  <section class="flex">
-    <PasteBoard class="max-w-3xl w-full mx-auto pt-5 lg:pt-10" />
-  </section>
-
-  <section class="my-5">
-    <Folders />
-  </section>
-
-  <section class="mt-10 mb-3">
-    <OpenFolders />
-  </section>
-
-  <section>
-    <Clips />
-  </section>
+  <div class="space-y-5">
+    <ClipboardToolbar />
+    <ClipList />
+  </div>
 </template>

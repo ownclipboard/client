@@ -1,10 +1,13 @@
 
 export type OwnClip = {
-  uuid: string;
+  publicId: string;
   title: string;
-  type: "text";
+  type: "text" | "url" | "html" | "file";
   folder: string;
+  /** The clip content. Ciphertext when encrypted. Always "File Clip" for file clips (the title holds the file name). */
   context: string;
+  /** Present on file clips. */
+  file?: { publicId: string; ext: string };
   locked: boolean;
   favorite: boolean;
   encrypted: boolean;
@@ -19,4 +22,51 @@ export type OwnFolder = {
   visibility: "public" | "private" | "encrypted";
   publicPaste?: { id: string; date: string };
   hasPassword?: boolean;
+};
+
+
+export interface Subscription {
+  _id: string;
+  type: "trial" | "monthly" | "yearly";
+  createdAt: Date;
+  userId: string;
+  plan: "pro";
+  amount: number;
+  status: "pending" | "active" | "cancelled";
+  duration: number;
+  expiresAt: Date;
+}
+
+export type InvoiceStatus =
+  | "pending"
+  | "waiting"
+  | "confirming"
+  | "confirmed"
+  | "sending"
+  | "partially_paid"
+  | "finished"
+  | "failed"
+  | "refunded"
+  | "expired";
+
+export type SubInvoice = {
+  provider: "nowpayments";
+  id: string;
+  url?: string;
+  status: InvoiceStatus;
+  updatedAt?: string;
+};
+
+export type SubStat = {
+  publicId: string;
+  plan: Subscription["plan"];
+  type: Subscription["type"];
+  status: Subscription["status"];
+  amount: number; // USD
+  duration: Subscription["duration"];
+  createdAt: string;
+  startsAt?: string;
+  expiresAt?: string;
+  expired: boolean;
+  invoice?: SubInvoice;
 };
