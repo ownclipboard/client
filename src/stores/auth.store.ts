@@ -26,6 +26,9 @@ export const useAuthUser = defineStore("authUser", () => {
   // Where files go. Filled by `ping`, and kept in step by the Settings page.
   const storage = ref<StorageSummary>();
 
+  /** Whether this server offers live updates, and the channel to listen on. */
+  const realtime = ref<components["schemas"]["RealtimeSummary"]>();
+
   /** Files can only be uploaded once storage is connected and usable. */
   const canUpload = computed(() => !!storage.value?.connected);
 
@@ -69,7 +72,7 @@ export const useAuthUser = defineStore("authUser", () => {
     clearSession();
   }
 
-  return { data, isLogged, subscription, pending, storage, canUpload, uploadBlockedReason, clearSession, signOut };
+  return { data, isLogged, subscription, pending, storage, realtime, canUpload, uploadBlockedReason, clearSession, signOut };
 });
 
 export type AuthUserStore = ReturnType<typeof useAuthUser>;

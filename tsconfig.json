@@ -15,7 +15,8 @@
     ],
     "types": [
       "vite/client",
-      "@types/web-bluetooth"
+      "@types/web-bluetooth",
+      "node"
     ]
   },
   "include": [

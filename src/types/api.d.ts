@@ -510,7 +510,9 @@ export interface paths {
         /**
          * Current user, storage and subscription
          * @description Returns the authenticated user's public profile, their latest active subscription and a
-         *     short view of their file storage, so the client can decide whether to offer uploads.
+         *     short view of their file storage, so the client can decide whether to offer uploads,
+         *     plus `realtime`, which says whether live updates are available and names the channel
+         *     to subscribe to after fetching a token from `POST /client/v1/realtime/token`.
          *     `storage.connected` is true when files can be uploaded now. `storage.default` says the
          *     app's own storage is in use, `storage.defaultAvailable` whether it is offered at all,
          *     and `storage.proRequired` appears when the default storage is picked but the Pro plan
@@ -773,6 +775,74 @@ export interface paths {
                 };
                 /** @description Missing `oc-token`. */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/realtime/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Token to listen for live updates
+         * @description Returns a signed Ably TokenRequest. Point the Ably SDK's `authUrl` at this endpoint
+         *     with `authMethod: "POST"` and the `oc-token` header, and it fetches and renews tokens
+         *     on its own. The response body is the TokenRequest itself, as the SDK expects.
+         *
+         *     The token may only **subscribe**, and only to the user's own channel,
+         *     `user:{publicId}`, which `GET /client/v1/ping` reports as `realtime.channel`.
+         *     It can neither publish nor listen to anyone else.
+         *
+         *     Messages carry ids and folder slugs only, never clip content: on an event the
+         *     client refetches over this api. Event names are `clip.new`, `clip.updated`,
+         *     `clip.deleted` and `clips.changed`, the last one for bulk changes such as a move
+         *     or a folder being deleted.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Ably TokenRequest, pass it straight to the SDK. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RealtimeTokenResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Realtime is not configured on this server. */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3407,6 +3477,8 @@ export interface components {
             user: components["schemas"]["AuthUser"] | null;
             /** @description File storage of the account, for deciding whether to offer uploads. */
             storage: components["schemas"]["StorageSummary"];
+            /** @description Live updates: whether this server offers them, and the channel to subscribe to. */
+            realtime: components["schemas"]["RealtimeSummary"];
             /** @description Latest active subscription, if any. */
             subscription?: components["schemas"]["Subscription"];
         };
@@ -3420,6 +3492,50 @@ export interface components {
             defaultAvailable: boolean;
             /** @description Set when the user picked the default storage but is no longer Pro. `connected` is false until they renew or connect their own server. */
             proRequired?: boolean;
+        };
+        /** @description Live updates over Ably. Absent capability means the client just polls as before. */
+        RealtimeSummary: {
+            /** @description False when this server has no Ably key configured. */
+            enabled: boolean;
+            /** @description Channel to subscribe to, e.g. `user:AbC123`. Null when realtime is off. */
+            channel: string | null;
+        };
+        /** @description Signed Ably TokenRequest. Pass it to the Ably SDK unchanged, it is not meant to be read. The token may only subscribe, and only to the user's own channel. */
+        RealtimeTokenResponse: {
+            keyName: string;
+            clientId?: string;
+            capability: string;
+            timestamp: number;
+            nonce: string;
+            mac: string;
+            ttl?: number;
+        };
+        /**
+         * @description Message delivered on a user's realtime channel. The Ably message `name` is the event: `clip.new`, `clip.updated`, `clip.deleted` or `clips.changed`.
+         *
+         *     Payloads carry ids and folder slugs only, never clip content: refetch over the api when one arrives.
+         */
+        RealtimeClipEvent: {
+            /** @description publicId of the clip. */
+            id: string;
+            /** @description Slug of the folder it lives in. */
+            folder: string;
+            /**
+             * @description Present when the clip is a file clip.
+             * @constant
+             */
+            kind?: "file";
+            /** @description Ably connectionId of the device that caused the change, when it sent one. */
+            from?: string;
+        };
+        /** @description Payload of `clips.changed`, sent once for a bulk change such as a move or a folder delete. */
+        RealtimeClipsChangedEvent: {
+            /** @description Folder slugs whose contents changed. */
+            folders: string[];
+            created?: number;
+            updated?: number;
+            deleted?: number;
+            from?: string;
         };
         LoginBody: {
             /** @description 3 to 250 alphanumeric characters. */

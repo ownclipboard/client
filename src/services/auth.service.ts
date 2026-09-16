@@ -4,13 +4,19 @@ import type { SubStat } from "../types/models.types";
 import type { components } from "../types/api";
 import { $localStorage } from "../stores/native";
 
-type PingResponse = { user: AuthUser; storage: StorageSummary; subscription: SubStat };
+type PingResponse = {
+  user: AuthUser;
+  storage: StorageSummary;
+  realtime: components["schemas"]["RealtimeSummary"];
+  subscription: SubStat;
+};
 
 export async function refreshAuthData(st: AuthUserStore) {
   try {
-    const { user, storage, subscription } = await $http.get<any, PingResponse>("/ping");
+    const { user, storage, realtime, subscription } = await $http.get<any, PingResponse>("/ping");
     st.data = user;
     st.storage = storage;
+    st.realtime = realtime;
     st.subscription = subscription;
   } catch {
     // The token is no longer good, so there is no session left to end server side.

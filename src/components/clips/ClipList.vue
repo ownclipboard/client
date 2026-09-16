@@ -10,6 +10,7 @@ import { composerOpen, openComposer } from "../../stores/composer.store";
 import { openFolderSettings } from "../../stores/folder-settings.store";
 import { $http, alertDeleteError, alertRequestError } from "../../http";
 import { $events } from "../../events";
+import type { RealtimeChange } from "../../services/realtime.service";
 import { askForPassword } from "../PasswordPromptHandler";
 import { askToConfirm } from "../ConfirmHandler";
 import { useAuthUser } from "../../stores/auth.store";
@@ -72,6 +73,23 @@ async function loadClips() {
 }
 
 $events.on("refreshClips", loadClips);
+
+/**
+ * Another device changed something. Only the folder on screen is worth
+ * refetching; counts for the rest are refreshed by the realtime service.
+ */
+$events.on("realtime:clips", (change: RealtimeChange) => {
+  const showingAll = isSearching.value && searchAllFolders.value;
+  if (!showingAll && change.folders.length && !change.folders.includes(currentTab.value)) return;
+  delete clipsCache[currentTab.value];
+  loadClips();
+});
+
+// Nothing is replayed after a drop, so take the whole list again.
+$events.on("realtime:resync", () => {
+  delete clipsCache[currentTab.value];
+  loadClips();
+});
 watch(currentTab, loadClips);
 
 // Reload when the search query or scope changes, starting from page 1.

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onMounted } from "vue";
+import { onBeforeUnmount, onMounted } from "vue";
 import AppShell from "../layouts/AppShell.vue";
 import PasswordPrompt from "../components/PasswordPrompt.vue";
 import FolderPicker from "../components/FolderPicker.vue";
@@ -12,14 +12,20 @@ import Brand from "../components/shell/Brand.vue";
 import { useAuthUser } from "../stores/auth.store";
 import { refreshAuthData } from "../services/auth.service";
 import { getFolders } from "../stores/tabs.store";
+import { startRealtime, stopRealtime } from "../services/realtime.service";
 import { isDev } from "../config";
 
 const authUser = useAuthUser();
 
 onMounted(async () => {
   await refreshAuthData(authUser);
-  if (authUser.isLogged) getFolders();
+  if (!authUser.isLogged) return;
+  getFolders();
+  // Live updates are an enhancement: a failure here leaves the app as it was.
+  startRealtime(authUser.realtime).catch(() => undefined);
 });
+
+onBeforeUnmount(stopRealtime);
 </script>
 
 <template>

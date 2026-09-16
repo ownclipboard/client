@@ -15,6 +15,8 @@ import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../http";
 import { listFiles, getFileUrl, humanFileSize, type FilePreview, type StoredFile } from "../services/files.service";
 import { folders } from "../stores/tabs.store";
+import { $events } from "../events";
+import type { RealtimeChange } from "../services/realtime.service";
 import { useAuthUser } from "../stores/auth.store";
 import PageHeader from "../components/ui/PageHeader.vue";
 import Select from "../components/ui/Select.vue";
@@ -103,6 +105,18 @@ function scheduleRefresh() {
 
 watch([folder, type], () => loadFiles(1));
 onMounted(loadFiles);
+
+/**
+ * A file clip changed elsewhere. `clips.changed` carries no kind, so a bulk
+ * change is taken at face value rather than missing an upload or a delete.
+ */
+$events.on("realtime:clips", (change: RealtimeChange) => {
+  if (!change.isFile && !change.bulk) return;
+  if (folder.value && change.folders.length && !change.folders.includes(folder.value)) return;
+  loadFiles(files.value.page);
+});
+
+$events.on("realtime:resync", () => loadFiles(files.value.page));
 onBeforeUnmount(() => clearTimeout(refreshTimer));
 
 function openPreview(file: StoredFile) {

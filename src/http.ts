@@ -24,6 +24,21 @@ export function setAuthToken(token: string) {
   if (headers.common) headers.common["oc-token"] = token;
 }
 
+/**
+ * Ably connection id of this tab. The api echoes it back on the events it
+ * publishes, which is how a tab tells its own changes from another device's.
+ */
+export function setConnectionId(id: string) {
+  const headers = $http.defaults.headers as any;
+  if (id) {
+    headers["oc-connection"] = id;
+    if (headers.common) headers.common["oc-connection"] = id;
+  } else {
+    delete headers["oc-connection"];
+    if (headers.common) delete headers.common["oc-connection"];
+  }
+}
+
 $http.interceptors.response.use((response) => {
 
   if (response.data) {
