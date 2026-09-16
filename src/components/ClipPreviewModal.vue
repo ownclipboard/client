@@ -95,7 +95,7 @@ function download() {
           <Badge variant="outline" uppercase>{{ clip.type }}</Badge>
           <span>{{ folderName }}</span>
           <span class="text-faint">·</span>
-          <TimeAgo :date="clip.updatedAt" class="font-mono" />
+          <TimeAgo :date="clip.updatedAt" />
         </div>
         <h2 v-if="clip.title" class="mt-1 truncate text-[15px] font-semibold text-fg">{{ clip.title }}</h2>
       </div>
@@ -110,17 +110,17 @@ function download() {
           <video v-else-if="fileKind === 'video'" :src="fileUrl" controls class="mx-auto max-h-[60vh] max-w-full rounded-md" @error="mediaError = true"></video>
           <audio v-else-if="fileKind === 'audio'" :src="fileUrl" controls class="w-full" @error="mediaError = true"></audio>
           <iframe v-else-if="fileKind === 'pdf'" :src="fileUrl" class="h-[60vh] w-full rounded-md bg-white" title="PDF preview"></iframe>
-          <pre v-else-if="fileKind === 'text' && textBody !== null" class="whitespace-pre-wrap break-words rounded-md bg-sunken p-4 font-mono text-xs leading-relaxed text-fg">{{ textBody }}</pre>
+          <pre v-else-if="fileKind === 'text' && textBody !== null" class="whitespace-pre-wrap break-words rounded-md bg-sunken p-4 text-xs leading-relaxed text-clip-fg">{{ textBody }}</pre>
           <div v-else class="flex flex-col items-center gap-2 py-12 text-center text-muted">
             <DocumentIcon class="h-10 w-10 text-faint" />
-            <div class="break-all font-mono text-sm text-fg">{{ fileLabel }}</div>
+            <div class="break-all text-sm text-fg">{{ fileLabel }}</div>
             <div class="text-xs">No inline preview for this file type.</div>
           </div>
         </template>
 
         <div v-else class="flex flex-col items-center gap-2 py-12 text-center text-muted">
           <DocumentIcon class="h-10 w-10 text-faint" />
-          <div class="break-all font-mono text-sm text-fg">{{ fileLabel }}</div>
+          <div class="break-all text-sm text-fg">{{ fileLabel }}</div>
           <div v-if="mediaError" class="text-xs">The file couldn't be displayed inline. Use Download instead.</div>
         </div>
       </template>
@@ -131,14 +131,14 @@ function download() {
           :href="clip.context"
           target="_blank"
           rel="noopener"
-          class="inline-flex items-center gap-1.5 break-all font-mono text-sm text-accent underline decoration-accent/40 underline-offset-2"
+          class="inline-flex items-center gap-1.5 break-all text-sm text-accent underline decoration-accent/40 underline-offset-2"
         >{{ clip.context }} <ArrowTopRightOnSquareIcon class="h-4 w-4 shrink-0" /></a>
-        <pre v-else class="whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed text-fg">{{ clip.context }}</pre>
+        <pre v-else class="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-clip-fg">{{ clip.context }}</pre>
       </template>
     </div>
 
     <template #footer>
-      <span v-if="clip" class="mr-auto font-mono text-xs text-muted">
+      <span v-if="clip" class="mr-auto text-xs text-muted">
         <template v-if="isFile && clip.file?.ext">{{ clip.file.ext.toUpperCase() }} file</template>
         <template v-else-if="clip">{{ clip.context.length.toLocaleString() }} characters</template>
       </span>

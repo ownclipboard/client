@@ -102,7 +102,7 @@ function cancel() {
 
         <div class="min-w-0 flex-1">
           <div class="truncate text-sm font-medium text-fg" :title="row.file.name">{{ row.file.name }}</div>
-          <div class="font-mono text-[11px] text-faint">{{ humanFileSize(row.file.size) }}<span v-if="row.file.type"> · {{ row.file.type }}</span></div>
+          <div class="text-[11px] text-faint">{{ humanFileSize(row.file.size) }}<span v-if="row.file.type"> · {{ row.file.type }}</span></div>
           <input
             v-model="row.title"
             type="text"
@@ -115,7 +115,7 @@ function cancel() {
             <div class="h-1.5 overflow-hidden rounded-full bg-sunken">
               <div class="h-full bg-accent transition-[width]" :style="{ width: `${progress ?? 0}%` }"></div>
             </div>
-            <div class="mt-1 font-mono text-[11px] text-muted">Uploading {{ progress ?? 0 }}%</div>
+            <div class="mt-1 text-[11px] text-muted">Uploading {{ progress ?? 0 }}%</div>
           </div>
           <div v-else-if="isDone(i)" class="mt-2 flex items-center gap-1 text-xs text-accent"><CheckCircleIcon class="h-4 w-4" /> Uploaded</div>
           <div v-else-if="errorOf(i)" class="mt-2 flex items-start gap-1 text-xs text-danger"><ExclamationCircleIcon class="h-4 w-4 shrink-0" /> {{ errorOf(i) }}</div>
@@ -134,7 +134,7 @@ function cancel() {
     </ul>
 
     <template #footer>
-      <span class="mr-auto font-mono text-xs text-muted">Total {{ humanFileSize(totalSize) }}</span>
+      <span class="mr-auto text-xs text-muted">Total {{ humanFileSize(totalSize) }}</span>
       <Button variant="ghost" :disabled="uploading" @click="cancel">{{ hasFailures ? "Close" : "Cancel" }}</Button>
       <Button variant="primary" :disabled="uploading || !remaining.length" @click="confirm">
         <template v-if="uploading"><ArrowPathIcon class="h-4 w-4 animate-spin" /> Uploading</template>

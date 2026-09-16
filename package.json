@@ -12,8 +12,7 @@
     "pull-api": "bash bash/pull-api.sh"
   },
   "dependencies": {
-    "@fontsource/ibm-plex-mono": "^5.3.0",
-    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@fontsource/lato": "^5.3.0",
     "@headlessui/vue": "^1.7.23",
     "@heroicons/vue": "^2.2.0",
     "@trapcode/browser-storage": "^2.4.2",

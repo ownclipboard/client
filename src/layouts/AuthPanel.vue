@@ -37,7 +37,7 @@ const points = [
         </ul>
       </div>
 
-      <p class="font-mono text-xs text-faint">Open source · self-hostable</p>
+      <p class="text-xs text-faint">Open source · self-hostable</p>
       <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-accent/10 blur-3xl" aria-hidden="true"></div>
     </section>
 

@@ -16,6 +16,8 @@
   --fg: 21 25 29;
   --muted: 93 104 116;
   --faint: 138 149 161;
+  /* Clip body text. Light mode reads best in the plain foreground color. */
+  --clip-fg: 21 25 29;
 
   --accent: 15 138 95;
   --accent-hover: 12 120 83;
@@ -45,6 +47,8 @@
   --fg: 231 234 237;
   --muted: 152 162 173;
   --faint: 104 115 126;
+  /* Antique white: warmer than the ui foreground, so clip text reads as paper. */
+  --clip-fg: 250 235 215;
 
   --accent: 60 207 151;
   --accent-hover: 84 220 168;

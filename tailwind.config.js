@@ -7,8 +7,8 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"IBM Plex Sans"', "system-ui", "-apple-system", '"Segoe UI"', "sans-serif"],
-        mono: ['"IBM Plex Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "monospace"]
+        sans: ['"Lato"', "system-ui", "-apple-system", '"Segoe UI"', "sans-serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"]
       },
       colors: {
         bg: token("bg"),
@@ -18,6 +18,7 @@ module.exports = {
         line: token("line"),
         "line-strong": token("line-strong"),
         fg: token("fg"),
+        "clip-fg": token("clip-fg"),
         muted: token("muted"),
         faint: token("faint"),
         accent: {

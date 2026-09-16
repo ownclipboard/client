@@ -4,12 +4,9 @@ import router from "./router";
 import { createPinia } from "pinia";
 import { isDev } from "./config";
 
-import "@fontsource/ibm-plex-sans/400.css";
-import "@fontsource/ibm-plex-sans/400-italic.css";
-import "@fontsource/ibm-plex-sans/500.css";
-import "@fontsource/ibm-plex-sans/600.css";
-import "@fontsource/ibm-plex-mono/400.css";
-import "@fontsource/ibm-plex-mono/500.css";
+import "@fontsource/lato/400.css";
+import "@fontsource/lato/400-italic.css";
+import "@fontsource/lato/700.css";
 
 import "./styles/tokens.css";
 import "./tailwind.css";

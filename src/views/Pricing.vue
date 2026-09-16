@@ -330,7 +330,7 @@ const proCta = computed(() => {
         </div>
         <div v-if="authUser.subscription.amount">
           <div class="text-[11px] font-medium uppercase tracking-wider text-faint">Paid</div>
-          <div class="mt-0.5 font-mono text-sm text-fg">${{ authUser.subscription.amount }}</div>
+          <div class="mt-0.5 text-sm tabular-nums text-fg">${{ authUser.subscription.amount }}</div>
         </div>
       </div>
     </Card>
@@ -343,7 +343,7 @@ const proCta = computed(() => {
             <div class="flex items-center gap-2 text-sm">
               <span class="font-semibold text-fg">Pro</span>
               <span class="text-muted">{{ subLabel(sub) }}</span>
-              <span class="font-mono text-fg">${{ sub.amount }}</span>
+              <span class="tabular-nums text-fg">${{ sub.amount }}</span>
             </div>
             <div class="flex items-center gap-2 text-sm">
               <Badge :variant="isTerminal(sub) ? 'danger' : 'warn'">{{ invoiceLabel(sub.invoice?.status) }}</Badge>

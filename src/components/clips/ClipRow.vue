@@ -287,11 +287,11 @@ function remove() {
       <!-- Body -->
       <div class="mt-1">
         <template v-if="isLocked">
-          <p class="text-[13px] text-faint">Encrypted in your browser. Unlock to read it.</p>
+          <p class="text-[13px] text-faint">Unlock to read it.</p>
         </template>
 
         <template v-else-if="isEditing">
-          <div v-if="isFile" class="flex items-center gap-1.5 font-mono text-xs text-muted">
+          <div v-if="isFile" class="flex items-center gap-1.5 text-xs text-muted">
             <DocumentIcon class="h-4 w-4 text-faint" /> {{ fileLabel }}
             <span class="text-faint">· file name can't be changed</span>
           </div>
@@ -306,7 +306,7 @@ function remove() {
           <button
             v-if="clip.type === 'text' || clip.type === 'html'"
             type="button"
-            class="block w-full text-left font-mono text-[13px] leading-relaxed text-fg/90 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] overflow-hidden break-words whitespace-pre-wrap"
+            class="block w-full text-left text-[13px] leading-relaxed text-clip-fg/90 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] overflow-hidden break-words whitespace-pre-wrap"
             title="Open preview"
             @click="previewClip(clip)"
           >{{ clip.context }}</button>
@@ -315,12 +315,12 @@ function remove() {
             :href="clip.context"
             target="_blank"
             rel="noopener"
-            class="break-all font-mono text-[13px] text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent"
+            class="break-all text-[13px] text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent"
           >{{ clip.context }}</a>
           <button
             v-else-if="isFile"
             type="button"
-            class="flex items-center gap-1.5 font-mono text-[13px] text-fg/90 hover:text-accent"
+            class="flex items-center gap-1.5 text-[13px] text-fg/90 hover:text-accent"
             title="Open preview"
             @click="previewClip(clip)"
           >
@@ -330,7 +330,7 @@ function remove() {
       </div>
 
       <!-- Meta -->
-      <div v-if="!isEditing" class="mt-1.5 flex items-center gap-2 font-mono text-[11px] text-faint">
+      <div v-if="!isEditing" class="mt-1.5 flex items-center gap-2 text-[11px] text-faint">
         <TimeAgo :date="clip.updatedAt" />
         <span v-if="!isFile && !isLocked">· {{ clip.context.length.toLocaleString() }} chars</span>
         <span v-if="clip.encrypted && clip.decrypted" class="flex items-center gap-1 text-warn"><LockOpenIcon class="h-3 w-3" /> unlocked</span>

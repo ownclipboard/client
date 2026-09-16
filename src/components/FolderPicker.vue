@@ -39,7 +39,7 @@ function cancel() {
       >
         <FolderIcon class="h-4 w-4 text-faint" />
         <span class="flex-1 truncate">{{ folder.name }}</span>
-        <span class="font-mono text-[11px] tabular-nums text-faint">{{ folder.contents }}</span>
+        <span class="text-[11px] tabular-nums text-faint">{{ folder.contents }}</span>
       </button>
     </div>
     <p v-else class="px-5 py-6 text-center text-sm text-muted">No other folders available. Encrypted folders can't receive clips.</p>

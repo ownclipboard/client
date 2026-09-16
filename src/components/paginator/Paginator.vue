@@ -63,7 +63,7 @@ export default defineComponent({
 </script>
 
 <template>
-  <nav v-if="data.total > data.perPage" class="flex items-center justify-between gap-3 pt-2 font-mono text-xs text-muted" aria-label="Pagination">
+  <nav v-if="data.total > data.perPage" class="flex items-center justify-between gap-3 pt-2 text-xs text-muted" aria-label="Pagination">
     <span class="tabular-nums">{{ from }}–{{ to }} of {{ data.total }}</span>
     <div class="flex items-center gap-1">
       <button

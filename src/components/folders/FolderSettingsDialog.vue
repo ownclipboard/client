@@ -141,7 +141,7 @@ async function deleteFolder(btn: ILoadingButton) {
             <component :is="VISIBILITY[folder.visibility].icon" class="h-3 w-3" />
             {{ VISIBILITY[folder.visibility].label }}
           </Badge>
-          <span class="font-mono text-xs">{{ folder.contents }} clips</span>
+          <span class="text-xs">{{ folder.contents }} clips</span>
         </div>
 
         <!-- Rename -->

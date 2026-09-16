@@ -123,7 +123,7 @@ function createFolder(btn: ILoadingButton) {
         >
           <component :is="ICONS[folder.visibility] || FolderIcon" class="h-4 w-4 shrink-0 opacity-80" />
           <span :class="['flex-1 truncate', folder.slug === currentTab ? 'font-medium text-fg' : 'text-fg/90']">{{ folder.name }}</span>
-          <span class="font-mono text-[11px] tabular-nums opacity-70">{{ folder.contents }}</span>
+          <span class="text-[11px] tabular-nums opacity-70">{{ folder.contents }}</span>
         </button>
         <button
           type="button"

@@ -284,7 +284,7 @@ const needsPassword = computed(() => currentFolderNeedsPassword.value);
     <div class="flex flex-wrap items-center gap-2 sm:gap-3">
       <div class="min-w-0">
         <h1 class="truncate text-lg font-semibold tracking-tight text-fg">{{ currentFolder?.name || "Clipboard" }}</h1>
-        <p class="font-mono text-[11px] text-faint">{{ currentFolder?.contents ?? 0 }} clips</p>
+        <p class="text-[11px] text-faint">{{ currentFolder?.contents ?? 0 }} clips</p>
       </div>
 
       <div class="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
@@ -298,7 +298,7 @@ const needsPassword = computed(() => currentFolderNeedsPassword.value);
         <Button variant="primary" :click="pasteFromButton" message="Pasting">
           <ClipboardIcon class="h-4 w-4" />
           Paste
-          <span class="ml-0.5 hidden rounded border border-accent-fg/30 px-1 font-mono text-[10px] font-medium text-accent-fg/80 sm:inline-block">{{ isMac ? "⌘V" : "Ctrl+V" }}</span>
+          <span class="ml-0.5 hidden rounded border border-accent-fg/30 px-1 text-[10px] font-medium text-accent-fg/80 sm:inline-block">{{ isMac ? "⌘V" : "Ctrl+V" }}</span>
         </Button>
         <Button @click="openComposer" :disabled="composerOpen">
           <PencilSquareIcon class="h-4 w-4" />
