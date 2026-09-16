@@ -8,10 +8,11 @@ import { currentTab, currentFolder, currentFolderNeedsPassword, foldersAsObject 
 import { searchQuery, searchAllFolders, clearSearch } from "../../stores/search.store";
 import { composerOpen, openComposer } from "../../stores/composer.store";
 import { openFolderSettings } from "../../stores/folder-settings.store";
-import { $http, alertRequestError } from "../../http";
+import { $http, alertDeleteError, alertRequestError } from "../../http";
 import { $events } from "../../events";
 import { askForPassword } from "../PasswordPromptHandler";
 import { askToConfirm } from "../ConfirmHandler";
+import { useAuthUser } from "../../stores/auth.store";
 import type { OwnClip } from "../../types/models.types";
 import Paginator, { Pagination } from "../paginator/Paginator.vue";
 import ClipRow from "./ClipRow.vue";
@@ -24,6 +25,7 @@ type PaginatedClips = Pagination<OwnClip>;
 
 const $route = useRoute();
 const $router = useRouter();
+const authUser = useAuthUser();
 const clips = ref(Pagination<OwnClip>());
 const clipsCache: Record<string, PaginatedClips> = {};
 const loading = ref(true);
@@ -106,7 +108,9 @@ async function deleteClip(btn: ILoadingButton, [clip]: [OwnClip, number]) {
     clips.value.data = clips.value.data.filter((c) => c.publicId !== clip.publicId);
     if (folder) folder.contents = Math.max(0, folder.contents - 1);
   } catch (e) {
-    alertRequestError(e);
+    // Only a file clip needs storage; a text clip failing has another cause.
+    if (clip.type === "file") alertDeleteError(e, !!authUser.storage?.connected);
+    else alertRequestError(e);
   } finally {
     btn.stopLoading();
   }

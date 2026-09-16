@@ -9,9 +9,10 @@ import { useClipboard } from "@vueuse/core";
 import { CheckIcon, ClipboardDocumentIcon, EyeSlashIcon, FolderIcon, LockClosedIcon } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { md5 } from "../../functions/crypto";
-import { $http, alertRequestError } from "../../http";
+import { $http, alertDeleteError, alertRequestError } from "../../http";
 import config from "../../config";
 import { currentTab, foldersAsObject, getFolders } from "../../stores/tabs.store";
+import { useAuthUser } from "../../stores/auth.store";
 import { closeFolderSettings, folderSettingsSlug, openFolderSettings } from "../../stores/folder-settings.store";
 import type { components } from "../../types/api";
 import { $alert } from "../ws-alert/ws-alert";
@@ -24,6 +25,7 @@ import Switch from "../ui/Switch.vue";
 import Badge from "../ui/Badge.vue";
 
 const $router = useRouter();
+const authUser = useAuthUser();
 const open = computed(() => folderSettingsSlug.value !== null);
 const folder = computed(() => (folderSettingsSlug.value ? foldersAsObject.value[folderSettingsSlug.value] : undefined));
 
@@ -134,7 +136,8 @@ async function deleteFolder(btn: ILoadingButton) {
     closeFolderSettings();
     redirect($router.resolve({ name: "clipboard" }).href, 1000);
   } catch (e) {
-    alertRequestError(e);
+    // The folder's files leave storage first, so a disconnected server fails this.
+    alertDeleteError(e, !!authUser.storage?.connected);
     btn.stopLoading();
   }
 }

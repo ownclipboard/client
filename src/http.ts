@@ -60,3 +60,17 @@ export function alertRequestError(res: any) {
     return $alert.error("Could not reach the server. Please try again.");
   }
 }
+
+/**
+ * Deleting a file clip, or a folder holding one, takes the object out of the
+ * storage server first. When storage is disconnected that step is what fails,
+ * so say so instead of repeating the api's generic rejection. A wrong password
+ * already explains itself, so that message is left alone.
+ */
+export function alertDeleteError(res: any, storageConnected: boolean) {
+  const apiError = String(res?.response?.data?.error ?? "");
+  if (!storageConnected && res?.response && !/password/i.test(apiError)) {
+    return $alert.error("File storage is disconnected, so the files could not be removed. Reconnect it in Settings, then try again.");
+  }
+  return alertRequestError(res);
+}
