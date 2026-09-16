@@ -5,7 +5,19 @@ import type { OwnClip } from "../types/models.types";
 type FileUploadResponse = components["schemas"]["FileUploadResponse"];
 type FileConfirmResponse = components["schemas"]["FileConfirmResponse"];
 type FileUrlResponse = components["schemas"]["FileUrlResponse"];
+type FileListResponse = components["schemas"]["FileListResponse"];
 export type Owns3Status = components["schemas"]["Owns3Status"];
+export type StoredFile = components["schemas"]["File"];
+export type FilePreview = components["schemas"]["FilePreview"];
+
+export type ListFilesOptions = {
+  page?: number;
+  perPage?: number;
+  /** Folder slug. */
+  folder?: string;
+  /** Content type prefix: `image` for every image, `image/png` for PNGs only. */
+  type?: string;
+};
 
 /**
  * Thrown when the browser could not deliver the file to the storage bucket at all
@@ -87,6 +99,16 @@ function putToStorage(
     xhr.onabort = () => reject(new Error("Upload cancelled."));
     xhr.send(body);
   });
+}
+
+/**
+ * Every uploaded file, newest first. When the user's owns3 app has preview links
+ * on, each file carries a `previewUrl` that needs no authentication, and the
+ * shared `preview` block says when the key behind them rotates: re-fetch at
+ * `preview.expiresAt`. A null `preview` means falling back to `getFileUrl`.
+ */
+export function listFiles(options: ListFilesOptions = {}) {
+  return $http.get<any, FileListResponse>("files", { params: options });
 }
 
 /** Temporary (1 hour) download url for a file clip. Signed by the storage server. */

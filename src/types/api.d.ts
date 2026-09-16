@@ -1506,6 +1506,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client/v1/folder/{folder}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete folder (POST alias)
+         * @description Same as `DELETE /client/v1/folder/{folder}`, for clients or proxies that cannot send
+         *     a body with a DELETE request. Takes the same body and returns the same responses.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Folder slug. */
+                    folder: string;
+                };
+                cookie?: never;
+            };
+            /** @description Required only when the folder has a password. */
+            requestBody?: {
+                content: {
+                    /**
+                     * @example {
+                     *       "password": "5f4dcc3b5aa765d61d8327deb882cf99"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["DeleteFolderBody"];
+                };
+            };
+            responses: {
+                /** @description Deleted. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Missing or wrong folder password, the default folder, or files that cannot be removed. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Folder not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/client/v1/folders/public/{pasteId}": {
         parameters: {
             query?: never;
@@ -1539,6 +1610,73 @@ export interface paths {
                 };
                 /** @description Paste folder not found or has expired. */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List files
+         * @description Every uploaded file of the user, newest first. Optional `folder` and `type` filters,
+         *     where `type` matches the start of the content type, so `image` returns every image
+         *     and `image/png` only PNGs.
+         *
+         *     When the user's owns3 app has preview links enabled, the response carries a `preview`
+         *     block with the rotating key's base url and expiry, and every file gets a `previewUrl`
+         *     that needs no authentication and can go straight into an `img` or `video` tag. The key
+         *     rotates, so refresh the listing at `preview.expiresAt`. Files of 99 MB or more are not
+         *     served this way.
+         *
+         *     `preview` is null when preview links are disabled for the app, when the user has no
+         *     storage connected, or when their default storage needs a Pro plan. Fall back to
+         *     `GET /client/v1/file/{file}/url` for a presigned url in that case.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    page?: number;
+                    perPage?: number;
+                    /** @description Folder slug. */
+                    folder?: string;
+                    /** @description Content type prefix, e.g. `image`. */
+                    type?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of files. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FileListResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3461,6 +3599,27 @@ export interface components {
             status: "pending" | "uploaded";
             createdAt: string;
             uploadedAt?: string | null;
+            /** @description Public url that needs no authentication, present only when the user's owns3 app has preview links enabled. Stops working when `FilePreview.expiresAt` passes. */
+            previewUrl?: string;
+        };
+        /** @description Rotating owns3 preview key, shared by every file in the response. */
+        FilePreview: {
+            /** @description Files are readable at `baseUrl` + their path. Each file's ready url is its `previewUrl`. */
+            baseUrl: string;
+            /** @description When the key rotates. Re-fetch the listing after this. */
+            expiresAt: string;
+            ttlMinutes: number;
+        };
+        FileListResponse: {
+            files: {
+                total: number;
+                perPage: number;
+                page: number;
+                lastPage: number;
+                data: components["schemas"]["File"][];
+            };
+            /** @description Null when preview links are off for the app, or no storage is connected. */
+            preview: components["schemas"]["FilePreview"] | null;
         };
         FileUploadBody: {
             /** @description Original file name, up to 255 characters. */

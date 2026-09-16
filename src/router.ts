@@ -17,6 +17,7 @@ const routes: Array<RouteRecordRaw> = [
     component: AuthLayout,
     children: [
       { path: "clipboard", name: "clipboard", component: () => import("./views/Clipboard.vue"), meta: { title: "Clipboard" } },
+      { path: "files", name: "files", component: () => import("./views/Files.vue"), meta: { title: "Files" } },
       { path: "devices", name: "devices", component: () => import("./views/Devices.vue"), meta: { title: "Devices" } },
       { path: "pricing", name: "pricing", component: () => import("./views/Pricing.vue"), meta: { title: "Plan" } },
       { path: "settings", name: "settings", component: () => import("./views/Settings.vue"), meta: { title: "Settings" } }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Cog6ToothIcon, CreditCardIcon, CpuChipIcon } from "@heroicons/vue/20/solid";
+import { Cog6ToothIcon, CreditCardIcon, CpuChipIcon, PhotoIcon } from "@heroicons/vue/20/solid";
 import { useAuthUser } from "../../stores/auth.store";
 import Brand from "./Brand.vue";
 import FolderNav from "./FolderNav.vue";
@@ -10,6 +10,7 @@ const emit = defineEmits<{ (e: "navigate"): void }>();
 const authUser = useAuthUser();
 
 const links = [
+  { name: "Files", route: { name: "files" }, icon: PhotoIcon },
   { name: "Devices", route: { name: "devices" }, icon: CpuChipIcon },
   { name: "Settings", route: { name: "settings" }, icon: Cog6ToothIcon },
   { name: "Plan", route: { name: "pricing" }, icon: CreditCardIcon }

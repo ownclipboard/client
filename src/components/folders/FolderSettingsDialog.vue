@@ -131,7 +131,8 @@ async function deleteFolder(btn: ILoadingButton) {
 
   try {
     // Every clip goes with the folder, and each file is removed from storage one by one.
-    await $http.delete(`/folder/${folder.value.slug}`, password ? { data: { password } } : undefined);
+    // The POST alias carries the password: a DELETE body does not survive every proxy.
+    await $http.post(`/folder/${folder.value.slug}/delete`, password ? { password } : undefined);
     currentTab.value = "clipboard";
     closeFolderSettings();
     redirect($router.resolve({ name: "clipboard" }).href, 1000);
