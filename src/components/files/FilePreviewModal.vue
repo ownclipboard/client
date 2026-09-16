@@ -88,11 +88,15 @@ watch(
 
 async function download() {
   if (!props.file) return;
+  // Opened before the await so the browser does not treat it as a popup.
+  const tab = window.open("", "_blank");
   try {
     // The signed url is the real file; the preview key expires and may be cached.
     downloadUrl.value = downloadUrl.value || (await getFileUrl(props.file.publicId));
-    window.open(downloadUrl.value, "_blank");
+    if (tab) tab.location.href = downloadUrl.value;
+    else window.location.href = downloadUrl.value;
   } catch (e) {
+    tab?.close();
     alertRequestError(e);
   }
 }

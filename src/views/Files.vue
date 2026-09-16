@@ -10,15 +10,17 @@
  */
 import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { ArrowPathIcon, DocumentIcon, FilmIcon, MusicalNoteIcon, PhotoIcon } from "@heroicons/vue/20/solid";
+import { ArrowDownTrayIcon, ArrowPathIcon, DocumentIcon, FilmIcon, MusicalNoteIcon, PhotoIcon } from "@heroicons/vue/20/solid";
+import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../http";
-import { listFiles, humanFileSize, type FilePreview, type StoredFile } from "../services/files.service";
+import { listFiles, getFileUrl, humanFileSize, type FilePreview, type StoredFile } from "../services/files.service";
 import { folders } from "../stores/tabs.store";
 import { useAuthUser } from "../stores/auth.store";
 import PageHeader from "../components/ui/PageHeader.vue";
 import Select from "../components/ui/Select.vue";
 import Badge from "../components/ui/Badge.vue";
 import Button from "../components/ui/Button.vue";
+import IconButton from "../components/ui/IconButton.vue";
 import Skeleton from "../components/ui/Skeleton.vue";
 import EmptyState from "../components/ui/EmptyState.vue";
 import Paginator, { Pagination } from "../components/paginator/Paginator.vue";
@@ -107,6 +109,25 @@ function openPreview(file: StoredFile) {
   previewing.value = file;
   previewOpen.value = true;
 }
+
+/**
+ * Download one file. The tab is opened before the signed url is fetched, so the
+ * browser does not treat the later navigation as a popup. The signed url is used
+ * rather than the preview one: that key expires and may be cached.
+ */
+async function downloadFile(btn: ILoadingButton, file: StoredFile) {
+  const tab = window.open("", "_blank");
+  try {
+    const url = await getFileUrl(file.publicId);
+    if (tab) tab.location.href = url;
+    else window.location.href = url;
+  } catch (e) {
+    tab?.close();
+    alertRequestError(e);
+  } finally {
+    btn.stopLoading();
+  }
+}
 </script>
 
 <template>
@@ -159,14 +180,12 @@ function openPreview(file: StoredFile) {
     </EmptyState>
 
     <div v-else class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-      <button
+      <div
         v-for="file in files.data"
         :key="file.publicId"
-        type="button"
-        class="group block overflow-hidden rounded-lg border border-line bg-surface text-left transition-colors hover:border-line-strong"
-        :title="file.name"
-        @click="openPreview(file)"
+        class="group relative overflow-hidden rounded-lg border border-line bg-surface transition-colors hover:border-line-strong"
       >
+        <button type="button" class="block w-full text-left" :title="file.name" @click="openPreview(file)">
         <div class="relative flex aspect-square items-center justify-center bg-sunken">
           <img
             v-if="thumbnailOf(file)"
@@ -179,7 +198,7 @@ function openPreview(file: StoredFile) {
           <Badge v-if="file.status === 'pending'" variant="neutral" class="absolute left-2 top-2">Pending</Badge>
           <span
             v-else-if="file.ext"
-            class="absolute right-2 top-2 rounded bg-bg/70 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted"
+            class="absolute left-2 top-2 rounded bg-bg/70 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted"
           >{{ file.ext }}</span>
         </div>
         <div class="p-2.5">
@@ -188,7 +207,20 @@ function openPreview(file: StoredFile) {
             {{ humanFileSize(file.size) }} · <TimeAgo :date="file.uploadedAt || file.createdAt" />
           </p>
         </div>
-      </button>
+        </button>
+
+        <IconButton
+          label="Download"
+          size="sm"
+          variant="subtle"
+          class="absolute right-2 top-2 shadow-card"
+          :disabled="file.status === 'pending'"
+          :click="downloadFile"
+          :data="file"
+        >
+          <ArrowDownTrayIcon />
+        </IconButton>
+      </div>
     </div>
 
     <Paginator :data="files" @on-page-change="loadFiles" />
