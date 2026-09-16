@@ -331,7 +331,7 @@ function remove() {
 
       <!-- Meta -->
       <div v-if="!isEditing" class="mt-1.5 flex items-center gap-2 text-[11px] text-faint">
-        <TimeAgo :date="clip.updatedAt" />
+        <TimeAgo :date="clip.createdAt" />
         <span v-if="!isFile && !isLocked">· {{ clip.context.length.toLocaleString() }} chars</span>
         <span v-if="clip.encrypted && clip.decrypted" class="flex items-center gap-1 text-warn"><LockOpenIcon class="h-3 w-3" /> unlocked</span>
       </div>

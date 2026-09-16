@@ -95,7 +95,7 @@ function download() {
           <Badge variant="outline" uppercase>{{ clip.type }}</Badge>
           <span>{{ folderName }}</span>
           <span class="text-faint">·</span>
-          <TimeAgo :date="clip.updatedAt" />
+          <TimeAgo :date="clip.createdAt" />
         </div>
         <h2 v-if="clip.title" class="mt-1 truncate text-[15px] font-semibold text-fg">{{ clip.title }}</h2>
       </div>

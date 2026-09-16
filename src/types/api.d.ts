@@ -3334,6 +3334,9 @@ export interface components {
             locked?: boolean | null;
             favorite?: boolean | null;
             encrypted?: boolean | null;
+            /** @description When the clip was created. */
+            createdAt: string;
+            /** @description When the clip was last changed, absent when it never was. */
             updatedAt?: string;
         };
         /** @description File reference embedded in a clip. */

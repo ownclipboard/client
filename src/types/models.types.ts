@@ -12,7 +12,9 @@ export type OwnClip = {
   favorite: boolean;
   encrypted: boolean;
   decrypted?: boolean;
-  updatedAt: string;
+  createdAt: string;
+  /** Absent until the clip is changed. */
+  updatedAt?: string;
 };
 
 export type OwnFolder = {
