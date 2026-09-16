@@ -16,6 +16,7 @@ import { closeFolderSettings, folderSettingsSlug, openFolderSettings } from "../
 import type { components } from "../../types/api";
 import { $alert } from "../ws-alert/ws-alert";
 import { redirect } from "../../functions";
+import { askForPassword } from "../PasswordPromptHandler";
 import Dialog from "../ui/Dialog.vue";
 import Button from "../ui/Button.vue";
 import Input from "../ui/Input.vue";
@@ -119,9 +120,16 @@ async function deleteFolder(btn: ILoadingButton) {
     return btn.stopLoading(() => $alert.warning("Type the folder name exactly to confirm."));
   }
 
+  // A folder with a password is only deleted when the request carries that password.
+  let password: string | undefined;
+  if (folder.value.hasPassword) {
+    password = await askForPassword(`Enter the password for "${folder.value.name}" to delete it.`);
+    if (!password) return btn.stopLoading();
+  }
+
   try {
     // Every clip goes with the folder, and each file is removed from storage one by one.
-    await $http.delete(`/folder/${folder.value.slug}`);
+    await $http.delete(`/folder/${folder.value.slug}`, password ? { data: { password } } : undefined);
     currentTab.value = "clipboard";
     closeFolderSettings();
     redirect($router.resolve({ name: "clipboard" }).href, 1000);
@@ -188,7 +196,7 @@ async function deleteFolder(btn: ILoadingButton) {
         <section v-if="!isProtected" class="space-y-3 border-t border-line pt-5">
           <div>
             <h3 class="text-sm font-medium text-fg">Delete folder</h3>
-            <p class="mt-0.5 text-sm text-muted">Deletes the folder and every clip in it. Type <span class="font-medium text-fg">{{ folder.name }}</span> to confirm.</p>
+            <p class="mt-0.5 text-sm text-muted">Deletes the folder and every clip in it. Type <span class="font-medium text-fg">{{ folder.name }}</span> to confirm<template v-if="folder.hasPassword">, then enter the folder password</template>.</p>
           </div>
           <form class="flex items-end gap-2" @submit.prevent>
             <Input v-model="deleteName" placeholder="Folder name" class="flex-1" autocomplete="off" />

@@ -1444,7 +1444,11 @@ export interface paths {
         post?: never;
         /**
          * Delete folder
-         * @description Deletes the folder and every clip in it. The default `clipboard` folder and folders with a password cannot be deleted.
+         * @description Deletes the folder and every clip in it. Files in the folder are removed from owns3
+         *     first, so storage must be connected when the folder holds any.
+         *     A folder that has a password is deleted only when the request carries that password,
+         *     as its MD5 hash, in the body. Folders without one are deleted straight away.
+         *     The default `clipboard` folder can never be deleted.
          */
         delete: {
             parameters: {
@@ -1456,7 +1460,17 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            requestBody?: never;
+            /** @description Required only when the folder has a password. */
+            requestBody?: {
+                content: {
+                    /**
+                     * @example {
+                     *       "password": "5f4dcc3b5aa765d61d8327deb882cf99"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["DeleteFolderBody"];
+                };
+            };
             responses: {
                 /** @description Deleted. */
                 200: {
@@ -1467,7 +1481,7 @@ export interface paths {
                         "application/json": components["schemas"]["MessageResponse"];
                     };
                 };
-                /** @description Folder is protected or is the default folder. */
+                /** @description Missing or wrong folder password, the default folder, or files that cannot be removed. */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -3323,6 +3337,10 @@ export interface components {
              * @enum {string}
              */
             visibility?: "public" | "encrypted";
+        };
+        DeleteFolderBody: {
+            /** @description MD5 hash of the folder password. Required only when the folder has one. */
+            password?: string;
         };
         RenameFolderBody: {
             /** @description New folder name, up to 100 characters. The slug is derived from it. */
