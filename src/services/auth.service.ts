@@ -5,22 +5,49 @@ import type { components } from "../types/api";
 import { $localStorage } from "../stores/native";
 
 type PingResponse = {
-  user: AuthUser;
+  /** Null when the token no longer identifies anyone. */
+  user: AuthUser | null;
   storage: StorageSummary;
   realtime: components["schemas"]["RealtimeSummary"];
   subscription: SubStat;
 };
 
-export async function refreshAuthData(st: AuthUserStore) {
+/**
+ * `ok` the session stands, `signed-out` it is gone and the sign-in page is
+ * already being loaded, `unreachable` the api never answered so nothing can be
+ * concluded about the session.
+ */
+export type AuthRefresh = "ok" | "signed-out" | "unreachable";
+
+export async function refreshAuthData(st: AuthUserStore): Promise<AuthRefresh> {
+  // No token means signed out, and no api is needed to know it. Asking anyway
+  // would strand the browser on a network error while the answer is already in.
+  if (!$localStorage.get("token")) {
+    st.clearSession();
+    return "signed-out";
+  }
+
   try {
     const { user, storage, realtime, subscription } = await $http.get<any, PingResponse>("/ping");
+
+    // A null user is a 200 that still means signed out. Without this the app
+    // sits on its loading screen with no session and no way out of it.
+    if (!user) {
+      st.clearSession();
+      return "signed-out";
+    }
+
     st.data = user;
     st.storage = storage;
     st.realtime = realtime;
     st.subscription = subscription;
-  } catch {
-    // The token is no longer good, so there is no session left to end server side.
+    return "ok";
+  } catch (e: any) {
+    // Only an answer from the api says the session is gone. A request that
+    // never arrived says nothing, so the token is kept and the caller decides.
+    if (!e?.response) return "unreachable";
     st.clearSession();
+    return "signed-out";
   }
 }
 
