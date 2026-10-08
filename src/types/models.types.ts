@@ -7,7 +7,8 @@ export type OwnClip = {
   /** The clip content. Ciphertext when encrypted. Always "File Clip" for file clips (the title holds the file name). */
   context: string;
   /** Present on file clips. */
-  file?: { publicId: string; ext: string };
+  /** `thumbnail` is true when a 200x200 version exists. Absent on clips uploaded before thumbnails did. */
+  file?: { publicId: string; ext: string; thumbnail?: boolean };
   locked: boolean;
   favorite: boolean;
   encrypted: boolean;

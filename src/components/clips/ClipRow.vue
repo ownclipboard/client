@@ -3,7 +3,7 @@
  * One clip in the list. Handles copy, download, preview, unlock/hide for
  * encrypted clips, inline editing (Pro), move / copy to folder, and delete.
  */
-import { computed, reactive, ref, nextTick, type PropType } from "vue";
+import { computed, onMounted, reactive, ref, nextTick, type PropType } from "vue";
 import { useClipboard } from "@vueuse/core";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import {
@@ -63,6 +63,19 @@ const isFile = computed(() => clip.value.type === "file" && !!clip.value.file);
 const isLocked = computed(() => clip.value.encrypted && !clip.value.decrypted);
 const folderName = computed(() => foldersAsObject.value[clip.value.folder]?.name || clip.value.folder);
 const fileLabel = computed(() => (clip.value.file ? clip.value.file.publicId + (clip.value.file.ext ? "." + clip.value.file.ext : "") : ""));
+
+/**
+ * Images carry a 200x200 thumbnail, so a row can show the picture without
+ * pulling the whole file. The url is signed and short lived, hence the fetch.
+ */
+const thumbUrl = ref("");
+
+onMounted(() => {
+  if (!clip.value.file?.thumbnail) return;
+  getFileUrl(clip.value.file.publicId, true)
+    .then((url) => (thumbUrl.value = url))
+    .catch(() => undefined);
+});
 
 const TYPE_ICON: Record<OwnClip["type"], any> = {
   text: Bars3BottomLeftIcon,
@@ -320,11 +333,19 @@ function remove() {
           <button
             v-else-if="isFile"
             type="button"
-            class="flex items-center gap-1.5 text-[13px] text-fg/90 hover:text-accent"
+            class="flex items-center gap-2 text-[13px] text-fg/90 hover:text-accent"
             title="Open preview"
             @click="previewClip(clip)"
           >
-            <DocumentIcon class="h-4 w-4 text-faint" /> {{ fileLabel }}
+            <img
+              v-if="thumbUrl"
+              :src="thumbUrl"
+              :alt="clip.title || fileLabel"
+              loading="lazy"
+              class="h-10 w-10 shrink-0 rounded border border-line object-cover"
+            />
+            <DocumentIcon v-else class="h-4 w-4 shrink-0 text-faint" />
+            <span class="truncate">{{ fileLabel }}</span>
           </button>
         </template>
       </div>

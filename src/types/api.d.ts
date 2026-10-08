@@ -4865,6 +4865,8 @@ export interface components {
             publicId: string;
             /** @description Lower-cased extension without the dot, empty when none. */
             ext: string;
+            /** @description True when a 200x200 thumbnail exists: get its url with `GET /file/{publicId}/url?thumb=1`. Absent on clips uploaded before thumbnails existed, treat that as false. */
+            thumbnail?: boolean;
         };
         PaginatedClips: {
             page: number;
