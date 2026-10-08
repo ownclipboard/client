@@ -80,6 +80,18 @@ export async function changePassword(currentPassword: string, newPassword: strin
   return res;
 }
 
+/**
+ * Close the account. Every session ends, but nothing is deleted yet: signing in
+ * again within the grace period reopens it, and after that it all goes.
+ */
+export function closeAccount(password: string) {
+  return $http.post<any, components["schemas"]["CloseAccountResponse"]>(
+    "/account/close",
+    { password },
+    { timeout: 30_000 }
+  );
+}
+
 /** Whether a username is already taken. */
 export async function usernameExists(username: string) {
   const res = await $http.post<any, components["schemas"]["CheckUsernameResponse"]>("/auth/check-username", { username });

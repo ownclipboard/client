@@ -6,7 +6,7 @@ import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../http";
 import { $alert } from "../components/ws-alert/ws-alert";
 import { connectOwns3, disconnectOwns3, getOwns3Status, useDefaultOwns3, type Owns3Status } from "../services/files.service";
-import { changePassword, refreshAuthData, setAccountEmail } from "../services/auth.service";
+import { changePassword, closeAccount, refreshAuthData, setAccountEmail } from "../services/auth.service";
 import { computed } from "vue";
 import { setTheme, themePreference, type ThemePreference } from "../stores/theme.store";
 import { useAuthUser } from "../stores/auth.store";
@@ -166,6 +166,48 @@ function savePassword(btn: ILoadingButton) {
       passwordForm.current = "";
       passwordForm.next = "";
       passwordForm.confirm = "";
+    })
+    .catch(alertRequestError)
+    .finally(btn.stopLoading);
+}
+
+/* ---------------- Closing the account ---------------- */
+
+const closeForm = reactive({ password: "", confirmText: "" });
+const CLOSE_PHRASE = "close my account";
+
+// Held after closing so the deadline for changing your mind can be read before
+// the session is dropped and the browser leaves for the sign-in page.
+const closedUntil = ref("");
+
+const canClose = computed(
+  () => !!closeForm.password && closeForm.confirmText.trim().toLowerCase() === CLOSE_PHRASE
+);
+
+async function close(btn: ILoadingButton) {
+  if (!canClose.value) {
+    $alert.warning(`Enter your password and type "${CLOSE_PHRASE}" to confirm.`);
+    return btn.stopLoading();
+  }
+
+  const ok = await askToConfirm({
+    title: "Close your account?",
+    message:
+      "You are signed out everywhere. Nothing is deleted for 30 days, and signing in again within that time brings the account back.",
+    confirmLabel: "Close account",
+    danger: true
+  });
+  if (!ok) return btn.stopLoading();
+
+  return closeAccount(closeForm.password)
+    .then((res) => {
+      closeForm.password = "";
+      closeForm.confirmText = "";
+      closedUntil.value = new Date(res.purgeAt).toLocaleDateString(undefined, {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      });
     })
     .catch(alertRequestError)
     .finally(btn.stopLoading);
@@ -399,6 +441,52 @@ async function disconnect(btn: ILoadingButton) {
         <Input v-model="passwordForm.confirm" type="password" label="Confirm new password" autocomplete="new-password" />
         <Button variant="primary" type="submit" :click="savePassword" message="Updating">Change password</Button>
       </form>
+    </Card>
+
+    <Card v-show="tab === 'account'" title="Close account">
+      <div v-if="closedUntil" class="space-y-4">
+        <div class="rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
+          <p>Your account is closed. You are signed out everywhere.</p>
+          <p class="mt-2">
+            Sign in again before <span class="font-medium">{{ closedUntil }}</span> and everything comes back. After that
+            it is deleted for good.
+          </p>
+        </div>
+        <Button variant="primary" @click="authUser.clearSession()">Done</Button>
+      </div>
+
+      <div v-else class="space-y-4">
+        <div class="rounded-md border border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-danger">
+          <p>Closing signs you out everywhere and stops your devices, public paste links and invitations from working.</p>
+          <p class="mt-2">
+            Nothing is deleted for 30 days. Sign in again within that time and the account comes back exactly as it was.
+          </p>
+          <p class="mt-2">
+            After 30 days it all goes: your clips, folders, files and devices, every space you own along with everything
+            in it for its members, and the clips you added to other people's spaces.
+          </p>
+        </div>
+
+        <form class="space-y-4" @submit.prevent>
+          <Input
+            v-model="closeForm.password"
+            type="password"
+            label="Account password"
+            placeholder="Your current password"
+            autocomplete="current-password"
+          />
+          <Input
+            v-model="closeForm.confirmText"
+            label="Type to confirm"
+            :placeholder="CLOSE_PHRASE"
+            autocomplete="off"
+            :hint="`Type &quot;${CLOSE_PHRASE}&quot; so this cannot happen by accident.`"
+          />
+          <Button variant="danger" type="submit" :click="close" message="Closing" :disabled="!canClose">
+            Close account
+          </Button>
+        </form>
+      </div>
     </Card>
     </div>
   </div>

@@ -567,6 +567,8 @@ export interface paths {
         /**
          * Login
          * @description Returns a JWT. Send it as the `oc-token` header on authenticated requests.
+         *     Logging in to a closed account (see `/account/close`) during its grace period reopens it,
+         *     and the response says so with `reopened`.
          */
         post: {
             parameters: {
@@ -4613,6 +4615,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client/v1/account/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close the account
+         * @description Closes the account and signs out every session. Nothing is deleted yet: for
+         *     30 days the account can be reopened by logging in again, after that everything is
+         *     deleted for good. That includes the account's clips, folders, files and devices, the
+         *     spaces it owns (with their content, for every member), and what it added to other people's
+         *     spaces. Pending payment invoices are cancelled. Payment records are kept, holding only the
+         *     account's id.
+         *
+         *     While closed, the account's devices, public paste links and invites stop working.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CloseAccountBody"];
+                };
+            };
+            responses: {
+                /** @description Closed. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CloseAccountResponse"];
+                    };
+                };
+                /** @description Wrong password. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/client/v1/account/set-email": {
         parameters: {
             query?: never;
@@ -5001,6 +5071,9 @@ export interface components {
             token: string;
             /** @enum {string|null} */
             plan: "free" | "pro" | null;
+            /** @description True when this login reopened an account that was closed. */
+            reopened?: boolean;
+            message?: string;
         };
         SignupBody: {
             /** @description 3 to 250 alphanumeric characters. */
@@ -5534,6 +5607,16 @@ export interface components {
         };
         TransferToFolderResponse: {
             clip: components["schemas"]["Clip"];
+            message: string;
+        };
+        CloseAccountBody: {
+            /** @description The account password. */
+            password: string;
+        };
+        CloseAccountResponse: {
+            closedAt: string;
+            /** @description When the account is deleted for good, unless it is reopened by logging in before that. */
+            purgeAt: string;
             message: string;
         };
     };
