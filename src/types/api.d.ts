@@ -1724,7 +1724,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/client/v1/space/{space}/clips/copy": {
+    "/client/v1/space/{space}/clips/move": {
         parameters: {
             query?: never;
             header?: never;
@@ -1734,8 +1734,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Copy clips into another folder of the space
-         * @description Up to 100 clips. The copies are authored by you, whoever wrote the originals. Skipped: `same_folder`, `not_found`, and file clips when the owner is not on Pro (`file`), the space is out of storage (`storage_full`) or the storage failed (`storage_error`). Identical text you already have in the target is merged.
+         * Move your clips into another folder of the space
+         * @description Up to 100 clips. Only the author can move a clip: others' clips are skipped as `not_author`.
+         *     Also skipped: `same_folder`, `not_found`. Skipped ids do not fail the request.
          */
         post: {
             parameters: {
@@ -1753,16 +1754,16 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Per-clip results. Skipped ids do not fail the request. */
+                /** @description Per-clip results. */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["SpaceCopyClipsResponse"];
+                        "application/json": components["schemas"]["SpaceMoveClipsResponse"];
                     };
                 };
-                /** @description Unknown space, folder or clip. */
+                /** @description Unknown space or folder. */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -5503,19 +5504,14 @@ export interface components {
             };
         };
         SpaceFoldersResponse: components["schemas"]["SpaceFolderInfo"][];
-        SpaceCopyClipsResponse: {
+        SpaceMoveClipsResponse: {
             folder: string;
-            /** @description Ids of the originals that were copied, with the `publicId` of each copy. */
-            copied: {
-                id: string;
-                copyId?: string;
-            }[];
-            /** @description Ids merged into identical text you already had. */
-            merged: string[];
+            /** @description Ids of the clips that were moved. */
+            moved: string[];
             skipped: {
                 id: string;
                 /** @enum {string} */
-                reason: "not_found" | "same_folder" | "file" | "storage_full" | "storage_error";
+                reason: "not_found" | "same_folder" | "not_author";
             }[];
             message: string;
         };

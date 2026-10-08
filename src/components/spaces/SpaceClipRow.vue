@@ -29,9 +29,9 @@ import { askForFolder } from "../FolderPickerHandler";
 import { previewClip } from "../ClipPreviewHandler";
 import { $alert } from "../ws-alert/ws-alert";
 import {
-  copySpaceClips,
   deleteSpaceClip,
   getSpaceFileUrl,
+  moveSpaceClips,
   transferSpaceClip,
   updateSpaceClip,
   type SpaceClip
@@ -127,19 +127,19 @@ async function copyText(btn?: ILoadingButton) {
   btn?.stopLoading();
 }
 
-/** Into another folder of the same space. The copy is authored by whoever took it. */
-async function copyToFolder() {
+/** Into another folder of the same space. Only the author of a clip can move it. */
+async function moveToFolder() {
   const choices = currentSpaceFolders.value.map((f) => ({
     name: f.name,
     slug: f.slug,
     contents: f.contents || 0,
     visibility: "public" as const
   }));
-  const folder = await askForFolder("Copy to which folder of this space?", [props.clip.folder], choices);
+  const folder = await askForFolder("Move to which folder of this space?", [props.clip.folder], choices);
   if (!folder) return;
 
   return run(async () => {
-    const res = await copySpaceClips(props.spaceId, [props.clip.publicId], folder.slug);
+    const res = await moveSpaceClips(props.spaceId, [props.clip.publicId], folder.slug);
     const skipped = res.skipped?.[0];
     if (skipped) $alert.warning(SKIP_REASONS[skipped.reason] || "The clip was skipped.");
     emit("changed");
@@ -149,9 +149,7 @@ async function copyToFolder() {
 const SKIP_REASONS: Record<string, string> = {
   same_folder: "The clip is already in that folder.",
   not_found: "The clip no longer exists.",
-  file: "Files can only be copied while the space owner is on Pro.",
-  storage_full: "This space has used all of its storage.",
-  storage_error: "The storage server could not be reached."
+  not_author: "Only the member who added a clip can move it."
 };
 
 /** Out of the space and into the member's own clipboard. */
@@ -317,8 +315,8 @@ async function remove() {
         <DropdownItem v-if="clip.mine" @click="startEditing">
           <template #icon><PencilSquareIcon /></template>{{ isFile ? "Edit title" : "Edit" }}
         </DropdownItem>
-        <DropdownItem @click="copyToFolder">
-          <template #icon><ArrowsRightLeftIcon /></template>Copy to folder
+        <DropdownItem v-if="clip.mine" @click="moveToFolder">
+          <template #icon><ArrowsRightLeftIcon /></template>Move to folder
         </DropdownItem>
         <DropdownItem @click="keepACopy">
           <template #icon><InboxArrowDownIcon /></template>Keep a copy in my clips

@@ -119,10 +119,10 @@ export function deleteSpaceClip(spaceId: string, clipId: string) {
   return $http.post<any, MessageResponse>(`space/${spaceId}/clip/${clipId}/delete`, undefined, { timeout: 30_000 });
 }
 
-/** Copy clips into another folder of the same space. The copies are authored by you. */
-export function copySpaceClips(spaceId: string, ids: string[], folder: string) {
-  return $http.post<any, components["schemas"]["SpaceCopyClipsResponse"]>(
-    `space/${spaceId}/clips/copy`,
+/** Move clips into another folder of the same space. Only their author can. */
+export function moveSpaceClips(spaceId: string, ids: string[], folder: string) {
+  return $http.post<any, components["schemas"]["SpaceMoveClipsResponse"]>(
+    `space/${spaceId}/clips/move`,
     { ids, folder },
     { timeout: 30_000 }
   );
