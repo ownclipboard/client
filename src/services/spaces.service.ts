@@ -154,10 +154,11 @@ export function confirmSpaceUpload(spaceId: string, clipId: string) {
   );
 }
 
-export async function getSpaceFileUrl(spaceId: string, clipId: string) {
+/** `thumb` asks for the 200x200 version, which exists only for images. */
+export async function getSpaceFileUrl(spaceId: string, clipId: string, thumb = false) {
   const { url } = await $http.get<any, components["schemas"]["FileUrlResponse"]>(
     `space/${spaceId}/clip/${clipId}/url`,
-    { timeout: 30_000 }
+    { timeout: 30_000, params: thumb ? { thumb: 1 } : undefined }
   );
   return url;
 }

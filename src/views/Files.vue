@@ -2,11 +2,15 @@
 /**
  * Every uploaded file, newest first, with folder and type filters.
  *
- * Images are drawn straight from storage using the `previewUrl` the api hands
- * out, which needs no authentication but stops working when the shared key
- * rotates, so the listing refreshes itself just before `preview.expiresAt`.
- * When the api sends no preview block at all the thumbnails are replaced by
- * icons and a file's url is fetched only when it is opened.
+ * Tiles are drawn from the 200x200 thumbnail the api makes for every image, so
+ * the grid costs a few kilobytes a tile instead of the whole picture. An image
+ * with no thumbnail, because of its type or its size, falls back to the full
+ * one under a size cap.
+ *
+ * Both urls need no authentication but stop working when the shared preview key
+ * rotates, so the listing refreshes itself just before `preview.expiresAt`. When
+ * the api sends no preview block at all, tiles are icons and a file's url is
+ * fetched only when it is opened.
  */
 import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
@@ -67,10 +71,15 @@ function iconFor(file: StoredFile) {
   return DocumentIcon;
 }
 
-/** Only images are drawn inline: a video or pdf thumbnail would pull the whole file. */
+/**
+ * Only images are drawn inline: a video or pdf would pull the whole file. The
+ * thumbnail is tiny whatever the original weighs, so the size cap applies only
+ * to the full image behind it.
+ */
 function thumbnailOf(file: StoredFile) {
-  if (file.status !== "uploaded" || !file.previewUrl) return "";
-  if (!file.contentType.startsWith("image/")) return "";
+  if (file.status !== "uploaded") return "";
+  if (file.hasThumbnail && file.thumbUrl) return file.thumbUrl;
+  if (!file.previewUrl || !file.contentType.startsWith("image/")) return "";
   return file.size <= PREVIEW_MAX_BYTES ? file.previewUrl : "";
 }
 

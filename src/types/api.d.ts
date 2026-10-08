@@ -2182,11 +2182,14 @@ export interface paths {
         };
         /**
          * Download url of a file clip
-         * @description Presigned and short lived. To keep a copy, download it and upload it to your own storage with `/files/upload`, which needs your own storage connected.
+         * @description Presigned and short lived. Add `?thumb=1` for the 200x200 thumbnail of an image (404 when it has none). To keep a copy, download it and upload it to your own storage with `/files/upload`, which needs your own storage connected.
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Get the thumbnail instead of the file. */
+                    thumb?: boolean;
+                };
                 header?: never;
                 path: {
                     /** @description Space publicId. */
@@ -3362,11 +3365,14 @@ export interface paths {
         };
         /**
          * Temporary download url
-         * @description Presigned url valid for one hour, fetched directly from the user's storage without an api key.
+         * @description Presigned url valid for one hour, fetched directly from the user's storage without an api key. Add `?thumb=1` for the 200x200 thumbnail of an image.
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Get the thumbnail instead of the file. 404 when it has none. */
+                    thumb?: boolean;
+                };
                 header?: never;
                 path: {
                     /** @description File publicId. */
@@ -5165,6 +5171,10 @@ export interface components {
             uploadedAt?: string | null;
             /** @description Public url that needs no authentication, present only when the user's owns3 app has preview links enabled. Stops working when `FilePreview.expiresAt` passes. */
             previewUrl?: string;
+            /** @description True when a 200x200 thumbnail was generated (images only). It is stored as `name.thumb.ext` next to the image and is not listed as a file of its own. */
+            hasThumbnail?: boolean;
+            /** @description Public url of the thumbnail, present when `hasThumbnail` is true and preview links are enabled. */
+            thumbUrl?: string;
         };
         /** @description Rotating owns3 preview key, shared by every file in the response. */
         FilePreview: {
@@ -5445,11 +5455,12 @@ export interface components {
                 human: string;
                 bytes: number;
             };
-            /** @description Present on file clips. */
+            /** @description `thumbnail` is true when a 200x200 thumbnail exists: get its url with `?thumb=1` on the clip's `/url`. */
             file?: {
                 name: string;
                 ext: string;
                 contentType: string;
+                thumbnail: boolean;
             };
             /** @description Username of the member who added it. Only they can edit or delete it. */
             author?: string;

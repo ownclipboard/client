@@ -111,9 +111,14 @@ export function listFiles(options: ListFilesOptions = {}) {
   return $http.get<any, FileListResponse>("files", { params: options });
 }
 
-/** Temporary (1 hour) download url for a file clip. Signed by the storage server. */
-export async function getFileUrl(filePublicId: string) {
-  const { url } = await $http.get<any, FileUrlResponse>(`file/${filePublicId}/url`);
+/**
+ * Temporary (1 hour) download url for a file clip. Signed by the storage server.
+ * `thumb` asks for the 200x200 version instead, which only images have.
+ */
+export async function getFileUrl(filePublicId: string, thumb = false) {
+  const { url } = await $http.get<any, FileUrlResponse>(`file/${filePublicId}/url`, {
+    params: thumb ? { thumb: 1 } : undefined
+  });
   return url;
 }
 

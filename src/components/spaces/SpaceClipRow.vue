@@ -5,7 +5,7 @@
  * them alone. Anyone can take a copy into another folder of the space, or into
  * their own clipboard.
  */
-import { computed, nextTick, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import { useClipboard } from "@vueuse/core";
 import {
   ArrowDownTrayIcon,
@@ -64,6 +64,20 @@ const folderName = computed(
 );
 
 const busy = ref(false);
+
+/**
+ * The api makes a 200x200 thumbnail for every image, so a row can show one
+ * without pulling the whole picture. Its url is signed per clip and short
+ * lived, hence the fetch rather than a field on the clip.
+ */
+const thumbUrl = ref("");
+
+onMounted(() => {
+  if (!props.clip.file?.thumbnail) return;
+  getSpaceFileUrl(props.spaceId, props.clip.publicId, true)
+    .then((url) => (thumbUrl.value = url))
+    .catch(() => undefined);
+});
 
 async function run(action: () => Promise<void>) {
   if (busy.value) return;
@@ -278,11 +292,19 @@ async function remove() {
           <button
             v-else
             type="button"
-            class="flex items-center gap-1.5 text-[13px] text-fg/90 hover:text-accent"
+            class="flex items-center gap-2 text-[13px] text-fg/90 hover:text-accent"
             title="Open preview"
             @click="openPreview"
           >
-            <DocumentIcon class="h-4 w-4 text-faint" /> {{ fileLabel }}
+            <img
+              v-if="thumbUrl"
+              :src="thumbUrl"
+              :alt="fileLabel"
+              loading="lazy"
+              class="h-10 w-10 shrink-0 rounded border border-line object-cover"
+            />
+            <DocumentIcon v-else class="h-4 w-4 shrink-0 text-faint" />
+            <span class="truncate">{{ fileLabel }}</span>
           </button>
         </template>
       </div>
