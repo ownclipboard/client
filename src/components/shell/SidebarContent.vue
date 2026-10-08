@@ -3,6 +3,7 @@ import { Cog6ToothIcon, CreditCardIcon, CpuChipIcon, PhotoIcon } from "@heroicon
 import { useAuthUser } from "../../stores/auth.store";
 import Brand from "./Brand.vue";
 import FolderNav from "./FolderNav.vue";
+import SpaceNav from "./SpaceNav.vue";
 import UserMenu from "./UserMenu.vue";
 import Badge from "../ui/Badge.vue";
 
@@ -22,6 +23,8 @@ const links = [
     <Brand />
 
     <FolderNav @navigate="emit('navigate')" />
+
+    <SpaceNav @navigate="emit('navigate')" />
 
     <nav aria-label="Account" class="flex flex-col gap-0.5">
       <span class="mb-1 px-2 text-[11px] font-medium uppercase tracking-wider text-faint">Account</span>

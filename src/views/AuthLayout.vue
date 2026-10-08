@@ -13,6 +13,7 @@ import Brand from "../components/shell/Brand.vue";
 import { useAuthUser } from "../stores/auth.store";
 import { refreshAuthData } from "../services/auth.service";
 import { getFolders } from "../stores/tabs.store";
+import { loadSpaces } from "../stores/spaces.store";
 import { startRealtime, stopRealtime } from "../services/realtime.service";
 import { isDev } from "../config";
 
@@ -42,6 +43,8 @@ async function boot() {
   if (result === "unreachable") return (state.value = "unreachable");
 
   getFolders();
+  // The sidebar lists spaces and any invite waiting, so both load with the shell.
+  loadSpaces().catch(() => undefined);
   // Live updates are an enhancement: a failure here leaves the app as it was.
   startRealtime(authUser.realtime).catch(() => undefined);
 }

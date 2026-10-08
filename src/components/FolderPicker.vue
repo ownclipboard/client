@@ -3,17 +3,19 @@ import { computed, watch } from "vue";
 import { FolderIcon } from "@heroicons/vue/20/solid";
 import { folders, foldersLoaded, getFolders } from "../stores/tabs.store";
 import type { OwnFolder } from "../types/models.types";
-import { FolderPickerExclude, FolderPickerLabel, FolderPickerResolveFn, ShowFolderPicker } from "./FolderPickerHandler";
+import { FolderPickerExclude, FolderPickerFolders, FolderPickerLabel, FolderPickerResolveFn, ShowFolderPicker } from "./FolderPickerHandler";
 import Dialog from "./ui/Dialog.vue";
 import Button from "./ui/Button.vue";
 
 // Encrypted folders can't receive moved/copied clips, and excluded slugs are hidden.
+const source = computed(() => FolderPickerFolders.value ?? folders.value);
 const options = computed(() =>
-  folders.value.filter((f) => f.visibility !== "encrypted" && !FolderPickerExclude.value.includes(f.slug))
+  source.value.filter((f) => f.visibility !== "encrypted" && !FolderPickerExclude.value.includes(f.slug))
 );
 
 watch(ShowFolderPicker, (show) => {
-  if (show && !foldersLoaded.value) getFolders();
+  // Only the user's own list needs fetching; a supplied list is already loaded.
+  if (show && !FolderPickerFolders.value && !foldersLoaded.value) getFolders();
 });
 
 function choose(folder: OwnFolder) {

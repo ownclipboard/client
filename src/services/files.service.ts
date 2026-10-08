@@ -71,7 +71,7 @@ export async function uploadFile(file: File, { folder, title, onProgress }: Uplo
 /**
  * PUT the raw body to the presigned url. Uses XHR so upload progress can be reported.
  */
-function putToStorage(
+export function putToStorage(
   url: string,
   method: string,
   headers: Record<string, string>,

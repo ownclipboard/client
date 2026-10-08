@@ -790,6 +790,1450 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client/v1/space/{space}/folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List folders of a space */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Folders with clip counts. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceFoldersResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/folders/create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a folder
+         * @description Any member can. Space folders are never encrypted.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SpaceNameBody"];
+                };
+            };
+            responses: {
+                /** @description Created. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceFolderResponse"];
+                    };
+                };
+                /** @description Name taken or invalid. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/folder/{folder}/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rename a folder (its author)
+         * @description Not even the space owner can rename a folder they did not create. The default folder cannot be renamed.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                    /** @description Folder slug. */
+                    folder: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SpaceNameBody"];
+                };
+            };
+            responses: {
+                /** @description Renamed. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceFolderResponse"];
+                    };
+                };
+                /** @description Not the folder's author. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/folder/{folder}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete a folder (its author)
+         * @description Only while every clip in it is the author's. The default folder cannot be deleted.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                    /** @description Folder slug. */
+                    folder: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Holds other members' clips, or is the default folder. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not the folder's author. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/spaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Spaces I own or joined, and my invites
+         * @description Free accounts can own 2 spaces, Pro accounts any number.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Spaces and pending invites. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpacesListResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create a space
+         * @description Free accounts can own 2 spaces, Pro accounts any number.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SpaceNameBody"];
+                };
+            };
+            responses: {
+                /** @description Created, with a default `clipboard` folder. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceCreatedResponse"];
+                    };
+                };
+                /** @description Space limit of the free plan reached. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a space
+         * @description Includes plan limits and storage usage. Anyone who is not the owner or an active member gets a 404.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The space. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceDetailResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rename a space (owner) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SpaceNameBody"];
+                };
+            };
+            responses: {
+                /** @description Renamed. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete a space (owner)
+         * @description Deletes the space with its clips, folders, files and memberships. Members are notified.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Space storage is unavailable, nothing was deleted. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List members
+         * @description The owner first. Pending invites are only listed to the owner.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Members. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceMembersResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite an account by username (owner)
+         * @description The invitee has to accept. Up to 10 members on a free owner, 100 on Pro, pending invites included.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SpaceUsernameBody"];
+                };
+            };
+            responses: {
+                /** @description Invite sent. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Already a member or invited, or inviting yourself. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The space is full. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept an invite */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Joined. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description No pending invite for this space. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline an invite */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Declined. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description No pending invite for this space. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove a member or cancel an invite (owner)
+         * @description Their clips stay in the space.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SpaceUsernameBody"];
+                };
+            };
+            responses: {
+                /** @description Removed. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Leave a space
+         * @description Your clips stay in the space. The owner cannot leave, they delete the space instead.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Left. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description The owner cannot leave. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/clips/{folder}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List clips of a space folder
+         * @description `folder` is optional and defaults to `clipboard`. Files still being uploaded are not listed.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    page?: number;
+                    perPage?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                    folder: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Clips, newest first. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceClipsListResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/clips/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search the clips of a space
+         * @description Case-insensitive substring search. `title` is searched on every clip, content only on text and link clips.
+         */
+        get: {
+            parameters: {
+                query: {
+                    q: string;
+                    /** @description Restrict to this folder slug. */
+                    folder?: string;
+                    page?: number;
+                    perPage?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Matching clips, newest first. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceClipsListResponse"];
+                    };
+                };
+                /** @description Missing or too long `q`. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/clips/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy clips into another folder of the space
+         * @description Up to 100 clips. The copies are authored by you, whoever wrote the originals. Skipped: `same_folder`, `not_found`, and file clips when the owner is not on Pro (`file`), the space is out of storage (`storage_full`) or the storage failed (`storage_error`). Identical text you already have in the target is merged.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TransferClipsBody"];
+                };
+            };
+            responses: {
+                /** @description Per-clip results. Skipped ids do not fail the request. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceCopyClipsResponse"];
+                    };
+                };
+                /** @description Unknown space, folder or clip. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/clip/{clip}/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Keep a copy in my own folders
+         * @description Any member can. Text is copied as is. A file needs your own storage: copied server-side when you use the default storage, streamed through the api when you connected your own server. The target must be a non-encrypted folder of yours.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                    /** @description Clip publicId. */
+                    clip: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TransferToFolderBody"];
+                };
+            };
+            responses: {
+                /** @description The new personal clip. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TransferToFolderResponse"];
+                    };
+                };
+                /** @description Encrypted target folder, or no storage connected. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unknown space, folder or clip. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Space storage is not available. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/clips/paste": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Paste a clip
+         * @description Identical content you already pasted in the folder is touched instead of repeated.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SpacePasteBody"];
+                };
+            };
+            responses: {
+                /** @description The clip. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceClipResponse"];
+                    };
+                };
+                /** @description Unknown folder or space. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/clip/{clip}/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Update your clip
+         * @description Only the author can. A file clip only has a title to change.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                    /** @description Clip publicId. */
+                    clip: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateClipBody"];
+                };
+            };
+            responses: {
+                /** @description Updated, or `info` when nothing changed. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Not the clip's author. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/clip/{clip}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete your clip
+         * @description Only the author can, not even the space owner. A file is removed from storage too.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                    /** @description Clip publicId. */
+                    clip: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Not the clip's author. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/files/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a file upload
+         * @description Needs the space owner to be on Pro, and room in the space's 5 GB of storage. PUT the bytes to the returned url, then confirm.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SpaceFileUploadBody"];
+                };
+            };
+            responses: {
+                /** @description Presigned upload slot. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceFileUploadResponse"];
+                    };
+                };
+                /** @description Owner is not on Pro, or the space is out of storage. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Space storage is not available. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/clip/{clip}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm an upload
+         * @description Checks the file is in storage, then the clip becomes visible to the space.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                    /** @description Clip publicId. */
+                    clip: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The file clip. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceClipResponse"];
+                    };
+                };
+                /** @description Not uploaded yet. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not the uploader, or the file does not fit in the space. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/clip/{clip}/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download url of a file clip
+         * @description Presigned and short lived. To keep a copy, download it and upload it to your own storage with `/files/upload`, which needs your own storage connected.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                    /** @description Clip publicId. */
+                    clip: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Presigned GET url. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FileUrlResponse"];
+                    };
+                };
+                /** @description Not a file clip, or not ready. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/client/v1/realtime/token": {
         parameters: {
             query?: never;
@@ -3888,6 +5332,200 @@ export interface components {
                 type: string;
                 message: string;
             };
+        };
+        /**
+         * @description What the caller is in a space.
+         * @enum {string}
+         */
+        SpaceRole: "owner" | "member";
+        /** @description A space the caller owns or has joined. */
+        SpaceSummary: {
+            publicId: string;
+            name: string;
+            role: components["schemas"]["SpaceRole"];
+            /** @description Username of the owner. */
+            owner?: string;
+            /** @description Owner plus active members. */
+            members: number;
+            createdAt: string;
+        };
+        /** @description An invite waiting for the caller's answer. */
+        SpaceInvite: {
+            space: {
+                publicId: string;
+                name: string;
+            };
+            /** @description Username of the space owner. */
+            owner?: string;
+            invitedBy?: string;
+            createdAt: string;
+        };
+        SpacesListResponse: {
+            spaces: components["schemas"]["SpaceSummary"][];
+            invites: components["schemas"]["SpaceInvite"][];
+        };
+        SpaceNameBody: {
+            /** @description Space name, up to 100 characters. */
+            name: string;
+        };
+        SpaceUsernameBody: {
+            username: string;
+        };
+        SpaceCreatedResponse: {
+            space: {
+                publicId: string;
+                name: string;
+                createdAt: string;
+                /** @constant */
+                role: "owner";
+            };
+            message: string;
+        };
+        SpaceDetail: {
+            publicId: string;
+            name: string;
+            /** @description Username of the owner. */
+            owner?: string;
+            /** @description Owner plus active members. */
+            members: number;
+            createdAt: string;
+            role: components["schemas"]["SpaceRole"];
+            limits: {
+                /** @description Most members (pending invites included) the space can have. Follows the owner's plan. */
+                members: number;
+                /** @description Whether files can be uploaded. True only while the owner is on Pro. */
+                uploads: boolean;
+                /** @description Bytes of files in the space and the most it can hold. */
+                storage: {
+                    used: number;
+                    max: number;
+                };
+            };
+        };
+        SpaceDetailResponse: {
+            space: components["schemas"]["SpaceDetail"];
+        };
+        SpaceMemberInfo: {
+            username?: string;
+            /**
+             * @description `invited` members have not accepted yet and are only listed to the owner.
+             * @enum {string}
+             */
+            role: "owner" | "member" | "invited";
+            joinedAt?: string;
+        };
+        SpaceMembersResponse: {
+            members: components["schemas"]["SpaceMemberInfo"][];
+        };
+        /** @description A folder in a space. Never encrypted. */
+        SpaceFolderInfo: {
+            name: string;
+            slug: string;
+            /** @description Number of clips in the folder. Only present in the folder list. */
+            contents?: number;
+            /** @description Username of the member who created it. Only they can rename or delete it. */
+            author?: string;
+            /** @description True when the caller created it. */
+            mine: boolean;
+        };
+        SpaceFolderResponse: {
+            folder: components["schemas"]["SpaceFolderInfo"];
+        };
+        /** @description Public view of a clip in a space. */
+        SpaceClip: {
+            publicId: string;
+            title?: string;
+            /** @enum {string} */
+            type: "text" | "url" | "file";
+            folder: string;
+            /** @description The clip content. Always "File Clip" for file clips. */
+            context: string;
+            size: {
+                human: string;
+                bytes: number;
+            };
+            /** @description Present on file clips. */
+            file?: {
+                name: string;
+                ext: string;
+                contentType: string;
+            };
+            /** @description Username of the member who added it. Only they can edit or delete it. */
+            author?: string;
+            /** @description True when the caller is the author. */
+            mine: boolean;
+            createdAt: string;
+            updatedAt?: string;
+        };
+        SpaceClipResponse: {
+            clip: components["schemas"]["SpaceClip"];
+            message?: string;
+            info?: string;
+        };
+        PaginatedSpaceClips: {
+            page: number;
+            perPage: number;
+            total?: number;
+            pages?: number;
+            data: components["schemas"]["SpaceClip"][];
+        };
+        SpaceClipsListResponse: {
+            clips: components["schemas"]["PaginatedSpaceClips"];
+        };
+        SpacePasteBody: {
+            title?: string;
+            content: string;
+            /** @description Folder name or slug. Defaults to clipboard. */
+            folder?: string;
+        };
+        SpaceFileUploadBody: {
+            /** @description Original file name, up to 255 characters. */
+            name: string;
+            title?: string;
+            /** @description MIME type, defaults to application/octet-stream. */
+            contentType?: string;
+            /** @description Size in bytes. Checked against the space's storage before a slot is issued. */
+            size: number;
+            /** @description Folder name or slug. Defaults to clipboard. */
+            folder?: string;
+        };
+        SpaceFileUploadResponse: {
+            clip: components["schemas"]["SpaceClip"];
+            upload: {
+                /** @constant */
+                method: "PUT";
+                /** @description Presigned url to PUT the raw bytes to. */
+                url: string;
+                expiresIn: number;
+                headers: {
+                    "Content-Type": string;
+                };
+            };
+        };
+        SpaceFoldersResponse: components["schemas"]["SpaceFolderInfo"][];
+        SpaceCopyClipsResponse: {
+            folder: string;
+            /** @description Ids of the originals that were copied, with the `publicId` of each copy. */
+            copied: {
+                id: string;
+                copyId?: string;
+            }[];
+            /** @description Ids merged into identical text you already had. */
+            merged: string[];
+            skipped: {
+                id: string;
+                /** @enum {string} */
+                reason: "not_found" | "same_folder" | "file" | "storage_full" | "storage_error";
+            }[];
+            message: string;
+        };
+        TransferToFolderBody: {
+            /** @description Name or slug of one of your own folders. Defaults to clipboard. Encrypted folders are refused. */
+            folder?: string;
+        };
+        TransferToFolderResponse: {
+            clip: components["schemas"]["Clip"];
+            message: string;
         };
     };
     responses: never;

@@ -3,7 +3,7 @@
 import { computed, ref, watch } from "vue";
 import { useClipboard } from "@vueuse/core";
 import { ArrowDownTrayIcon, ArrowTopRightOnSquareIcon, CheckIcon, ClipboardDocumentIcon, DocumentIcon } from "@heroicons/vue/20/solid";
-import { ClipPreviewClip, closeClipPreview, ShowClipPreview } from "./ClipPreviewHandler";
+import { ClipPreviewClip, ClipPreviewUrlResolver, closeClipPreview, ShowClipPreview } from "./ClipPreviewHandler";
 import { getFileUrl } from "../services/files.service";
 import { alertRequestError } from "../http";
 import { foldersAsObject } from "../stores/tabs.store";
@@ -51,7 +51,7 @@ watch(
 
     loadingUrl.value = true;
     try {
-      fileUrl.value = await getFileUrl(c.file.publicId);
+      fileUrl.value = ClipPreviewUrlResolver.value ? await ClipPreviewUrlResolver.value(c) : await getFileUrl(c.file.publicId);
       // Small text files can be shown inline; this needs CORS GET on the bucket, so fall back quietly.
       if (fileKind.value === "text") {
         try {

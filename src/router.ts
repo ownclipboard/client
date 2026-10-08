@@ -18,6 +18,8 @@ const routes: Array<RouteRecordRaw> = [
     children: [
       { path: "clipboard", name: "clipboard", component: () => import("./views/Clipboard.vue"), meta: { title: "Clipboard" } },
       { path: "files", name: "files", component: () => import("./views/Files.vue"), meta: { title: "Files" } },
+      { path: "spaces", name: "spaces", component: () => import("./views/Spaces.vue"), meta: { title: "Spaces" } },
+      { path: "spaces/:spaceId", name: "space", component: () => import("./views/Space.vue"), meta: { title: "Space" } },
       { path: "devices", name: "devices", component: () => import("./views/Devices.vue"), meta: { title: "Devices" } },
       { path: "pricing", name: "pricing", component: () => import("./views/Pricing.vue"), meta: { title: "Plan" } },
       { path: "settings", name: "settings", component: () => import("./views/Settings.vue"), meta: { title: "Settings" } }
