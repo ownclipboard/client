@@ -39,6 +39,7 @@ const points = [
 
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-faint">
         <span>Open source · self-hostable</span>
+        <RouterLink :to="{ name: 'public-pricing' }" class="hover:text-fg">Plans</RouterLink>
         <RouterLink :to="{ name: 'privacy' }" class="hover:text-fg">Privacy</RouterLink>
         <RouterLink :to="{ name: 'terms' }" class="hover:text-fg">Terms</RouterLink>
         <RouterLink :to="{ name: 'support' }" class="hover:text-fg">Support</RouterLink>
