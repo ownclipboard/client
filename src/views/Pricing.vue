@@ -35,14 +35,14 @@ import Button from "../components/ui/Button.vue";
 import Badge from "../components/ui/Badge.vue";
 import Dialog from "../components/ui/Dialog.vue";
 import Select from "../components/ui/Select.vue";
+import PlanComparison from "../components/pricing/PlanComparison.vue";
+import { MONTHLY_PRICE, PLAN_FAQ, YEARLY_PRICE } from "../data/plans";
 import StorageSetupGuide from "../components/storage/StorageSetupGuide.vue";
 
 const $router = useRouter();
 const $route = useRoute();
 const authUser = useAuthUser();
 const showPaymentModal = ref(false);
-const MONTHLY_PRICE = 2;
-const YEARLY_PRICE = 20;
 // Monthly subscriptions are disabled for now, only yearly is offered. Flip this to re-enable.
 const MONTHLY_ENABLED = false;
 
@@ -59,51 +59,7 @@ const computedPrice = computed(() => {
   return price * subscribeForm.duration;
 });
 
-type PricingRow = {
-  feature: string;
-  /** One line, or several to put on their own lines. */
-  desc?: string | string[];
-  free: boolean | string;
-  pro: boolean | string;
-  icon: any;
-  /** Adds a link to the storage setup guide under the description. */
-  guide?: boolean;
-};
-
 const guideOpen = ref(false);
-
-function descLines(row: PricingRow) {
-  if (!row.desc) return [];
-  return Array.isArray(row.desc) ? row.desc : [row.desc];
-}
-
-const pricing: PricingRow[] = [
-  { feature: "Unlimited clips", free: true, pro: true, icon: Square2StackIcon },
-  { feature: "Folders", free: "100", pro: "Unlimited", icon: FolderIcon },
-  { feature: "Public paste", desc: "Share a folder link so anyone can paste into it", free: true, pro: true, icon: GlobeAltIcon },
-  { feature: "Mobile app", desc: "iOS and Android", free: true, pro: true, icon: DevicePhoneMobileIcon },
-  { feature: "Chrome extension", desc: "Paste from any page", free: true, pro: true, icon: PuzzlePieceIcon },
-  { feature: "Encrypted folders", desc: "256-bit AES, encrypted in your browser", free: true, pro: true, icon: LockClosedIcon },
-  { feature: "Devices", desc: "Api keys apps use to read and write your clips", free: "3", pro: "Unlimited", icon: CpuChipIcon },
-  { feature: "File upload", desc: "Upload files into any folder", free: true, pro: true, icon: CloudArrowUpIcon },
-  {
-    feature: "File storage",
-    desc: ["Free: connect your own owns3 server.", "Pro: we host your files for you, nothing to set up."],
-    free: "Own server",
-    pro: "Own server or hosted",
-    icon: ServerStackIcon,
-    guide: true
-  },
-  { feature: "Edit clips", desc: "Change a clip's title and content after saving", free: false, pro: true, icon: PencilSquareIcon },
-  { feature: "Transfer clips", desc: "Move between folders, or copy to keep both", free: "Move", pro: "Move and copy", icon: ArrowsRightLeftIcon },
-  { feature: "Share clips", desc: "Between accounts", free: false, pro: true, icon: ShareIcon }
-];
-
-const faq = [
-  { question: "How do I pay?", answer: "With crypto (BTC, USDT and many more) through NowPayments. You are redirected to their invoice page and back here when done." },
-  { question: "What happens when I cancel?", answer: "You are moved to the free plan and Pro features are disabled." },
-  { question: "Do I keep my files if I cancel?", answer: "Files on your own owns3 server are untouched. Files we host stay put, but uploads pause until you renew Pro or connect your own server." }
-];
 
 /* ---------------- Subscription state & NowPayments ---------------- */
 
@@ -406,47 +362,11 @@ const proCta = computed(() => {
     </div>
 
     <!-- Comparison -->
-    <div class="mt-6 overflow-x-auto rounded-lg border border-line bg-surface">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="text-left text-[11px] uppercase tracking-wider text-faint">
-            <th class="px-5 py-3 font-medium">Feature</th>
-            <th class="w-28 px-3 py-3 font-medium">Free</th>
-            <th class="w-28 px-3 py-3 font-medium text-accent">Pro</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-line">
-          <tr v-for="item in pricing" :key="item.feature">
-            <td class="px-5 py-3">
-              <div class="flex items-center gap-3">
-                <component :is="item.icon" class="h-4 w-4 shrink-0 text-faint" />
-                <div>
-                  <div class="text-fg">{{ item.feature }}</div>
-                  <div v-for="line in descLines(item)" :key="line" class="text-xs text-muted">{{ line }}</div>
-                  <button
-                    v-if="item.guide"
-                    type="button"
-                    class="mt-0.5 text-xs font-medium text-accent underline underline-offset-2"
-                    @click="guideOpen = true"
-                  >
-                    How to connect your own storage
-                  </button>
-                </div>
-              </div>
-            </td>
-            <td v-for="col in (['free', 'pro'] as const)" :key="col" class="px-3 py-3">
-              <span v-if="typeof item[col] === 'string'" class="text-fg">{{ item[col] }}</span>
-              <CheckIcon v-else-if="item[col]" class="h-4 w-4 text-accent" aria-label="Included" />
-              <XMarkIcon v-else class="h-4 w-4 text-faint" aria-label="Not included" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <PlanComparison class="mt-6" with-guide-link @guide="guideOpen = true" />
 
     <!-- FAQ -->
     <section class="mt-8 grid gap-6 sm:grid-cols-3">
-      <div v-for="item in faq" :key="item.question">
+      <div v-for="item in PLAN_FAQ" :key="item.question">
         <h3 class="text-sm font-medium text-fg">{{ item.question }}</h3>
         <p class="mt-1 text-sm text-muted">{{ item.answer }}</p>
       </div>

@@ -443,6 +443,14 @@ async function disconnect(btn: ILoadingButton) {
       </form>
     </Card>
 
+    <Card v-show="tab === 'account'" title="About">
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+        <RouterLink :to="{ name: 'privacy' }" class="text-accent underline underline-offset-2">Privacy policy</RouterLink>
+        <RouterLink :to="{ name: 'terms' }" class="text-accent underline underline-offset-2">Terms of service</RouterLink>
+        <RouterLink :to="{ name: 'support' }" class="text-accent underline underline-offset-2">Support</RouterLink>
+      </div>
+    </Card>
+
     <Card v-show="tab === 'account'" title="Close account">
       <div v-if="closedUntil" class="space-y-4">
         <div class="rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
