@@ -40,6 +40,18 @@ export function setConnectionId(id: string) {
 }
 
 $http.interceptors.response.use((response) => {
+  /**
+   * An endpoint this server does not have answers 200 with a body that carries
+   * the real status, so a client talking to an older api sees success and
+   * assigns an empty payload over its state. Treat a failing status in the body
+   * as the failure it describes.
+   */
+  const bodyStatus = (response.data as any)?.status;
+  if (typeof bodyStatus === "number" && bodyStatus >= 400) {
+    return Promise.reject({
+      response: { status: bodyStatus, data: { error: (response.data as any)?.message || `Request failed (${bodyStatus}).` } }
+    });
+  }
 
   if (response.data) {
     if (response.data.message) {

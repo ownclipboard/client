@@ -49,8 +49,10 @@ export const spaceUploadIssue = computed(() => {
 
 export async function loadSpaces() {
   const res = await getSpaces();
-  spaces.value = res.spaces;
-  invites.value = res.invites;
+  // Defaulted rather than trusted: a payload without them would otherwise put
+  // undefined where every template expects a list, and the section stops rendering.
+  spaces.value = res?.spaces ?? [];
+  invites.value = res?.invites ?? [];
   spacesLoaded.value = true;
 }
 
@@ -58,7 +60,7 @@ export async function loadSpaces() {
 export async function openSpace(spaceId: string) {
   const [{ space }, folders] = await Promise.all([getSpace(spaceId), getSpaceFolders(spaceId)]);
   currentSpace.value = space;
-  currentSpaceFolders.value = folders;
+  currentSpaceFolders.value = Array.isArray(folders) ? folders : [];
 
   // The folder we were on may have been deleted by its author in the meantime.
   if (!folders.some((f) => f.slug === currentSpaceFolder.value)) currentSpaceFolder.value = "clipboard";
@@ -66,7 +68,8 @@ export async function openSpace(spaceId: string) {
 }
 
 export async function refreshSpaceFolders(spaceId: string) {
-  currentSpaceFolders.value = await getSpaceFolders(spaceId);
+  const folders = await getSpaceFolders(spaceId);
+  currentSpaceFolders.value = Array.isArray(folders) ? folders : [];
 }
 
 /** Storage usage moves on every upload and delete, so the detail is refetched. */
