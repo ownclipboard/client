@@ -8,6 +8,8 @@ import { logout } from "../services/auth.service";
 
 export type AuthUser = {
   email?: string;
+  /** Only a confirmed address can reset the password, so the app nags until it is. */
+  emailVerified?: boolean;
   username: string;
   plan?: "free" | "pro";
 };

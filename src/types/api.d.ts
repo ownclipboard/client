@@ -624,6 +624,124 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client/v1/auth/forgot-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for a password reset code
+         * @description Emails a 6 digit code to the address, valid for 15 minutes. Only an account whose email is
+         *     **verified** can reset its password. The answer is the same whether or not the address
+         *     belongs to such an account, so it can not be used to find out who has one.
+         *     A new code can be asked for once a minute.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ForgotPasswordBody"];
+                };
+            };
+            responses: {
+                /** @description Always the same message. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Validation error. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description This server can not send email. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/auth/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset the password with the emailed code
+         * @description Sets a new password and ends every session of the account, so log in again afterwards.
+         *     A code is used up when it works, expires after 15 minutes, and is thrown away after 5 wrong tries.
+         *     A wrong, expired or used code all answer the same.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ResetPasswordBody"];
+                };
+            };
+            responses: {
+                /** @description Password changed. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Validation error, or the code is wrong or expired. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/client/v1/auth/signup": {
         parameters: {
             query?: never;
@@ -4697,7 +4815,8 @@ export interface paths {
          * @description Adds an email to an account that has none, or replaces the one it has. The account
          *     password is required, because the address is what a future password reset is sent to.
          *     The address is trimmed, lower-cased and must not belong to another account.
-         *     It is not verified, so treat it as unconfirmed until a verification flow exists.
+         *     The new address starts **unverified** and a verification code is emailed to it (see
+         *     `verify-email`). Until it is verified the account can not reset its password by email.
          */
         post: {
             parameters: {
@@ -4738,6 +4857,127 @@ export interface paths {
                 };
                 /** @description Missing or invalid `oc-token`. */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/send-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Email a code to verify the account email
+         * @description Sends a 6 digit code to the account's email, valid for 30 minutes. Send it back to
+         *     `verify-email`. A new code can be asked for once a minute; asking again replaces the old one.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Code sent. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description The account has no email, or it is already verified. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description A code was sent less than a minute ago. `retryAfter` is the seconds to wait. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description This server can not send email. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify the account email with the emailed code
+         * @description Marks the email verified, which allows password reset by email. A code works once, expires
+         *     after 30 minutes, and is thrown away after 5 wrong tries. It only works for the address it was
+         *     sent to: changing the email cancels it.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VerifyEmailBody"];
+                };
+            };
+            responses: {
+                /** @description Verified. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VerifyEmailResponse"];
+                    };
+                };
+                /** @description Validation error, no email on the account, or the code is wrong or expired. */
+                400: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4992,6 +5232,8 @@ export interface components {
             username: string;
             publicId: string;
             email?: string;
+            /** @description True once the email was confirmed with a code. Only then can it reset the password. */
+            emailVerified?: boolean;
             joinedAt: string;
             /** @enum {string|null} */
             plan?: "free" | "pro" | null;
@@ -5317,7 +5559,37 @@ export interface components {
         SetEmailResponse: {
             /** @description The address as stored. */
             email: string;
+            /**
+             * @description Always false: a changed email has to be verified again.
+             * @constant
+             */
+            verified: false;
+            /** @description Whether the verification code was emailed. If false, ask for one with send-verification. */
+            verificationSent: boolean;
             message: string;
+        };
+        VerifyEmailBody: {
+            /** @description The 6 digit code from the email. */
+            code: string;
+        };
+        VerifyEmailResponse: {
+            email: string;
+            /** @constant */
+            verified: true;
+            message?: string;
+            /** @description Present when the email was already verified. */
+            info?: string;
+        };
+        ForgotPasswordBody: {
+            /** @description The account's verified email. */
+            email: string;
+        };
+        ResetPasswordBody: {
+            email: string;
+            /** @description The 6 digit code from the email. */
+            code: string;
+            /** @description 6 to 500 characters. */
+            newPassword: string;
         };
         ChangePasswordBody: {
             currentPassword: string;

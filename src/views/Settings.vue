@@ -6,7 +6,7 @@ import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../http";
 import { $alert } from "../components/ws-alert/ws-alert";
 import { connectOwns3, disconnectOwns3, getOwns3Status, useDefaultOwns3, type Owns3Status } from "../services/files.service";
-import { changePassword, closeAccount, refreshAuthData, setAccountEmail } from "../services/auth.service";
+import { changePassword, closeAccount, refreshAuthData, sendEmailVerification, setAccountEmail, verifyEmail } from "../services/auth.service";
 import { computed } from "vue";
 import { setTheme, themePreference, type ThemePreference } from "../stores/theme.store";
 import { useAuthUser } from "../stores/auth.store";
@@ -137,7 +137,12 @@ function saveEmail(btn: ILoadingButton) {
 
   return setAccountEmail(email, emailForm.password)
     .then((res) => {
-      if (authUser.data) authUser.data.email = res.email;
+      if (authUser.data) {
+        authUser.data.email = res.email;
+        // A changed address starts unverified, whether or not the code went out.
+        authUser.data.emailVerified = false;
+      }
+      codeSent.value = res.verificationSent;
       emailForm.email = "";
       emailForm.password = "";
     })
@@ -166,6 +171,39 @@ function savePassword(btn: ILoadingButton) {
       passwordForm.current = "";
       passwordForm.next = "";
       passwordForm.confirm = "";
+    })
+    .catch(alertRequestError)
+    .finally(btn.stopLoading);
+}
+
+/* ---------------- Verifying the email ---------------- */
+
+const verifyCode = ref("");
+// True once a code has gone out in this visit, which changes what the card says.
+const codeSent = ref(false);
+
+const emailVerified = computed(() => !!authUser.data?.emailVerified);
+const needsVerifying = computed(() => !!authUser.data?.email && !emailVerified.value);
+
+function sendCode(btn: ILoadingButton) {
+  return sendEmailVerification()
+    .then(() => (codeSent.value = true))
+    .catch(alertRequestError)
+    .finally(btn.stopLoading);
+}
+
+function confirmEmail(btn: ILoadingButton) {
+  const code = verifyCode.value.trim();
+  if (code.length !== 6) {
+    $alert.warning("Enter the six digit code from the email.");
+    return btn.stopLoading();
+  }
+
+  return verifyEmail(code)
+    .then(() => {
+      if (authUser.data) authUser.data.emailVerified = true;
+      verifyCode.value = "";
+      codeSent.value = false;
     })
     .catch(alertRequestError)
     .finally(btn.stopLoading);
@@ -399,11 +437,42 @@ async function disconnect(btn: ILoadingButton) {
       title="Email address"
       description="Used to reset your password if you forget it. We don't email you for anything else."
     >
+      <template #header>
+        <Badge v-if="emailVerified" variant="accent">Verified</Badge>
+        <Badge v-else-if="authUser.data?.email" variant="warn">Not verified</Badge>
+      </template>
+
       <div
         v-if="!authUser.data?.email"
         class="mb-4 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn"
       >
         Without an email address you can't reset your password if you forget it.
+      </div>
+
+      <!-- An address only works for a reset once it has been confirmed -->
+      <div v-else-if="needsVerifying" class="mb-4 space-y-3 rounded-md border border-warn/30 bg-warn-soft p-3">
+        <p class="text-sm text-warn">
+          <span class="font-medium">{{ authUser.data?.email }}</span> is not confirmed yet, so it cannot reset your
+          password. We will email a six digit code to check it reaches you.
+        </p>
+
+        <form v-if="codeSent" class="flex flex-wrap items-end gap-2" @submit.prevent>
+          <Input
+            v-model="verifyCode"
+            label="Code from the email"
+            placeholder="123456"
+            inputmode="numeric"
+            maxlength="6"
+            autocomplete="one-time-code"
+            mono
+            class="w-40"
+          />
+          <Button variant="primary" type="submit" :click="confirmEmail" message="Checking">Confirm</Button>
+          <Button variant="ghost" :click="sendCode" message="Sending">Send another</Button>
+        </form>
+        <Button v-else variant="primary" size="sm" :click="sendCode" message="Sending">Send me a code</Button>
+
+        <p v-if="codeSent" class="text-xs text-warn/80">The code lasts 30 minutes. A new one can be asked for once a minute.</p>
       </div>
 
       <form class="space-y-4" @submit.prevent>

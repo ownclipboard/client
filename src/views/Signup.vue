@@ -9,7 +9,7 @@ import { useDebounceFn } from "@vueuse/core";
 import { CheckCircleIcon } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../http";
-import { login, signup, usernameExists } from "../services/auth.service";
+import { login, sendEmailVerification, signup, usernameExists } from "../services/auth.service";
 import { redirect } from "../functions";
 import AuthPanel from "../layouts/AuthPanel.vue";
 import Input from "../components/ui/Input.vue";
@@ -92,8 +92,13 @@ async function createAccount(btn: ILoadingButton) {
   const username = form.username.trim();
 
   try {
-    await signup(username, form.password, form.email.trim() || undefined);
+    const email = form.email.trim();
+    await signup(username, form.password, email || undefined);
     await login(username, form.password);
+
+    // Signing up does not send a code, so ask for one here. A failure is not
+    // worth blocking on: the address can be confirmed later from settings.
+    if (email) await sendEmailVerification().catch(() => undefined);
     // Full reload so the axios instance picks up the token; new accounts choose a plan first.
     redirect($router.resolve({ name: "pricing" }).href, 300);
   } catch (e) {

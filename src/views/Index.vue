@@ -100,7 +100,12 @@ const LEGACY_URL = "https://legacy.ownclipboard.com";
     <form v-else class="mt-8 space-y-4" @submit.prevent>
       <Input ref="passwordInput" v-model="form.password" type="password" label="Password" autocomplete="current-password" />
       <Button variant="primary" size="lg" type="submit" block :click="submitLogin" message="Signing in">Sign in</Button>
-      <Button variant="ghost" size="sm" @click="back"><ArrowLeftIcon class="h-4 w-4" /> Not {{ form.username }}?</Button>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <Button variant="ghost" size="sm" @click="back"><ArrowLeftIcon class="h-4 w-4" /> Not {{ form.username }}?</Button>
+        <RouterLink :to="{ name: 'forgot-password' }" class="text-sm text-muted underline underline-offset-4 hover:text-fg">
+          Forgot your password?
+        </RouterLink>
+      </div>
     </form>
 
     <p class="mt-8 text-sm text-muted">

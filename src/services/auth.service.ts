@@ -63,6 +63,31 @@ export function logout() {
  * Add an email to the account or replace the one it has. The account password is
  * required because this address is where a password reset would be sent.
  */
+/**
+ * Ask for a reset code. The answer is the same whatever address is given, so it
+ * cannot be used to find out who has an account.
+ */
+export function forgotPassword(email: string) {
+  return $http.post<any, components["schemas"]["MessageResponse"]>("/auth/forgot-password", { email }, { timeout: 30_000 });
+}
+
+/** Set a new password with the emailed code. Every session ends, so sign in again. */
+export function resetPassword(email: string, code: string, newPassword: string) {
+  return $http.post<any, components["schemas"]["MessageResponse"]>("/auth/reset-password", { email, code, newPassword });
+}
+
+/** Email a fresh verification code to the address on the account. */
+export function sendEmailVerification() {
+  return $http.post<any, components["schemas"]["MessageResponse"]>("/account/send-verification", undefined, {
+    timeout: 30_000
+  });
+}
+
+/** Confirm the address with the code from the email. */
+export function verifyEmail(code: string) {
+  return $http.post<any, components["schemas"]["MessageResponse"]>("/account/verify-email", { code });
+}
+
 export function setAccountEmail(email: string, password: string) {
   return $http.post<any, components["schemas"]["SetEmailResponse"]>("/account/set-email", { email, password });
 }
