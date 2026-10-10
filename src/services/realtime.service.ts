@@ -92,6 +92,10 @@ export function stopRealtime() {
 }
 
 function handle(event: string, data: ClipEvent | ClipsChangedEvent | undefined) {
+  // Not every event on the channel is about clips. A phone scanning a sign-in
+  // code arrives here too, and must not drag the clip list through a refetch.
+  if (event === "qr.scanned") return $events.emit("realtime:qr-scanned");
+
   // Our own writes already updated the screen, so skip the pointless refetch.
   if (data?.from && client?.connection.id && data.from === client.connection.id) return;
 

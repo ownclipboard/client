@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { CloudIcon, ComputerDesktopIcon, MoonIcon, ServerStackIcon, SunIcon, SwatchIcon, UserCircleIcon } from "@heroicons/vue/20/solid";
+import { CloudIcon, ComputerDesktopIcon, MoonIcon, QrCodeIcon, ServerStackIcon, SunIcon, SwatchIcon, UserCircleIcon } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../http";
 import { $alert } from "../components/ws-alert/ws-alert";
@@ -18,6 +18,8 @@ import Input from "../components/ui/Input.vue";
 import Badge from "../components/ui/Badge.vue";
 import Skeleton from "../components/ui/Skeleton.vue";
 import StorageSetupGuide from "../components/storage/StorageSetupGuide.vue";
+import SessionList from "../components/sessions/SessionList.vue";
+import QrSignInDialog from "../components/sessions/QrSignInDialog.vue";
 import Tabs, { type TabItem } from "../components/ui/Tabs.vue";
 
 const authUser = useAuthUser();
@@ -218,6 +220,11 @@ const CLOSE_PHRASE = "close my account";
 // the session is dropped and the browser leaves for the sign-in page.
 const closedUntil = ref("");
 
+/* ---------------- Devices signed in ---------------- */
+
+const qrOpen = ref(false);
+const sessionList = ref<InstanceType<typeof SessionList>>();
+
 const canClose = computed(
   () => !!closeForm.password && closeForm.confirmText.trim().toLowerCase() === CLOSE_PHRASE
 );
@@ -415,6 +422,14 @@ async function disconnect(btn: ILoadingButton) {
 
     <StorageSetupGuide :open="guideOpen" @close="guideOpen = false" />
 
+    <!-- The new session appears when the device collects its token, which is after
+         the approval, so the list is read again on the way out as well. -->
+    <QrSignInDialog
+      :open="qrOpen"
+      @close="qrOpen = false; sessionList?.reload()"
+      @signed-in="sessionList?.reload()"
+    />
+
     <div v-show="tab === 'account'" class="space-y-5">
     <Card title="Account">
       <dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
@@ -431,6 +446,20 @@ async function disconnect(btn: ILoadingButton) {
       <template #footer>
         <Button variant="danger" size="sm" :click="authUser.signOut" message="Signing out">Sign out</Button>
       </template>
+    </Card>
+
+    <Card
+      v-show="tab === 'account'"
+      title="Devices signed in"
+      description="Every device with a live session. Sign one out and it has to sign in again."
+    >
+      <template #header>
+        <Button size="sm" @click="qrOpen = true">
+          <QrCodeIcon class="h-4 w-4" />Sign in a device
+        </Button>
+      </template>
+
+      <SessionList ref="sessionList" />
     </Card>
 
     <Card

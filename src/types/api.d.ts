@@ -861,10 +861,13 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Log out
-         * @description Ends every session of the account, on every device. The jwt carries a login token
-         *     that is compared on each request, and this endpoint replaces it, so all tokens
-         *     issued so far stop working. The client should discard its own token as well.
+         * Log out of this device
+         * @description Ends the session of the token that sent this request. The account's other devices stay
+         *     logged in; to end them too see `/auth/logout-all` and the session list under `/account/sessions`.
+         *     The client should discard its own token as well.
+         *
+         *     A token issued before sessions existed has no session of its own to end, so for that one
+         *     alone this ends every session of the account, as logout used to.
          */
         post: {
             parameters: {
@@ -894,6 +897,56 @@ export interface paths {
                     };
                 };
                 /** @description Missing `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/auth/logout-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Log out of every device
+         * @description Ends every session of the account, this one included, and any login from before sessions
+         *     existed. Use it when a device is lost or you do not recognise a session. The client should
+         *     discard its own token as well.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Every session ended. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -2411,6 +2464,321 @@ export interface paths {
                 };
                 /** @description Realtime is not configured on this server. */
                 503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/auth/qr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * State of the latest QR login code (logged in device)
+         * @description Poll this while the QR is on screen, or listen for the `qr.scanned` realtime event.
+         *     When `status` is `pending` a phone scanned the code: show `device` (text the phone chose itself, so display it as plain text and do not trust it) and ask the user to approve or deny.
+         *     Expired codes count as `none`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Current state. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["QrStatusResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Make a QR login code (logged in device)
+         * @description Step 1 of signing a phone in. The logged in device calls this and shows `code` as a QR.
+         *     The code works for one scan, expires after `expiresIn` seconds (2 minutes), and replaces any earlier code of the account.
+         *     The phone sends it to `/auth/qr/scan`; the user then approves it here, see `/auth/qr` and `/auth/qr/approve`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The code to encode in the QR. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["QrCreateResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/auth/qr/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve the phone that scanned the code (logged in device)
+         * @description Lets the phone that scanned the latest code collect its login token. Only approve a device the user just scanned with themselves.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Approved. The phone gets its token on its next poll. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description No scanned code is waiting for approval. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/auth/qr/deny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deny the phone that scanned the code (logged in device)
+         * @description Refuses the phone. The code is dead afterwards, make a new one to try again.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Denied. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description No scanned code is waiting for approval. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/auth/qr/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scan a QR login code (phone)
+         * @description Step 2, called by the phone that is not logged in: no `oc-token`. The first scan of a valid code wins; any other scan is refused.
+         *     Returns a `pollToken` that only this phone holds. Nothing is granted yet: the user has to approve on the logged in device.
+         *     `deviceName` is optional and only shown to the user that approves.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["QrScanBody"];
+                };
+            };
+            responses: {
+                /** @description Scanned, waiting for approval. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["QrScanResponse"];
+                    };
+                };
+                /** @description The code is invalid, already used or expired. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/auth/qr/poll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Collect the login token (phone)
+         * @description Step 3, called by the phone every second or two after scanning, with the code and its `pollToken`. No `oc-token`.
+         *     `pending`: keep polling. `approved`: the response carries the login token, exactly like `/auth/login`, and it is handed over once.
+         *     A denied request answers 403 with `status: denied`; an expired, used or unknown one answers 400 with `status: expired`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["QrPollBody"];
+                };
+            };
+            responses: {
+                /** @description Pending, or approved with the login token. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["QrPollResponse"];
+                    };
+                };
+                /** @description Invalid, used or expired. `status` is `expired`. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The user denied the request. `status` is `denied`. */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4993,6 +5361,173 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client/v1/account/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where the account is logged in
+         * @description One entry per live session, most recently used first, with the device name the client gave,
+         *     its browser or app string and the address it logged in from. `current` marks the session
+         *     of the token that asked. Revoke one with `/account/sessions/{session}/revoke`.
+         *
+         *     `currentListed` is false when this token was issued before sessions existed: it works, but has
+         *     no entry here and can only be ended with `/auth/logout-all`.
+         *
+         *     `deviceName` and `userAgent` are text the client chose, show them as plain text. `lastUsedAt` is
+         *     accurate to about 5 minutes.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The live sessions. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SessionsResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/sessions/{session}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign a device out
+         * @description Ends one session: that device's next request is refused. Revoking the current session is
+         *     the same as logging out.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Session publicId from the session list. */
+                    session: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Revoked. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RevokeSessionResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description No such session on this account. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/sessions/revoke-others": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign out every other device
+         * @description Ends every session except the current one. A token issued before sessions existed has no
+         *     entry to keep, so called from one this ends every listed session; use `/auth/logout-all` to
+         *     end old logins too.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Revoked. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RevokeOthersResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/client/v1/account/change-password": {
         parameters: {
             query?: never;
@@ -5307,6 +5842,8 @@ export interface components {
             username: string;
             /** @description 6 to 500 characters. */
             password: string;
+            /** @description What this device is called in the account's list of sessions, e.g. "Chrome on Mac". Up to 60 characters are kept. */
+            deviceName?: string;
         };
         LoginResponse: {
             /** @description JWT to send in the `oc-token` header. */
@@ -5322,6 +5859,8 @@ export interface components {
             username: string;
             /** @description 6 to 500 characters. */
             password: string;
+            /** @description What this device is called in the account's list of sessions, e.g. "Chrome on Mac". Up to 60 characters are kept. */
+            deviceName?: string;
             /** @description Optional. Must be unique; stored trimmed and lower-cased. Used for password resets. */
             email?: string;
         };
@@ -5889,6 +6428,85 @@ export interface components {
             closedAt: string;
             /** @description When the account is deleted for good, unless it is reopened by logging in before that. */
             purgeAt: string;
+            message: string;
+        };
+        QrCreateResponse: {
+            /** @description Encode this in the QR. Secret: it is shown only to the person scanning it. */
+            code: string;
+            expiresAt: string;
+            /** @description Seconds the code works for. */
+            expiresIn: number;
+        };
+        QrStatusResponse: {
+            /**
+             * @description `none` when there is no live code. `pending` means a phone scanned it and waits for approval.
+             * @enum {string}
+             */
+            status: "none" | "waiting" | "pending" | "approved" | "denied" | "used";
+            /** @description What the scanning phone called itself. Untrusted text, show it as plain text. */
+            device?: string;
+            scannedAt?: string;
+            expiresAt?: string;
+        };
+        QrScanBody: {
+            /** @description The code read from the QR. */
+            code: string;
+            /** @description Optional, up to 60 characters kept. Shown to the user who approves. */
+            deviceName?: string;
+        };
+        QrScanResponse: {
+            /** @description Secret that only this phone holds, needed to poll. */
+            pollToken: string;
+            expiresAt: string;
+            message: string;
+        };
+        QrPollBody: {
+            code: string;
+            pollToken: string;
+        };
+        QrPollResponse: {
+            /** @enum {string} */
+            status: "pending" | "approved";
+            /** @description JWT to send in the `oc-token` header. Only when `status` is `approved`, and only once. */
+            token?: string;
+            /** @enum {string|null} */
+            plan?: "free" | "pro" | null;
+        };
+        SessionInfo: {
+            /** @description Id to revoke the session with. */
+            publicId: string;
+            /** @description What the client called itself at login. Text the client chose: show it as plain text. */
+            deviceName?: string;
+            /** @description Browser or app string of the login. Text the client chose: show it as plain text. */
+            userAgent?: string;
+            /** @description Address the login came from. */
+            ip?: string;
+            /**
+             * @description How the device got in.
+             * @enum {string}
+             */
+            method: "password" | "qr";
+            createdAt: string;
+            /** @description Accurate to about 5 minutes. */
+            lastUsedAt: string;
+            /** @description When the token stops working anyway. */
+            expiresAt: string;
+            /** @description True for the session of the token that asked. */
+            current: boolean;
+        };
+        SessionsResponse: {
+            sessions: components["schemas"]["SessionInfo"][];
+            /** @description False when this token was issued before sessions existed: it works but is not in the list. */
+            currentListed: boolean;
+        };
+        RevokeSessionResponse: {
+            message: string;
+            /** @description True when the revoked session was the one that asked, so the client is logged out now. */
+            current: boolean;
+        };
+        RevokeOthersResponse: {
+            /** @description How many sessions were ended. */
+            revoked: number;
             message: string;
         };
     };

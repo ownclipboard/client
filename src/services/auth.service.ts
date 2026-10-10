@@ -59,6 +59,11 @@ export function logout() {
   return $http.post<any, components["schemas"]["MessageResponse"]>("/auth/logout");
 }
 
+/** Ends every session of the account, this one included. For a lost device. */
+export function logoutEverywhere() {
+  return $http.post<any, components["schemas"]["MessageResponse"]>("/auth/logout-all", undefined, { timeout: 30_000 });
+}
+
 /**
  * Add an email to the account or replace the one it has. The account password is
  * required because this address is where a password reset would be sent.
@@ -124,8 +129,37 @@ export async function usernameExists(username: string) {
 }
 
 /** Log in and store the token. Returns the user's plan (null when none chosen yet). */
+/**
+ * What this browser calls itself in the account's session list. Guessed from
+ * the user agent, which is all a browser can honestly offer, and kept short.
+ */
+export function describeThisDevice() {
+  const ua = navigator.userAgent;
+  const browser =
+    /Edg\//.test(ua) ? "Edge"
+    : /OPR\//.test(ua) ? "Opera"
+    : /Firefox\//.test(ua) ? "Firefox"
+    : /Chrome\//.test(ua) ? "Chrome"
+    : /Safari\//.test(ua) ? "Safari"
+    : "Browser";
+
+  const os =
+    /iPhone|iPad/.test(ua) ? "iOS"
+    : /Android/.test(ua) ? "Android"
+    : /Mac OS X/.test(ua) ? "Mac"
+    : /Windows/.test(ua) ? "Windows"
+    : /Linux/.test(ua) ? "Linux"
+    : "";
+
+  return os ? `${browser} on ${os}` : browser;
+}
+
 export async function login(username: string, password: string) {
-  const res = await $http.post<any, components["schemas"]["LoginResponse"]>("/auth/login", { username, password });
+  const res = await $http.post<any, components["schemas"]["LoginResponse"]>("/auth/login", {
+    username,
+    password,
+    deviceName: describeThisDevice()
+  });
   $localStorage.set("token", res.token);
   return res.plan;
 }

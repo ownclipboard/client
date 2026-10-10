@@ -4,7 +4,7 @@ import { $localStorage, $sessionStorage } from "./native";
 import { type SubStat } from "../types/models.types";
 import type { components } from "../types/api";
 import { askToConfirm } from "../components/ConfirmHandler";
-import { logout } from "../services/auth.service";
+import { logout, logoutEverywhere } from "../services/auth.service";
 
 export type AuthUser = {
   email?: string;
@@ -51,30 +51,45 @@ export const useAuthUser = defineStore("authUser", () => {
   }
 
   /**
-   * The API has a single logout endpoint and it ends every session of the
-   * account, so say so before calling it. Takes the LoadingButton when one
-   * invoked it, to release it if the user backs out.
+   * Signs out this device alone; the account's others carry on. Asking first
+   * would be noise for something that undoes itself with one sign-in.
    */
   async function signOut(btn?: { stopLoading?: () => void }) {
+    try {
+      await logout();
+    } catch {
+      // An expired or already ended session still means signing out here.
+    } finally {
+      btn?.stopLoading?.();
+    }
+
+    clearSession();
+  }
+
+  /**
+   * The lost-device button. This one does deserve a confirmation, because it
+   * reaches every other device the account is signed in on.
+   */
+  async function signOutEverywhere(btn?: { stopLoading?: () => void }) {
     const ok = await askToConfirm({
-      title: "Sign out?",
-      message: "This ends your session everywhere you are signed in, not just in this browser.",
-      confirmLabel: "Sign out",
+      title: "Sign out everywhere?",
+      message: "Every device signed in to this account is signed out, including this one.",
+      confirmLabel: "Sign out everywhere",
       danger: true
     });
 
     if (!ok) return btn?.stopLoading?.();
 
     try {
-      await logout();
+      await logoutEverywhere();
     } catch {
-      // An expired or already ended session still means signing out here.
+      // Whatever the server said, this browser is not staying signed in.
     }
 
     clearSession();
   }
 
-  return { data, isLogged, subscription, pending, storage, realtime, canUpload, uploadBlockedReason, clearSession, signOut };
+  return { data, isLogged, subscription, pending, storage, realtime, canUpload, uploadBlockedReason, clearSession, signOut, signOutEverywhere };
 });
 
 export type AuthUserStore = ReturnType<typeof useAuthUser>;
