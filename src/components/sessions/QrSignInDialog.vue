@@ -9,7 +9,8 @@
  */
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import QRCode from "qrcode";
-import { ArrowPathIcon, CheckIcon, ExclamationTriangleIcon, XMarkIcon } from "@heroicons/vue/20/solid";
+import { ArrowPathIcon, CheckIcon, ClipboardDocumentIcon, ExclamationTriangleIcon, XMarkIcon } from "@heroicons/vue/20/solid";
+import { useClipboard } from "@vueuse/core";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../../http";
 import { $events } from "../../events";
@@ -18,6 +19,8 @@ import { isDark } from "../../stores/theme.store";
 import Dialog from "../ui/Dialog.vue";
 import Button from "../ui/Button.vue";
 import Spinner from "../ui/Spinner.vue";
+import Input from "../ui/Input.vue";
+import IconButton from "../ui/IconButton.vue";
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ (e: "close"): void; (e: "signed-in"): void }>();
@@ -26,6 +29,8 @@ type Phase = "loading" | "waiting" | "pending" | "done" | "expired";
 
 const phase = ref<Phase>("loading");
 const qrImage = ref("");
+// The same secret the QR carries, for a device with no camera to be given by hand.
+const code = ref("");
 const scanningDevice = ref("");
 const secondsLeft = ref(0);
 
@@ -49,13 +54,15 @@ async function start() {
   stopTimers();
   phase.value = "loading";
   qrImage.value = "";
+  code.value = "";
   scanningDevice.value = "";
 
   try {
-    const { code, expiresIn } = await createQrCode();
+    const { code: created, expiresIn } = await createQrCode();
+    code.value = created;
 
     // Drawn, never printed: anyone who reads the code can use it once.
-    qrImage.value = await QRCode.toDataURL(code, {
+    qrImage.value = await QRCode.toDataURL(created, {
       margin: 1,
       width: 480,
       color: isDark.value ? { dark: "#e7eaed", light: "#00000000" } : { dark: "#15191d", light: "#00000000" }
@@ -122,6 +129,13 @@ function deny(btn: ILoadingButton) {
     .finally(btn.stopLoading);
 }
 
+const { copy, copied } = useClipboard({ copiedDuring: 2000 });
+
+/** Clicking the field selects the lot, which is the usual way people grab it. */
+function selectAll(e: Event) {
+  (e.target as HTMLInputElement).select();
+}
+
 function onScanned() {
   check();
 }
@@ -147,10 +161,36 @@ onBeforeUnmount(() => {
         <Spinner v-if="phase === 'loading'" />
         <img v-else :src="qrImage" alt="Sign-in code" class="h-full w-full" />
       </div>
-      <p class="mt-4 text-sm text-fg">Open {{ "OwnClipboard" }} on the other device and scan this.</p>
+      <p class="mt-4 text-sm text-fg">Open OwnClipboard on the other device and scan this.</p>
       <p class="mt-1 text-xs text-faint">
         The code lasts {{ expiresLabel }} and works once. You will be asked to approve before anything is granted.
       </p>
+
+      <!-- Not every device has a camera -->
+      <div v-if="code" class="mt-5 w-full text-left">
+        <Input
+          :model-value="code"
+          label="Or enter this code by hand"
+          readonly
+          mono
+          size="sm"
+          hint="For a device with no camera. It is the same code the square holds."
+          @focus="selectAll"
+          @click="selectAll"
+        >
+          <template #trailing>
+            <IconButton
+              size="sm"
+              :label="copied ? 'Copied' : 'Copy code'"
+              :variant="copied ? 'primary' : 'ghost'"
+              @click="copy(code)"
+            >
+              <CheckIcon v-if="copied" />
+              <ClipboardDocumentIcon v-else />
+            </IconButton>
+          </template>
+        </Input>
+      </div>
     </div>
 
     <!-- Someone scanned it -->
