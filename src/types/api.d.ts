@@ -5045,7 +5045,7 @@ export interface paths {
         put?: never;
         /**
          * Set plan
-         * @description Sets the user's plan. Choosing `pro` creates a one month trial subscription.
+         * @description Sets the user's plan. Choosing `pro` creates a six month trial subscription.
          *     Paid Pro time is bought through `/client/v1/account/subscribe`.
          */
         post: {
@@ -5874,7 +5874,7 @@ export interface components {
         };
         SetPlanBody: {
             /**
-             * @description Choosing `pro` for the first time starts a one month trial.
+             * @description Choosing `pro` for the first time starts a six month trial.
              * @enum {string}
              */
             plan: "free" | "pro";

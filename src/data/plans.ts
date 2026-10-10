@@ -18,6 +18,9 @@ import {
   UserGroupIcon
 } from "@heroicons/vue/20/solid";
 
+/** Months of Pro a first-time account gets free, set by the api on set-plan. */
+export const TRIAL_MONTHS = 6;
+
 export const MONTHLY_PRICE = 2;
 export const YEARLY_PRICE = 20;
 

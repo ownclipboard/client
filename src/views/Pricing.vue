@@ -36,7 +36,7 @@ import Badge from "../components/ui/Badge.vue";
 import Dialog from "../components/ui/Dialog.vue";
 import Select from "../components/ui/Select.vue";
 import PlanComparison from "../components/pricing/PlanComparison.vue";
-import { MONTHLY_PRICE, PLAN_FAQ, YEARLY_PRICE } from "../data/plans";
+import { MONTHLY_PRICE, PLAN_FAQ, TRIAL_MONTHS, YEARLY_PRICE } from "../data/plans";
 import StorageSetupGuide from "../components/storage/StorageSetupGuide.vue";
 
 const $router = useRouter();
@@ -246,7 +246,7 @@ const proCta = computed(() => {
   if (hasPendingInvoice.value) return { label: "Payment pending", hint: "Complete or cancel it above" };
   if (hasActiveSubscription.value) return { label: "Extend Pro", hint: "Added to your current expiry" };
   if (authUser.subscription) return { label: "Subscribe to Pro", hint: MONTHLY_ENABLED ? "Monthly or yearly" : "Billed yearly" };
-  return { label: "Try Pro free", hint: "1 month, no payment" };
+  return { label: "Try Pro free", hint: `${TRIAL_MONTHS} months, no payment` };
 });
 </script>
 
