@@ -46,6 +46,12 @@ async function load() {
 
 onMounted(load);
 
+/** Two letter code to its flag, which is just those letters as regional indicators. */
+function flagOf(code: string) {
+  if (!/^[A-Za-z]{2}$/.test(code)) return "";
+  return String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+}
+
 function iconFor(session: SessionInfo) {
   const text = `${session.deviceName || ""} ${session.userAgent || ""}`;
   return /iphone|ipad|android|mobile/i.test(text) ? DevicePhoneMobileIcon : ComputerDesktopIcon;
@@ -124,6 +130,9 @@ defineExpose({ reload: load });
             </div>
             <p class="mt-0.5 truncate text-xs text-muted">{{ session.userAgent || "Unknown browser" }}</p>
             <p class="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-faint">
+              <span v-if="session.country">
+                <span aria-hidden="true">{{ flagOf(session.country.code) }}</span> {{ session.country.name }} ·
+              </span>
               <span>Last used <TimeAgo :date="session.lastUsedAt" /></span>
               <span>· signed in <TimeAgo :date="session.createdAt" /></span>
             </p>

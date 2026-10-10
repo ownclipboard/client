@@ -5371,7 +5371,8 @@ export interface paths {
         /**
          * Where the account is logged in
          * @description One entry per live session, most recently used first, with the device name the client gave,
-         *     its browser or app string and the address it logged in from. `current` marks the session
+         *     its browser or app string and the country it logged in from (`country` is null when that could not
+         *     be told, for example a local address). The IP address is never returned. `current` marks the session
          *     of the token that asked. Revoke one with `/account/sessions/{session}/revoke`.
          *
          *     `currentListed` is false when this token was issued before sessions existed: it works, but has
@@ -6479,8 +6480,11 @@ export interface components {
             deviceName?: string;
             /** @description Browser or app string of the login. Text the client chose: show it as plain text. */
             userAgent?: string;
-            /** @description Address the login came from. */
-            ip?: string;
+            /** @description Country the login came from, null when it could not be told. The IP address is never returned. */
+            country: {
+                code: string;
+                name: string;
+            } | null;
             /**
              * @description How the device got in.
              * @enum {string}
