@@ -24,8 +24,6 @@ import Skeleton from "../ui/Skeleton.vue";
 const authUser = useAuthUser();
 
 const sessions = ref<SessionInfo[]>([]);
-// False for a token from before sessions existed: it works, but is not listed.
-const currentListed = ref(true);
 const loading = ref(true);
 const working = ref("");
 
@@ -34,9 +32,7 @@ const others = computed(() => sessions.value.filter((s) => !s.current).length);
 async function load() {
   loading.value = true;
   try {
-    const res = await getSessions();
-    sessions.value = res.sessions;
-    currentListed.value = res.currentListed;
+    sessions.value = (await getSessions()).sessions;
   } catch (e) {
     alertRequestError(e);
   } finally {
@@ -105,11 +101,6 @@ defineExpose({ reload: load });
     </div>
 
     <template v-else>
-      <p v-if="!currentListed" class="rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
-        This browser signed in before sessions were recorded, so it is not in the list below. It still works. To be rid
-        of it, sign out everywhere.
-      </p>
-
       <ul class="divide-y divide-line rounded-md border border-line">
         <li
           v-for="session in sessions"
