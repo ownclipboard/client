@@ -124,8 +124,7 @@ defineExpose({ reload: load });
             </div>
             <p class="mt-0.5 truncate text-xs text-muted">{{ session.userAgent || "Unknown browser" }}</p>
             <p class="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-faint">
-              <span v-if="session.ip">{{ session.ip }}</span>
-              <span>· last used <TimeAgo :date="session.lastUsedAt" /></span>
+              <span>Last used <TimeAgo :date="session.lastUsedAt" /></span>
               <span>· signed in <TimeAgo :date="session.createdAt" /></span>
             </p>
           </div>
