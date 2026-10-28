@@ -175,21 +175,20 @@ function submitRecovery(btn: ILoadingButton) {
 
       <!-- Something required is not set up yet -->
       <div v-if="mode === 'setup'" class="mt-6 space-y-5">
-        <p class="text-sm text-muted">
-          This space asks for something you have not set up. Do that first and the space opens.
-        </p>
-
         <form v-if="missingPassword" class="space-y-3" @submit.prevent>
-          <p class="text-[13px] font-medium text-fg">Choose a password for this space</p>
-          <p class="text-xs text-muted">Yours alone, not shared with the space, and not your account password.</p>
+          <p class="text-[13px] font-medium text-fg">Set a password for this space</p>
+          <p class="text-xs text-muted">
+            This space requires one. It is yours alone, not your account password, and nobody else ever sees it.
+          </p>
           <Input v-model="setupPassword.next" type="password" label="Password" autocomplete="new-password" hint="At least 6 characters." />
           <Input v-model="setupPassword.confirm" type="password" label="Confirm password" autocomplete="new-password" />
           <Button variant="primary" type="submit" :click="createPassword" message="Saving">Set password</Button>
         </form>
 
         <form v-else-if="missingTotp" class="space-y-3" @submit.prevent>
-          <p class="text-[13px] font-medium text-fg">Turn on your authenticator here</p>
+          <p class="text-[13px] font-medium text-fg">Turn on your authenticator</p>
           <template v-if="authUser.hasAuthenticator">
+            <p class="text-xs text-muted">This space requires a code from your authenticator app.</p>
             <Input
               v-model="setupCode"
               label="Code from the app"
@@ -203,7 +202,10 @@ function submitRecovery(btn: ILoadingButton) {
             <Button variant="primary" type="submit" :click="turnOnTotp" message="Turning on">Turn it on</Button>
           </template>
           <template v-else>
-            <p class="text-xs text-muted">You have no authenticator yet. Set one up on your account, then come back.</p>
+            <p class="text-xs text-muted">
+              This space requires a code, and you have no authenticator yet. Set one up on your account, then come
+              back here.
+            </p>
             <Button variant="primary" size="sm" :to="{ name: 'settings', query: { tab: 'account' } }">
               <ShieldCheckIcon class="h-4 w-4" />Set up an authenticator
             </Button>

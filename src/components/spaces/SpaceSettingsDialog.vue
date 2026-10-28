@@ -237,18 +237,22 @@ const ROLE_LABEL: Record<string, string> = { owner: "Owner", member: "Member", i
           </li>
         </ul>
 
-        <form v-if="isSpaceOwner" class="flex items-end gap-2" @submit.prevent>
-          <Input
-            v-model="inviteName"
-            label="Invite by username"
-            placeholder="username"
-            class="flex-1"
-            autocomplete="off"
-            :hint="seatsFull ? 'This space is full.' : 'They have to accept before they can see anything.'"
-          />
-          <Button type="submit" variant="primary" :click="invite" message="Inviting" :disabled="seatsFull">
-            <UserPlusIcon class="h-4 w-4" />Invite
-          </Button>
+        <form v-if="isSpaceOwner" class="space-y-1.5" @submit.prevent>
+          <div class="flex items-end gap-2">
+            <Input
+              v-model="inviteName"
+              label="Invite by username"
+              placeholder="username"
+              class="flex-1"
+              autocomplete="off"
+            />
+            <Button type="submit" variant="primary" :click="invite" message="Inviting" :disabled="seatsFull">
+              <UserPlusIcon class="h-4 w-4" />Invite
+            </Button>
+          </div>
+          <p class="text-xs text-muted">
+            {{ seatsFull ? "This space is full." : "They have to accept before they can see anything." }}
+          </p>
         </form>
       </section>
 

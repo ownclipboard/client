@@ -184,20 +184,24 @@ const canDropMine = computed(
           </p>
         </div>
 
-        <div class="flex flex-wrap items-end gap-2">
-          <Select v-model="demand" label="Requirement" class="flex-1">
-            <option v-for="r in REQUIREMENTS" :key="r.value" :value="r.value">{{ r.label }}</option>
-          </Select>
-          <Input
-            v-model.number="unlockMinutes"
-            type="number"
-            min="1"
-            max="1440"
-            label="Stays open for"
-            class="w-28"
-            hint="Minutes"
-          />
-          <Button variant="primary" :click="saveDemand" message="Saving">Save</Button>
+        <!-- A hint under any field here would drop the button below the inputs,
+             since the row bottom-aligns, so the note sits under the whole row. -->
+        <div class="space-y-1.5">
+          <div class="flex flex-wrap items-end gap-2">
+            <Select v-model="demand" label="Requirement" class="flex-1">
+              <option v-for="r in REQUIREMENTS" :key="r.value" :value="r.value">{{ r.label }}</option>
+            </Select>
+            <Input
+              v-model.number="unlockMinutes"
+              type="number"
+              min="1"
+              max="1440"
+              label="Open for (minutes)"
+              class="w-36"
+            />
+            <Button variant="primary" :click="saveDemand" message="Saving">Save</Button>
+          </div>
+          <p class="text-xs text-muted">An unlocked space closes again after this long without use.</p>
         </div>
       </div>
 
