@@ -43,7 +43,6 @@ const unlockMinutes = ref(15);
 
 const hasPassword = computed(() => !!state.value?.mine.includes("password"));
 const hasTotpHere = computed(() => !!state.value?.mine.includes("totp"));
-const demandedByOwner = computed(() => state.value?.demanded || []);
 
 const REQUIREMENTS: { value: SpaceRequirement; label: string }[] = [
   { value: "none", label: "Nothing extra" },
@@ -177,12 +176,7 @@ const canDropMine = computed(
     <template v-else-if="state">
       <!-- Owner: what everyone must pass -->
       <div v-if="isSpaceOwner" class="space-y-3 rounded-md border border-line p-3">
-        <div>
-          <p class="text-[13px] font-medium text-fg">Ask everyone for</p>
-          <p class="mt-0.5 text-xs text-muted">
-            You never hold anyone's secret. Each member sets their own password and uses their own authenticator.
-          </p>
-        </div>
+        <p class="text-[13px] font-medium text-fg">Require from everyone</p>
 
         <!-- A hint under any field here would drop the button below the inputs,
              since the row bottom-aligns, so the note sits under the whole row. -->
@@ -196,12 +190,12 @@ const canDropMine = computed(
               type="number"
               min="1"
               max="1440"
-              label="Open for (minutes)"
-              class="w-36"
+              label="Stay unlocked (minutes)"
+              class="w-44"
             />
             <Button variant="primary" :click="saveDemand" message="Saving">Save</Button>
           </div>
-          <p class="text-xs text-muted">An unlocked space closes again after this long without use.</p>
+          <p class="text-xs text-muted">Everyone sets their own password and uses their own authenticator.</p>
         </div>
       </div>
 
@@ -214,52 +208,41 @@ const canDropMine = computed(
           <Badge v-if="!state.mine.length" variant="outline">None</Badge>
         </div>
 
-        <p v-if="demandedByOwner.length" class="text-xs text-muted">
-          The owner requires {{ demandedByOwner.join(" and ") }} here, so that much cannot be removed.
-        </p>
-
         <!-- Password -->
         <form class="space-y-3" @submit.prevent>
-          <p class="text-xs text-muted">
-            {{ hasPassword ? "Change your password for this space." : "Set a password only you know for this space." }}
-          </p>
+          <!-- The current one is only asked for when the space is actually shut. -->
           <Input
-            v-if="hasPassword"
+            v-if="hasPassword && state.locked"
             v-model="password.current"
             type="password"
-            label="Current space password"
+            label="Current password"
             autocomplete="current-password"
-            hint="Not needed while this space is already unlocked here."
           />
-          <Input v-model="password.next" type="password" label="New space password" autocomplete="new-password" hint="At least 6 characters." />
+          <Input
+            v-model="password.next"
+            type="password"
+            :label="hasPassword ? 'New password' : 'Space password'"
+            autocomplete="new-password"
+            hint="At least 6 characters."
+          />
           <Input v-model="password.confirm" type="password" label="Confirm" autocomplete="new-password" />
           <Button size="sm" variant="primary" type="submit" :click="savePassword" message="Saving">
-            {{ hasPassword ? "Change password" : "Set password" }}
+            {{ hasPassword ? "Change password" : "Require a password" }}
           </Button>
         </form>
 
         <!-- Authenticator -->
         <form class="space-y-3 border-t border-line pt-4" @submit.prevent>
-          <p class="text-xs text-muted">
-            <template v-if="!authUser.hasAuthenticator">
-              Set up an authenticator on your account before you can ask for a code here.
-            </template>
-            <template v-else-if="hasTotpHere">A code from your authenticator is asked for here.</template>
-            <template v-else>Ask for a code from your authenticator when opening this space.</template>
-          </p>
-
-          <Button
-            v-if="!authUser.hasAuthenticator"
-            size="sm"
-            :to="{ name: 'settings', query: { tab: 'account' } }"
-          >
-            <ShieldCheckIcon class="h-4 w-4" />Set one up
-          </Button>
+          <template v-if="!authUser.hasAuthenticator">
+            <Button size="sm" :to="{ name: 'settings', query: { tab: 'account' } }">
+              <ShieldCheckIcon class="h-4 w-4" />Set up an authenticator
+            </Button>
+          </template>
 
           <template v-else>
             <Input
               v-model="totpCode"
-              label="Code from the app"
+              label="Authenticator code"
               placeholder="123456"
               inputmode="numeric"
               maxlength="6"
@@ -268,19 +251,18 @@ const canDropMine = computed(
               class="w-40"
             />
             <Button size="sm" :variant="hasTotpHere ? 'danger' : 'primary'" type="submit" :click="toggleTotp" message="Saving">
-              {{ hasTotpHere ? "Stop asking for a code" : "Ask for a code here" }}
+              {{ hasTotpHere ? "Stop requiring a code" : "Require a code" }}
             </Button>
           </template>
         </form>
 
-        <!-- Dropping what is mine -->
+        <!-- Dropping what is mine. Only offered for factors the owner leaves optional. -->
         <div v-if="canDropMine" class="space-y-3 border-t border-line pt-4">
-          <p class="text-xs text-muted">Pass what you set, and it is removed.</p>
           <Input
             v-if="hasPassword"
             v-model="removePassword"
             type="password"
-            label="Your space password"
+            label="Space password"
             autocomplete="current-password"
           />
           <Button size="sm" variant="danger" :click="dropMyLock" message="Removing">Remove my lock</Button>

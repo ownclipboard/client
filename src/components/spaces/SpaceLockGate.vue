@@ -176,19 +176,16 @@ function submitRecovery(btn: ILoadingButton) {
       <!-- Something required is not set up yet -->
       <div v-if="mode === 'setup'" class="mt-6 space-y-5">
         <form v-if="missingPassword" class="space-y-3" @submit.prevent>
-          <p class="text-[13px] font-medium text-fg">Set a password for this space</p>
-          <p class="text-xs text-muted">
-            This space requires one. It is yours alone, not your account password, and nobody else ever sees it.
-          </p>
+          <p class="text-[13px] font-medium text-fg">This space requires a password</p>
+          <p class="text-xs text-muted">Yours alone. Not your account password.</p>
           <Input v-model="setupPassword.next" type="password" label="Password" autocomplete="new-password" hint="At least 6 characters." />
           <Input v-model="setupPassword.confirm" type="password" label="Confirm password" autocomplete="new-password" />
           <Button variant="primary" type="submit" :click="createPassword" message="Saving">Set password</Button>
         </form>
 
         <form v-else-if="missingTotp" class="space-y-3" @submit.prevent>
-          <p class="text-[13px] font-medium text-fg">Turn on your authenticator</p>
+          <p class="text-[13px] font-medium text-fg">This space requires an authenticator code</p>
           <template v-if="authUser.hasAuthenticator">
-            <p class="text-xs text-muted">This space requires a code from your authenticator app.</p>
             <Input
               v-model="setupCode"
               label="Code from the app"
@@ -202,10 +199,7 @@ function submitRecovery(btn: ILoadingButton) {
             <Button variant="primary" type="submit" :click="turnOnTotp" message="Turning on">Turn it on</Button>
           </template>
           <template v-else>
-            <p class="text-xs text-muted">
-              This space requires a code, and you have no authenticator yet. Set one up on your account, then come
-              back here.
-            </p>
+            <p class="text-xs text-muted">Set one up on your account first.</p>
             <Button variant="primary" size="sm" :to="{ name: 'settings', query: { tab: 'account' } }">
               <ShieldCheckIcon class="h-4 w-4" />Set up an authenticator
             </Button>
@@ -216,15 +210,11 @@ function submitRecovery(btn: ILoadingButton) {
       <!-- Recovery, for the creator only -->
       <div v-else-if="mode === 'recover'" class="mt-6 space-y-4">
         <p class="text-sm text-muted">
-          A code goes to the email on your account. That code with your account password clears what you set on this
-          space, so you can set it up again.
+          We email a code to your account address. That code and your account password open this space and clear what
+          you set on it.
         </p>
 
-        <Button v-if="!codeSent" variant="primary" :click="sendRecoveryCode" message="Sending">
-          <EnvelopeIcon class="h-4 w-4" />Email me a code
-        </Button>
-
-        <form v-else class="space-y-3" @submit.prevent>
+        <form v-if="codeSent" class="space-y-3" @submit.prevent>
           <Input
             v-model="recover.code"
             label="Code from the email"
@@ -238,9 +228,15 @@ function submitRecovery(btn: ILoadingButton) {
           <Button variant="primary" type="submit" :click="submitRecovery" message="Recovering">Recover this space</Button>
         </form>
 
-        <button type="button" class="text-sm text-accent underline underline-offset-4" @click="mode = 'unlock'">
-          Back
-        </button>
+        <!-- A row, because both are inline: under space-y they would sit flush together. -->
+        <div class="flex flex-wrap items-center gap-4">
+          <Button v-if="!codeSent" variant="primary" :click="sendRecoveryCode" message="Sending">
+            <EnvelopeIcon class="h-4 w-4" />Email me a code
+          </Button>
+          <button type="button" class="text-sm text-accent underline underline-offset-4" @click="mode = 'unlock'">
+            Back
+          </button>
+        </div>
       </div>
 
       <!-- Ordinary unlock -->
@@ -249,13 +245,13 @@ function submitRecovery(btn: ILoadingButton) {
           v-if="needsPassword"
           v-model="form.password"
           type="password"
-          label="Your password for this space"
+          label="Space password"
           autocomplete="current-password"
         />
         <Input
           v-if="needsCode"
           v-model="form.code"
-          label="Code from your authenticator"
+          label="Authenticator code"
           placeholder="123456"
           inputmode="numeric"
           maxlength="6"
@@ -288,8 +284,7 @@ function submitRecovery(btn: ILoadingButton) {
       </div>
 
       <p class="mt-3 text-[11px] leading-relaxed text-faint">
-        If you are a member and have lost your password or authenticator, ask the owner for a new invite. Only the
-        person who created a space can recover it.
+        Only the person who created a space can recover it. Members who lose theirs need a new invite.
       </p>
     </div>
   </div>
