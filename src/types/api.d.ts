@@ -1001,6 +1001,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         put?: never;
@@ -1067,6 +1068,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         delete?: never;
@@ -1133,6 +1135,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         delete?: never;
@@ -1204,6 +1207,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         delete?: never;
@@ -1270,7 +1274,12 @@ export interface paths {
                         "application/json": components["schemas"]["SpaceCreatedResponse"];
                     };
                 };
-                /** @description Space limit of the free plan reached. */
+                /**
+                 * @description No verified email on the account (`emailRequired`), or the free plan's space
+                 *     limit is reached (`limit`). A verified address is required because an emailed
+                 *     code plus the account password is the only way back into a space its creator
+                 *     locks themselves out of.
+                 */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -1328,6 +1337,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         put?: never;
@@ -1382,6 +1392,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         delete?: never;
@@ -1433,6 +1444,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
                 /** @description Space storage is unavailable, nothing was deleted. */
                 503: {
                     headers: {
@@ -1491,6 +1503,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         put?: never;
@@ -1566,6 +1579,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         delete?: never;
@@ -1717,6 +1731,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         delete?: never;
@@ -1777,6 +1792,505 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lock state of a space
+         * @description What this account must pass before the space opens, and whether this session has
+         *     already passed it. Answers even while the space is locked, unlike every other
+         *     space route.
+         *
+         *     `demanded` is what the owner requires of everyone, `mine` what this account chose
+         *     for itself, and `required` the union of the two. `setupRequired` lists required
+         *     factors this account has not set up yet: the space stays shut until it does.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Lock state. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceLockState"];
+                    };
+                };
+                /** @description Space not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unlock a space for this session
+         * @description Pass the factors `GET space/{space}/lock` reported. The unlock belongs to this
+         *     session only, and closes again after the space's idle window.
+         *     Five wrong tries start a cooldown.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SpaceUnlockBody"];
+                };
+            };
+            responses: {
+                /** @description Unlocked. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceUnlockResponse"];
+                    };
+                };
+                /** @description A factor was wrong or missing. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Too many wrong tries, cooling down. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/lock/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set or change my space password
+         * @description The password is this account's own, not shared with the space. Send its MD5 hash,
+         *     never the password itself, exactly as folder passwords work.
+         *
+         *     Setting the first one needs nothing else. Changing it needs the current one, unless
+         *     this session has the space unlocked already. Changing it closes every other unlock
+         *     of this space for this account.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SpaceLockPasswordBody"];
+                };
+            };
+            responses: {
+                /** @description Saved. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceLockState"];
+                    };
+                };
+                /** @description The current password is wrong or missing. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/lock/totp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Use my authenticator for this space
+         * @description Turns the authenticator requirement on or off for this account in this space.
+         *     Enrollment itself lives on the account (`POST account/2fa/setup`), and one code
+         *     is required either way, to prove the authenticator works before it becomes a lock
+         *     and that it is really you when switching it off.
+         *     It cannot be switched off while the owner demands it.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SpaceLockTotpBody"];
+                };
+            };
+            responses: {
+                /** @description Saved. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceLockState"];
+                    };
+                };
+                /** @description No authenticator enrolled, a wrong code, or the owner demands it. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/lock/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove my own lock on a space
+         * @description Drops the factors this account chose for itself, after passing them. Factors the
+         *     owner demands cannot be dropped, so this only works on a space whose owner demands
+         *     nothing, or for factors beyond what they demand.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SpaceUnlockBody"];
+                };
+            };
+            responses: {
+                /** @description Removed. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceLockState"];
+                    };
+                };
+                /** @description A factor was wrong, or the owner demands it. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/security": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Require a password or an authenticator in this space
+         * @description Owner only. Declares which factors everyone in the space must pass: `none`,
+         *     `password`, `totp` or `both`. The owner never sets a shared secret: each member
+         *     sets up their own password and uses their own authenticator.
+         *
+         *     Members who have not set a newly required factor are told to set it up the next
+         *     time they open the space, and are notified. Raising the bar closes every unlock in
+         *     the space, including the owner's.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "require": "both",
+                     *       "unlockMinutes": 15
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SpaceSecurityBody"];
+                };
+            };
+            responses: {
+                /** @description Saved. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceSecurityResponse"];
+                    };
+                };
+                /** @description Not the owner. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                423: components["responses"]["SpaceLocked"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/lock/recover/code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Email me a recovery code for my own space
+         * @description Creator only, because nobody can invite them back into their own space. Sends a
+         *     code to the account's verified email address. Members have no recovery: they ask
+         *     the owner for a new invite.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Code sent. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description No verified email on the account. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description A code was sent moments ago. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Email is not available on this server. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/lock/recover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Recover my own space
+         * @description Creator only. An emailed code plus the account password clears the creator's own
+         *     factors for this space and unlocks it for this session, so they can set it up
+         *     again or lower what the space demands. Nothing about other members changes.
+         *
+         *     Members cannot recover: without their password or authenticator the space is gone
+         *     for them until the owner invites them again.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SpaceRecoverBody"];
+                };
+            };
+            responses: {
+                /** @description Recovered and unlocked for this session. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceUnlockResponse"];
+                    };
+                };
+                /** @description Wrong password, or a wrong or expired code. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -1830,6 +2344,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         put?: never;
@@ -1887,6 +2402,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         put?: never;
@@ -1945,6 +2461,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         delete?: never;
@@ -2011,6 +2528,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
                 /** @description Space storage is not available. */
                 503: {
                     headers: {
@@ -2075,6 +2593,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         delete?: never;
@@ -2141,6 +2660,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         delete?: never;
@@ -2203,6 +2723,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         delete?: never;
@@ -2258,6 +2779,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
                 /** @description Space storage is not available. */
                 503: {
                     headers: {
@@ -2338,6 +2860,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         delete?: never;
@@ -2401,6 +2924,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         put?: never;
@@ -5180,11 +5704,21 @@ export interface paths {
         put?: never;
         /**
          * Set or change the account email
-         * @description Adds an email to an account that has none, or replaces the one it has. The account
-         *     password is required, because the address is what a future password reset is sent to.
+         * @description Adds an email to an account that has none, or replaces the one it has. Setting the
+         *     first address and changing a later one go through this same path, so both require
+         *     the account password.
+         *
+         *     The password is required because the address is what the account can be recovered
+         *     through: a password reset is sent there, a **verified** address is needed to create
+         *     a space, and an emailed code plus this password is the only way a space's creator
+         *     gets back into a space they locked themselves out of. Without the gate, a borrowed
+         *     session could point all of that at a mailbox its holder controls.
+         *
          *     The address is trimmed, lower-cased and must not belong to another account.
-         *     The new address starts **unverified** and a verification code is emailed to it (see
-         *     `verify-email`). Until it is verified the account can not reset its password by email.
+         *     The new address starts **unverified**, and any codes already sent to the old one are
+         *     thrown away. A fresh verification code is emailed (see `verify-email`); if that send
+         *     fails the address is still saved and `verificationSent` is false, so ask again with
+         *     `send-verification`.
          */
         post: {
             parameters: {
@@ -5318,7 +5852,8 @@ export interface paths {
         put?: never;
         /**
          * Verify the account email with the emailed code
-         * @description Marks the email verified, which allows password reset by email. A code works once, expires
+         * @description Marks the email verified, which allows password reset by email, creating spaces, and
+         *     recovering a space you created. A code works once, expires
          *     after 30 minutes, and is thrown away after 5 wrong tries. It only works for the address it was
          *     sent to: changing the email cancels it.
          */
@@ -5598,6 +6133,166 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client/v1/account/2fa/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start enrolling an authenticator
+         * @description Returns a fresh secret and the `otpauth://` url for it. Render the url as a QR code
+         *     for Google Authenticator, or show the secret for manual entry. Nothing is enrolled
+         *     until `POST account/2fa/enable` confirms a working code, so calling this again
+         *     simply replaces the unconfirmed secret.
+         *
+         *     One enrollment covers the whole account, including every space that asks for a code.
+         *     There are no recovery codes: lose the authenticator and the factor is gone.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A secret to enroll. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TwoFactorSetupResponse"];
+                    };
+                };
+                /** @description An authenticator is already enrolled. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/2fa/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm the authenticator
+         * @description Finishes enrollment with a code from the app, proving it was set up correctly.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TwoFactorCodeBody"];
+                };
+            };
+            responses: {
+                /** @description Enrolled. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Nothing to confirm, already enrolled, or a wrong code. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/2fa/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove the authenticator
+         * @description Needs the account password and a live code, so a stolen session cannot strip the
+         *     factor. Spaces that demand a code stay shut until an authenticator is enrolled
+         *     again. Spaces where only this account asked for a code stop asking.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TwoFactorDisableBody"];
+                };
+            };
+            responses: {
+                /** @description Removed. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TwoFactorDisableResponse"];
+                    };
+                };
+                /** @description Not enrolled, wrong password, or a wrong code. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5780,6 +6475,8 @@ export interface components {
             storage: components["schemas"]["StorageSummary"];
             /** @description Live updates: whether this server offers them, and the channel to subscribe to. */
             realtime: components["schemas"]["RealtimeSummary"];
+            /** @description Whether an authenticator is enrolled, which space locks can ask for. */
+            twoFactor: components["schemas"]["TwoFactorSummary"];
             /** @description Latest active subscription, if any. */
             subscription?: components["schemas"]["Subscription"];
         };
@@ -5800,6 +6497,10 @@ export interface components {
             enabled: boolean;
             /** @description Channel to subscribe to, e.g. `user:AbC123`. Null when realtime is off. */
             channel: string | null;
+        };
+        /** @description Whether this account has an authenticator enrolled. */
+        TwoFactorSummary: {
+            enabled: boolean;
         };
         /** @description Signed Ably TokenRequest. Pass it to the Ably SDK unchanged, it is not meant to be read. The token may only subscribe, and only to the user's own channel. */
         RealtimeTokenResponse: {
@@ -6513,8 +7214,122 @@ export interface components {
             revoked: number;
             message: string;
         };
+        TwoFactorSetupResponse: {
+            /** @description Base32 secret, for manual entry. Shown once, during enrollment. */
+            secret: string;
+            /** @description `otpauth://` url to render as a QR code for the authenticator app. */
+            uri: string;
+            message: string;
+        };
+        TwoFactorCodeBody: {
+            /** @description The 6 digit code from the authenticator app. */
+            code: string;
+        };
+        TwoFactorDisableBody: {
+            /** @description The account password. */
+            password: string;
+            /** @description A live code, so a stolen session cannot strip the factor. */
+            code: string;
+        };
+        TwoFactorDisableResponse: {
+            /** @description Spaces that stopped asking this account for a code. */
+            spacesAffected: number;
+            message: string;
+        };
+        /**
+         * @description A factor a space can ask for. Each one is personal to the member who sets it up.
+         * @enum {string}
+         */
+        SpaceFactor: "password" | "totp";
+        /**
+         * @description What a space's owner demands of everyone. `none` still lets a member lock their own view.
+         * @enum {string}
+         */
+        SpaceRequirement: "none" | "password" | "totp" | "both";
+        SpaceLockState: {
+            /** @description Everything this account must pass: what the owner demands plus what it chose. */
+            required: components["schemas"]["SpaceFactor"][];
+            /** @description What the owner demands of everyone. */
+            demanded: components["schemas"]["SpaceFactor"][];
+            /** @description Required factors this account has not set up yet. The space stays shut until it does. */
+            setupRequired: components["schemas"]["SpaceFactor"][];
+            /** @description Factors this account set up for itself. */
+            mine: components["schemas"]["SpaceFactor"][];
+            /** @description True when the space will refuse until this session unlocks. */
+            locked: boolean;
+            /** @description When the current unlock goes stale. */
+            unlockedUntil?: string;
+            /** @description Set while a cooldown from wrong tries is running. */
+            retryAt?: string;
+            /** @description Idle minutes an unlock lasts here. */
+            unlockMinutes: number;
+            message?: string;
+        };
+        /** @description Body of a 423 from any space route while the space is locked. */
+        SpaceLockedResponse: {
+            error: string;
+            /** @constant */
+            locked: true;
+            /** @description Factors this account must pass. */
+            required: components["schemas"]["SpaceFactor"][];
+            /** @description Required factors not set up yet: set them up before unlocking. */
+            setupRequired: components["schemas"]["SpaceFactor"][];
+        };
+        SpaceUnlockBody: {
+            /** @description MD5 of this account's space password, when the space asks for one. */
+            password?: string;
+            /** @description Authenticator code, when the space asks for one. */
+            code?: string;
+        };
+        SpaceUnlockResponse: {
+            /** @constant */
+            locked: false;
+            /** @description When the unlock goes stale, unless the space is used again. */
+            unlockedUntil?: string;
+            message: string;
+        };
+        SpaceLockPasswordBody: {
+            /** @description MD5 of the new space password. */
+            password: string;
+            /** @description MD5 of the current one. Needed to change it, unless this session is already unlocked. */
+            current?: string;
+        };
+        SpaceLockTotpBody: {
+            enabled: boolean;
+            /** @description A live authenticator code, required both to turn it on and to turn it off. */
+            code: string;
+        };
+        SpaceSecurityBody: {
+            require: components["schemas"]["SpaceRequirement"];
+            /** @description Idle minutes before an unlocked space closes again. 1 to 1440, defaults to 15. */
+            unlockMinutes?: number;
+        };
+        SpaceSecurityResponse: {
+            security: {
+                require: components["schemas"]["SpaceRequirement"];
+                unlockMinutes: number;
+            };
+            demanded: components["schemas"]["SpaceFactor"][];
+            message: string;
+        };
+        SpaceRecoverBody: {
+            /** @description The code emailed by `POST space/{space}/lock/recover/code`. */
+            code: string;
+            /** @description The account password. Both halves are required. */
+            password: string;
+        };
     };
-    responses: never;
+    responses: {
+        /** @description The space is locked for this account. Read `GET space/{space}/lock`, then unlock with `POST space/{space}/unlock`. `setupRequired` means a demanded factor has not been set up yet. */
+        SpaceLocked: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["SpaceLockedResponse"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
     headers: never;

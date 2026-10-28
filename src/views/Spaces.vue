@@ -24,6 +24,8 @@ const loading = ref(true);
 const createOpen = ref(false);
 const newName = ref("");
 const answering = ref("");
+// Shown when the api refuses a new space for want of a confirmed address.
+const needsEmail = ref(false);
 
 // A free account owns two spaces; joining more is unlimited either way.
 const FREE_OWNED = 2;
@@ -56,7 +58,17 @@ function create(btn: ILoadingButton) {
       await loadSpaces();
       $router.push({ name: "space", params: { spaceId: space.publicId } });
     })
-    .catch(alertRequestError)
+    .catch((e: any) => {
+      // A space can only be made by an account with a confirmed email, because
+      // an emailed code is the creator's only way back into one they lock
+      // themselves out of. Send them where that is fixed.
+      if (e?.response?.status === 403 && !authUser.data?.emailVerified) {
+        createOpen.value = false;
+        needsEmail.value = true;
+        return;
+      }
+      alertRequestError(e);
+    })
     .finally(btn.stopLoading);
 }
 
@@ -90,6 +102,19 @@ function open(spaceId: string) {
         <PlusIcon class="h-4 w-4" />New space
       </Button>
     </PageHeader>
+
+    <div
+      v-if="needsEmail"
+      class="flex flex-wrap items-center gap-3 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn"
+    >
+      <p class="min-w-0 flex-1">
+        A space needs a confirmed email on your account first. It is the only way back in if you ever lock yourself out
+        of a space you made.
+      </p>
+      <Button size="sm" :to="{ name: 'settings', query: { tab: 'account' } }">
+        {{ authUser.data?.email ? "Confirm my email" : "Add an email" }}
+      </Button>
+    </div>
 
     <!-- Invites -->
     <Card v-if="invites.length" title="Invitations" :padded="false">

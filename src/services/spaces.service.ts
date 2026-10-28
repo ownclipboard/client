@@ -162,3 +162,59 @@ export async function getSpaceFileUrl(spaceId: string, clipId: string, thumb = f
   );
   return url;
 }
+
+/* ---------------- Locking ---------------- */
+
+export type SpaceLockState = components["schemas"]["SpaceLockState"];
+export type SpaceFactor = components["schemas"]["SpaceFactor"];
+export type SpaceRequirement = components["schemas"]["SpaceRequirement"];
+
+/**
+ * What this account must pass before the space opens. The only space route that
+ * answers while the space is shut, which is what makes a gate possible.
+ */
+export function getSpaceLock(spaceId: string) {
+  return $http.get<any, SpaceLockState>(`space/${spaceId}/lock`);
+}
+
+/** Opens the space for this session only, until the idle window runs out. */
+export function unlockSpace(spaceId: string, body: components["schemas"]["SpaceUnlockBody"]) {
+  return $http.post<any, components["schemas"]["SpaceUnlockResponse"]>(`space/${spaceId}/unlock`, body);
+}
+
+/**
+ * This account's own password for this space, never shared with the space.
+ * Hashed here, as folder passwords are. `current` is needed to change one
+ * unless this session already holds the space open.
+ */
+export function setSpaceLockPassword(spaceId: string, password: string, current?: string) {
+  return $http.post<any, MessageResponse>(`space/${spaceId}/lock/password`, { password, current });
+}
+
+/** Turns this account's authenticator requirement on or off here. A code is needed either way. */
+export function setSpaceTotp(spaceId: string, enabled: boolean, code: string) {
+  return $http.post<any, MessageResponse>(`space/${spaceId}/lock/totp`, { enabled, code });
+}
+
+/** Drops the factors this account chose, after passing them. What the owner demands stays. */
+export function removeSpaceLock(spaceId: string, body: components["schemas"]["SpaceUnlockBody"]) {
+  return $http.post<any, SpaceLockState>(`space/${spaceId}/lock/remove`, body);
+}
+
+/** Owner only: what everyone must pass, and how long an unlock survives idle. */
+export function setSpaceSecurity(spaceId: string, require: SpaceRequirement, unlockMinutes?: number) {
+  return $http.post<any, MessageResponse>(`space/${spaceId}/security`, { require, unlockMinutes });
+}
+
+/** Creator only: emails a recovery code to the account's verified address. */
+export function requestSpaceRecoveryCode(spaceId: string) {
+  return $http.post<any, MessageResponse>(`space/${spaceId}/lock/recover/code`, undefined, { timeout: 30_000 });
+}
+
+/** Creator only: clears their own factors here and opens the space for this session. */
+export function recoverSpace(spaceId: string, code: string, password: string) {
+  return $http.post<any, components["schemas"]["SpaceUnlockResponse"]>(`space/${spaceId}/lock/recover`, {
+    code,
+    password
+  });
+}

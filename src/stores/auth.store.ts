@@ -31,6 +31,10 @@ export const useAuthUser = defineStore("authUser", () => {
   /** Whether this server offers live updates, and the channel to listen on. */
   const realtime = ref<components["schemas"]["RealtimeSummary"]>();
 
+  // Whether an authenticator is enrolled. Space locks can ask for a code.
+  const twoFactor = ref<components["schemas"]["TwoFactorSummary"]>();
+  const hasAuthenticator = computed(() => !!twoFactor.value?.enabled);
+
   /** Files can only be uploaded once storage is connected and usable. */
   const canUpload = computed(() => !!storage.value?.connected);
 
@@ -89,7 +93,7 @@ export const useAuthUser = defineStore("authUser", () => {
     clearSession();
   }
 
-  return { data, isLogged, subscription, pending, storage, realtime, canUpload, uploadBlockedReason, clearSession, signOut, signOutEverywhere };
+  return { data, isLogged, subscription, pending, storage, realtime, twoFactor, hasAuthenticator, canUpload, uploadBlockedReason, clearSession, signOut, signOutEverywhere };
 });
 
 export type AuthUserStore = ReturnType<typeof useAuthUser>;

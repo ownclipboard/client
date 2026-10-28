@@ -19,6 +19,7 @@ import Badge from "../components/ui/Badge.vue";
 import Skeleton from "../components/ui/Skeleton.vue";
 import StorageSetupGuide from "../components/storage/StorageSetupGuide.vue";
 import SessionList from "../components/sessions/SessionList.vue";
+import TwoFactorCard from "../components/account/TwoFactorCard.vue";
 import QrSignInDialog from "../components/sessions/QrSignInDialog.vue";
 import Tabs, { type TabItem } from "../components/ui/Tabs.vue";
 
@@ -540,6 +541,8 @@ async function disconnect(btn: ILoadingButton) {
         <Button variant="primary" type="submit" :click="savePassword" message="Updating">Change password</Button>
       </form>
     </Card>
+
+    <TwoFactorCard v-show="tab === 'account'" />
 
     <Card v-show="tab === 'account'" title="About">
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">

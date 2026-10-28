@@ -29,6 +29,7 @@ import Badge from "../ui/Badge.vue";
 import Divider from "../ui/Divider.vue";
 import Skeleton from "../ui/Skeleton.vue";
 import IconButton from "../ui/IconButton.vue";
+import SpaceSecuritySection from "./SpaceSecuritySection.vue";
 
 const props = defineProps<{ open: boolean; spaceId: string }>();
 const emit = defineEmits<{ (e: "close"): void }>();
@@ -250,6 +251,10 @@ const ROLE_LABEL: Record<string, string> = { owner: "Owner", member: "Member", i
           </Button>
         </form>
       </section>
+
+      <Divider />
+
+      <SpaceSecuritySection :open="open" :space-id="spaceId" />
 
       <Divider />
 

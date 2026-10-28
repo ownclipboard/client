@@ -4,6 +4,8 @@ import { onBeforeUnmount, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { alertRequestError } from "../http";
 import { clearCurrentSpace, currentSpace, openSpace } from "../stores/spaces.store";
+import { getSpaceLock, type SpaceLockState } from "../services/spaces.service";
+import SpaceLockGate from "../components/spaces/SpaceLockGate.vue";
 import SpaceToolbar from "../components/spaces/SpaceToolbar.vue";
 import SpaceClipList from "../components/spaces/SpaceClipList.vue";
 import SpaceSettingsDialog from "../components/spaces/SpaceSettingsDialog.vue";
@@ -19,20 +21,39 @@ const loading = ref(true);
 const gone = ref(false);
 const query = ref("");
 const settingsOpen = ref(false);
+// Set when the space refuses until this session passes its factors.
+const lock = ref<SpaceLockState | null>(null);
 
 async function load(id: string) {
   loading.value = true;
   gone.value = false;
+  lock.value = null;
   query.value = "";
   try {
     await openSpace(id);
   } catch (e: any) {
-    // A space you were removed from, or that the owner deleted, answers 404.
-    if (e?.response?.status === 404) gone.value = true;
-    else alertRequestError(e);
+    const status = e?.response?.status;
+
+    // 423 is a shut door rather than a missing space: the lock endpoint is the
+    // one route that still answers, and it says what has to be passed.
+    if (status === 423) {
+      lock.value = await getSpaceLock(id).catch(() => null);
+      if (!lock.value) gone.value = true;
+    } else if (status === 404) {
+      // Removed from the space, or the owner deleted it.
+      gone.value = true;
+    } else {
+      alertRequestError(e);
+    }
   } finally {
     loading.value = false;
   }
+}
+
+/** Opened for this session: load the space properly now. */
+function onUnlocked() {
+  lock.value = null;
+  load(spaceId.value);
 }
 
 watch(
@@ -55,6 +76,14 @@ onBeforeUnmount(clearCurrentSpace);
       <Skeleton class="h-8 w-full" />
       <Skeleton v-for="i in 3" :key="i" class="h-20 w-full" />
     </template>
+
+    <SpaceLockGate
+      v-else-if="lock"
+      :space-id="spaceId"
+      :space-name="currentSpace?.name"
+      :lock="lock"
+      @unlocked="onUnlocked"
+    />
 
     <EmptyState
       v-else-if="gone"

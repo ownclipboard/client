@@ -9,6 +9,7 @@ type PingResponse = {
   user: AuthUser | null;
   storage: StorageSummary;
   realtime: components["schemas"]["RealtimeSummary"];
+  twoFactor: components["schemas"]["TwoFactorSummary"];
   subscription: SubStat;
 };
 
@@ -28,7 +29,7 @@ export async function refreshAuthData(st: AuthUserStore): Promise<AuthRefresh> {
   }
 
   try {
-    const { user, storage, realtime, subscription } = await $http.get<any, PingResponse>("/ping");
+    const { user, storage, realtime, twoFactor, subscription } = await $http.get<any, PingResponse>("/ping");
 
     // A null user is a 200 that still means signed out. Without this the app
     // sits on its loading screen with no session and no way out of it.
@@ -40,6 +41,7 @@ export async function refreshAuthData(st: AuthUserStore): Promise<AuthRefresh> {
     st.data = user;
     st.storage = storage;
     st.realtime = realtime;
+    st.twoFactor = twoFactor;
     st.subscription = subscription;
     return "ok";
   } catch (e: any) {
@@ -120,6 +122,26 @@ export function closeAccount(password: string) {
     { password },
     { timeout: 30_000 }
   );
+}
+
+/* ---------------- Authenticator ---------------- */
+
+/**
+ * Begin enrolling an authenticator. Nothing is live until a code confirms it,
+ * so calling this again simply replaces an unconfirmed secret.
+ */
+export function setupTwoFactor() {
+  return $http.post<any, components["schemas"]["TwoFactorSetupResponse"]>("/account/2fa/setup");
+}
+
+/** Finish enrolment by proving the app produces the right code. */
+export function enableTwoFactor(code: string) {
+  return $http.post<any, components["schemas"]["MessageResponse"]>("/account/2fa/enable", { code });
+}
+
+/** Needs the password as well as a live code, so a stolen session cannot strip it. */
+export function disableTwoFactor(password: string, code: string) {
+  return $http.post<any, components["schemas"]["MessageResponse"]>("/account/2fa/disable", { password, code });
 }
 
 /** Whether a username is already taken. */
