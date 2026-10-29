@@ -163,7 +163,7 @@ onBeforeUnmount(() => {
       </div>
       <p class="mt-4 text-sm text-fg">Open OwnClipboard on the other device and scan this.</p>
       <p class="mt-1 text-xs text-faint">
-        The code lasts {{ expiresLabel }} and works once. You will be asked to approve before anything is granted.
+        The code lasts {{ expiresLabel }} and works once. You approve the device before it signs in.
       </p>
 
       <!-- Not every device has a camera -->
@@ -174,7 +174,6 @@ onBeforeUnmount(() => {
           readonly
           mono
           size="sm"
-          hint="For a device with no camera. It is the same code the square holds."
           @focus="selectAll"
           @click="selectAll"
         >
@@ -198,14 +197,14 @@ onBeforeUnmount(() => {
       <div class="flex items-start gap-2.5 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
         <ExclamationTriangleIcon class="mt-px h-4 w-4 shrink-0" />
         <p>
-          Approve this only if you scanned the code yourself just now. Approving signs that device in to your account.
+          Approve only if you just scanned the code yourself. This signs that device in to your account.
         </p>
       </div>
 
       <div class="rounded-md border border-line bg-sunken px-3 py-3 text-center">
         <p class="text-xs uppercase tracking-wider text-faint">Device asking to sign in</p>
         <p class="mt-1 break-words text-sm font-medium text-fg">{{ scanningDevice || "Unnamed device" }}</p>
-        <p class="mt-1 text-[11px] text-faint">That name came from the device itself.</p>
+        <p class="mt-1 text-[11px] text-faint">Name sent by the device.</p>
       </div>
     </div>
 

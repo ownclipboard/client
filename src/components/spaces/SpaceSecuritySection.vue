@@ -77,10 +77,10 @@ async function load() {
 async function saveDemand(btn: ILoadingButton) {
   const raising = demand.value !== "none";
   const ok = await askToConfirm({
-    title: raising ? "Ask everyone for this?" : "Stop asking for anything?",
+    title: raising ? "Require this from everyone?" : "Stop requiring anything?",
     message: raising
-      ? "Everyone in the space, you included, is locked out until they pass it. Anyone who has not set it up is asked to."
-      : "The space opens without a second step. Anything members chose for themselves stays.",
+      ? "Everyone, you included, has to set it up before the space opens again."
+      : "The space opens with no extra step. Locks members set for themselves stay.",
     confirmLabel: "Save",
     danger: raising
   });
@@ -120,7 +120,7 @@ const totpCode = ref("");
 
 function toggleTotp(btn: ILoadingButton) {
   if (totpCode.value.trim().length !== 6) {
-    $alert.warning("A live code is needed either way.");
+    $alert.warning("Enter a code from your authenticator.");
     return btn.stopLoading();
   }
 
@@ -137,8 +137,8 @@ const removePassword = ref("");
 
 async function dropMyLock(btn: ILoadingButton) {
   const ok = await askToConfirm({
-    title: "Remove your own lock?",
-    message: "What you chose for this space is dropped. Anything the owner demands stays.",
+    title: "Remove your lock?",
+    message: "Your password and code for this space are removed. Anything the owner requires stays.",
     confirmLabel: "Remove",
     danger: true
   });
@@ -195,7 +195,7 @@ const canDropMine = computed(
             />
             <Button variant="primary" :click="saveDemand" message="Saving">Save</Button>
           </div>
-          <p class="text-xs text-muted">Everyone sets their own password and uses their own authenticator.</p>
+          <p class="text-xs text-muted">Each member sets their own.</p>
         </div>
       </div>
 

@@ -239,7 +239,7 @@ async function close(btn: ILoadingButton) {
   const ok = await askToConfirm({
     title: "Close your account?",
     message:
-      "You are signed out everywhere. Nothing is deleted for 30 days, and signing in again within that time brings the account back.",
+      "You are signed out everywhere. Nothing is deleted for 30 days — sign in again within that time to bring it back.",
     confirmLabel: "Close account",
     danger: true
   });
@@ -452,7 +452,7 @@ async function disconnect(btn: ILoadingButton) {
     <Card
       v-show="tab === 'account'"
       title="Devices signed in"
-      description="Every device with a live session. Sign one out and it has to sign in again."
+      description="Every device signed in to your account."
     >
       <template #header>
         <Button size="sm" @click="qrOpen = true">
@@ -476,14 +476,14 @@ async function disconnect(btn: ILoadingButton) {
         v-if="!authUser.data?.email"
         class="mb-4 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn"
       >
-        Without an email address you can't reset your password if you forget it.
+        Add an email address so you can reset your password if you forget it.
       </div>
 
       <!-- An address only works for a reset once it has been confirmed -->
       <div v-else-if="needsVerifying" class="mb-4 space-y-3 rounded-md border border-warn/30 bg-warn-soft p-3">
         <p class="text-sm text-warn">
           <span class="font-medium">{{ authUser.data?.email }}</span> is not confirmed yet, so it cannot reset your
-          password. We will email a six digit code to check it reaches you.
+          password. We'll email you a six digit code.
         </p>
 
         <form v-if="codeSent" class="flex flex-wrap items-end gap-2" @submit.prevent>
@@ -502,7 +502,7 @@ async function disconnect(btn: ILoadingButton) {
         </form>
         <Button v-else variant="primary" size="sm" :click="sendCode" message="Sending">Send me a code</Button>
 
-        <p v-if="codeSent" class="text-xs text-warn/80">The code lasts 30 minutes. A new one can be asked for once a minute.</p>
+        <p v-if="codeSent" class="text-xs text-warn/80">The code lasts 30 minutes. You can ask for a new one every minute.</p>
       </div>
 
       <form class="space-y-4" @submit.prevent>
@@ -519,7 +519,7 @@ async function disconnect(btn: ILoadingButton) {
           label="Account password"
           placeholder="Your current password"
           autocomplete="current-password"
-          hint="Confirms it's you, since this address can reset your password."
+          hint="Needed to change your email address."
         />
         <Button variant="primary" type="submit" :click="saveEmail" message="Saving">
           {{ authUser.data?.email ? "Change email" : "Add email" }}
@@ -527,7 +527,7 @@ async function disconnect(btn: ILoadingButton) {
       </form>
     </Card>
 
-    <Card title="Password" description="Changing your password signs you out everywhere else, including other tabs in this browser. This tab stays signed in.">
+    <Card title="Password" description="Changing it signs you out everywhere else, including other tabs. This tab stays signed in.">
       <form class="space-y-4" @submit.prevent>
         <Input v-model="passwordForm.current" type="password" label="Current password" autocomplete="current-password" />
         <Input
@@ -568,7 +568,7 @@ async function disconnect(btn: ILoadingButton) {
         <div class="rounded-md border border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-danger">
           <p>Closing signs you out everywhere and stops your devices, public paste links and invitations from working.</p>
           <p class="mt-2">
-            Nothing is deleted for 30 days. Sign in again within that time and the account comes back exactly as it was.
+            Nothing is deleted for 30 days. Sign in again within that time and your account comes back as it was.
           </p>
           <p class="mt-2">
             After 30 days it all goes: your clips, folders, files and devices, every space you own along with everything
@@ -589,7 +589,6 @@ async function disconnect(btn: ILoadingButton) {
             label="Type to confirm"
             :placeholder="CLOSE_PHRASE"
             autocomplete="off"
-            :hint="`Type &quot;${CLOSE_PHRASE}&quot; so this cannot happen by accident.`"
           />
           <Button variant="danger" type="submit" :click="close" message="Closing" :disabled="!canClose">
             Close account

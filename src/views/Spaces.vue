@@ -108,8 +108,7 @@ function open(spaceId: string) {
       class="flex flex-wrap items-center gap-3 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn"
     >
       <p class="min-w-0 flex-1">
-        A space needs a confirmed email on your account first. It is the only way back in if you ever lock yourself out
-        of a space you made.
+        Confirm your email address first. It is the only way back into a space you lock yourself out of.
       </p>
       <Button size="sm" :to="{ name: 'settings', query: { tab: 'account' } }">
         {{ authUser.data?.email ? "Confirm my email" : "Add an email" }}
@@ -146,7 +145,7 @@ function open(spaceId: string) {
     <EmptyState
       v-else-if="!spaces.length"
       title="No spaces yet"
-      description="Make one to share a clipboard with other people. Everyone in it sees every clip, and only the person who added a clip can change it."
+      description="Share a clipboard with other people. Everyone sees every clip, and only its author can change it."
     >
       <template #icon><UserGroupIcon /></template>
       <Button variant="primary" size="sm" :disabled="atOwnLimit" @click="openCreate">

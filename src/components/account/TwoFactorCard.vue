@@ -88,7 +88,7 @@ function confirm(btn: ILoadingButton) {
 
 function remove(btn: ILoadingButton) {
   if (!canRemove.value) {
-    $alert.warning("Your password and a live code are both needed.");
+    $alert.warning("Enter your password and a code from your authenticator.");
     return btn.stopLoading();
   }
 
@@ -103,7 +103,7 @@ function remove(btn: ILoadingButton) {
 </script>
 
 <template>
-  <Card title="Authenticator" description="A six digit code from an app, for spaces that ask for one.">
+  <Card title="Authenticator" description="Set it up once. Every space that asks for a code accepts it.">
     <template #header>
       <Badge v-if="enrolled" variant="accent">On</Badge>
       <Badge v-else variant="neutral">Off</Badge>
@@ -111,15 +111,9 @@ function remove(btn: ILoadingButton) {
 
     <!-- Nothing in progress -->
     <div v-if="step === 'idle'" class="space-y-4">
-      <p class="text-sm text-muted">
-        <template v-if="enrolled">
-          Your authenticator is set up. Spaces that ask for a code will accept it, and you can require one on spaces of
-          your own.
-        </template>
-        <template v-else>
-          Set one up with Google Authenticator, 1Password, or anything that takes an <span class="font-mono text-[13px] text-fg">otpauth</span> link.
-          One setup covers your whole account.
-        </template>
+      <p v-if="!enrolled" class="text-sm text-muted">
+        Works with Google Authenticator, 1Password, or any app that takes an
+        <span class="font-mono text-[13px] text-fg">otpauth</span> link.
       </p>
 
       <Button v-if="!enrolled" variant="primary" :click="begin" message="Preparing">
@@ -133,8 +127,7 @@ function remove(btn: ILoadingButton) {
       <div class="flex items-start gap-2.5 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
         <ExclamationTriangleIcon class="mt-px h-4 w-4 shrink-0" />
         <p>
-          There are no backup codes. If you lose the authenticator, any space that demands a code is shut to you until
-          the owner invites you back, and a space you created needs its recovery by email.
+          There are no backup codes. Lose your authenticator and every space that requires a code is locked to you.
         </p>
       </div>
 
@@ -161,7 +154,7 @@ function remove(btn: ILoadingButton) {
       <form class="flex flex-wrap items-end gap-2" @submit.prevent>
         <Input
           v-model="code"
-          label="Code from the app"
+          label="Authenticator code"
           placeholder="123456"
           inputmode="numeric"
           maxlength="6"
@@ -179,20 +172,18 @@ function remove(btn: ILoadingButton) {
     <!-- Removing -->
     <form v-else class="space-y-4" @submit.prevent>
       <p class="text-sm text-muted">
-        Removing it shuts every space that demands a code until you enrol again. Spaces where only you asked for one
-        stop asking.
+        Spaces that require a code stay locked to you until you set up an authenticator again.
       </p>
       <Input v-model="password" type="password" label="Account password" autocomplete="current-password" />
       <Input
         v-model="code"
-        label="Code from the app"
+        label="Authenticator code"
         placeholder="123456"
         inputmode="numeric"
         maxlength="6"
         autocomplete="one-time-code"
         mono
         class="w-40"
-        hint="Proves it is you, not a borrowed session."
       />
       <div class="flex gap-2">
         <Button variant="danger" type="submit" :click="remove" message="Removing" :disabled="!canRemove">

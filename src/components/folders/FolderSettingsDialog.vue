@@ -168,8 +168,8 @@ async function deleteFolder(btn: ILoadingButton) {
         <!-- Encrypted folder without a password yet -->
         <section v-if="folder.visibility === 'encrypted' && !folder.hasPassword" class="space-y-3">
           <div class="rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
-            This folder encrypts its clips in your browser, but has no password yet. Set one to start pasting into it.
-            The password is required every time you read or write a clip here, and it cannot be recovered.
+            This folder has no password yet. Set one to start adding clips. You'll need it every time you read or
+            write one here, and it cannot be recovered.
           </div>
           <form class="flex items-end gap-2" @submit.prevent>
             <Input v-model="password" type="password" label="Encryption password" placeholder="Choose a password" class="flex-1" autocomplete="new-password" />

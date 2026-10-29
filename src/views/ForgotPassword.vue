@@ -88,7 +88,7 @@ function startOver() {
           label="Email address"
           placeholder="you@example.com"
           autocomplete="email"
-          hint="The verified address on your account. Without one, a password cannot be reset."
+          hint="The verified address on your account."
         />
         <Button variant="primary" type="submit" block :click="requestCode" message="Sending">
           <EnvelopeIcon class="h-4 w-4" />Email me a code
@@ -148,7 +148,7 @@ function startOver() {
     <template v-else>
       <h1 class="text-xl font-semibold tracking-tight text-fg">Password changed</h1>
       <p class="mt-1 text-sm text-muted">
-        Every session was signed out, including any other device. Sign in with the new password.
+        You were signed out everywhere. Sign in with your new password.
       </p>
       <Button class="mt-6" variant="primary" block :to="{ name: 'index' }">
         <ArrowRightIcon class="h-4 w-4" />Go to sign in

@@ -145,7 +145,7 @@ function sendRecoveryCode(btn: ILoadingButton) {
 
 function submitRecovery(btn: ILoadingButton) {
   if (recover.value.code.trim().length !== 6 || !recover.value.password) {
-    $alert.warning("The emailed code and your account password are both needed.");
+    $alert.warning("Enter the emailed code and your account password.");
     return btn.stopLoading();
   }
 
@@ -168,7 +168,7 @@ function submitRecovery(btn: ILoadingButton) {
           <p class="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">
             <Badge v-if="needsPassword" variant="neutral">Password</Badge>
             <Badge v-if="needsCode" variant="neutral">Authenticator</Badge>
-            <span>· unlocks for {{ state.unlockMinutes }} minutes of use</span>
+            <span>· stays unlocked for {{ state.unlockMinutes }} minutes</span>
           </p>
         </div>
       </div>
@@ -188,7 +188,7 @@ function submitRecovery(btn: ILoadingButton) {
           <template v-if="authUser.hasAuthenticator">
             <Input
               v-model="setupCode"
-              label="Code from the app"
+              label="Authenticator code"
               placeholder="123456"
               inputmode="numeric"
               maxlength="6"
@@ -210,8 +210,7 @@ function submitRecovery(btn: ILoadingButton) {
       <!-- Recovery, for the creator only -->
       <div v-else-if="mode === 'recover'" class="mt-6 space-y-4">
         <p class="text-sm text-muted">
-          We email a code to your account address. That code and your account password open this space and clear what
-          you set on it.
+          Enter the code we email you, plus your account password. This opens the space and clears your lock on it.
         </p>
 
         <form v-if="codeSent" class="space-y-3" @submit.prevent>
@@ -284,7 +283,7 @@ function submitRecovery(btn: ILoadingButton) {
       </div>
 
       <p class="mt-3 text-[11px] leading-relaxed text-faint">
-        Only the person who created a space can recover it. Members who lose theirs need a new invite.
+        Only the creator can recover a space. Members who lose their password need a new invite.
       </p>
     </div>
   </div>

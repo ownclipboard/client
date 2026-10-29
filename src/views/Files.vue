@@ -163,7 +163,7 @@ async function downloadFile(btn: ILoadingButton, file: StoredFile) {
     </PageHeader>
 
     <div v-if="!authUser.storage?.connected" class="mb-5 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
-      File storage is disconnected, so these files cannot be opened or previewed until you reconnect it in Settings.
+      Reconnect your file storage in Settings to open or preview these files.
     </div>
 
     <div class="mb-5 flex flex-wrap items-end gap-3">

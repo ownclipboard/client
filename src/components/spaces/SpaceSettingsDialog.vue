@@ -194,7 +194,7 @@ const ROLE_LABEL: Record<string, string> = { owner: "Owner", member: "Member", i
           <div class="h-full rounded-full bg-accent transition-[width]" :style="{ width: storagePercent + '%' }" />
         </div>
         <p v-if="!limits?.uploads" class="text-xs text-warn">
-          {{ isSpaceOwner ? "Uploading files needs Pro." : "Files can be uploaded once the owner is on Pro." }}
+          {{ isSpaceOwner ? "Uploading files needs Pro." : "The owner needs Pro before files can be uploaded." }}
         </p>
       </section>
 
@@ -251,7 +251,7 @@ const ROLE_LABEL: Record<string, string> = { owner: "Owner", member: "Member", i
             </Button>
           </div>
           <p class="text-xs text-muted">
-            {{ seatsFull ? "This space is full." : "They have to accept before they can see anything." }}
+            {{ seatsFull ? "This space is full." : "They have to accept the invite first." }}
           </p>
         </form>
       </section>

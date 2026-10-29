@@ -81,7 +81,7 @@ export function alertRequestError(res: any) {
     return $alert.error("The server took too long to respond. Please try again.");
   }
   if (typeof navigator !== "undefined" && !navigator.onLine) {
-    return $alert.error("You appear to be offline.");
+    return $alert.error("You're offline.");
   }
   if (res?.request) {
     return $alert.error("Could not reach the server. Please try again.");

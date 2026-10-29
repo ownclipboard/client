@@ -159,7 +159,7 @@ function createFolder(btn: ILoadingButton) {
         </button>
       </div>
       <p v-if="newEncrypted" class="px-0.5 text-[11px] leading-snug text-faint">
-        You'll set a password next. Encrypted folders can't hold files, and the type is fixed once created.
+        You'll set a password next. Encrypted folders can't hold files, and you can't change this later.
       </p>
 
       <div class="flex items-center justify-end gap-1">
