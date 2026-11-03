@@ -278,7 +278,7 @@ function remove() {
   >
     <!-- Content -->
     <div class="min-w-0">
-      <!-- Title row: the type badge always comes first so it lines up across rows -->
+      <!-- Title row: the type badge always comes first so it lines up across rows . -->
       <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
         <Badge :variant="isLocked ? 'warn' : isFile ? 'info' : 'outline'" uppercase>
           <LockClosedIcon v-if="isLocked" class="h-3 w-3" />
