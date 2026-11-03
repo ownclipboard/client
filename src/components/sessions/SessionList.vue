@@ -4,7 +4,7 @@
  * whatever a client called itself, so they are rendered as plain text and
  * believed no further than that.
  */
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import {
   ComputerDesktopIcon,
   DevicePhoneMobileIcon,
@@ -13,6 +13,7 @@ import {
 } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../../http";
+import { $events } from "../../events";
 import { askToConfirm } from "../ConfirmHandler";
 import { getSessions, revokeOtherSessions, revokeSession, type SessionInfo } from "../../services/sessions.service";
 import { useAuthUser } from "../../stores/auth.store";
@@ -41,6 +42,10 @@ async function load() {
 }
 
 onMounted(load);
+
+// A device signed in by QR from anywhere in the app lands in this list.
+$events.on("sessions:changed", load);
+onBeforeUnmount(() => $events.off("sessions:changed", load));
 
 /** Two letter code to its flag, which is just those letters as regional indicators. */
 function flagOf(code: string) {
@@ -90,8 +95,6 @@ async function revokeOthers(btn: ILoadingButton) {
     .catch(alertRequestError)
     .finally(btn.stopLoading);
 }
-
-defineExpose({ reload: load });
 </script>
 
 <template>

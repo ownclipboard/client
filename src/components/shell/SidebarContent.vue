@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Cog6ToothIcon, CreditCardIcon, CpuChipIcon, PhotoIcon } from "@heroicons/vue/20/solid";
+import { Cog6ToothIcon, CreditCardIcon, CpuChipIcon, PhotoIcon, QrCodeIcon } from "@heroicons/vue/20/solid";
 import { useAuthUser } from "../../stores/auth.store";
+import { openQrSignIn } from "../sessions/QrSignInHandler";
 import Brand from "./Brand.vue";
 import FolderNav from "./FolderNav.vue";
 import SpaceNav from "./SpaceNav.vue";
@@ -44,6 +45,17 @@ const links = [
           </Badge>
         </a>
       </RouterLink>
+
+      <!-- Not a route: it opens the dialog mounted on the shell. Closing the
+           mobile drawer first keeps the dialog from opening behind it. -->
+      <button
+        type="button"
+        class="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] text-muted transition-colors hover:bg-raised hover:text-fg"
+        @click="emit('navigate'); openQrSignIn()"
+      >
+        <QrCodeIcon class="h-4 w-4 opacity-80" />
+        <span class="flex-1 text-left text-fg/90">Sign in a device</span>
+      </button>
     </nav>
 
     <div class="mt-auto border-t border-line pt-3">

@@ -7,9 +7,12 @@ import { ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { Dialog, DialogPanel, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import { Bars3Icon, XMarkIcon } from "@heroicons/vue/24/outline";
+import { QrCodeIcon } from "@heroicons/vue/20/solid";
 import SidebarContent from "../components/shell/SidebarContent.vue";
 import Brand from "../components/shell/Brand.vue";
 import ThemeToggle from "../components/shell/ThemeToggle.vue";
+import IconButton from "../components/ui/IconButton.vue";
+import { openQrSignIn } from "../components/sessions/QrSignInHandler";
 
 const drawerOpen = ref(false);
 const $route = useRoute();
@@ -56,7 +59,12 @@ watch(() => $route.fullPath, () => (drawerOpen.value = false));
         <Bars3Icon class="h-6 w-6" />
       </button>
       <Brand />
-      <div class="ml-auto"><ThemeToggle /></div>
+      <div class="ml-auto flex items-center gap-1">
+        <IconButton label="Sign in another device" size="sm" @click="openQrSignIn">
+          <QrCodeIcon />
+        </IconButton>
+        <ThemeToggle />
+      </div>
     </header>
 
     <slot name="banner" />

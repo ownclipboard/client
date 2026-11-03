@@ -15,15 +15,13 @@ import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../../http";
 import { $events } from "../../events";
 import { approveQrLogin, createQrCode, denyQrLogin, getQrStatus, type QrStatus } from "../../services/sessions.service";
+import { closeQrSignIn, ShowQrSignIn } from "./QrSignInHandler";
 import { isDark } from "../../stores/theme.store";
 import Dialog from "../ui/Dialog.vue";
 import Button from "../ui/Button.vue";
 import Spinner from "../ui/Spinner.vue";
 import Input from "../ui/Input.vue";
 import IconButton from "../ui/IconButton.vue";
-
-const props = defineProps<{ open: boolean }>();
-const emit = defineEmits<{ (e: "close"): void; (e: "signed-in"): void }>();
 
 type Phase = "loading" | "waiting" | "pending" | "done" | "expired";
 
@@ -113,10 +111,20 @@ function approve(btn: ILoadingButton) {
     .then(() => {
       stopTimers();
       phase.value = "done";
-      emit("signed-in");
+      // Whichever screen is listing sessions now has one more to show.
+      $events.emit("sessions:changed");
     })
     .catch(alertRequestError)
     .finally(btn.stopLoading);
+}
+
+/**
+ * The new session only shows up once the other device collects its token, which
+ * is after the approval, so the list is asked again on the way out as well.
+ */
+function dismiss() {
+  if (phase.value === "done") $events.emit("sessions:changed");
+  closeQrSignIn();
 }
 
 function deny(btn: ILoadingButton) {
@@ -141,11 +149,13 @@ function onScanned() {
 }
 $events.on("realtime:qr-scanned", onScanned);
 
-watch(
-  () => props.open,
-  (open) => (open ? start() : stopTimers()),
-  { immediate: true }
-);
+watch(ShowQrSignIn, (open) => {
+  if (open) return start();
+  stopTimers();
+  // Mounted for the whole session now, so a closed dialog is parked out of the
+  // polling phases and a late scan event cannot drive it.
+  phase.value = "loading";
+});
 
 onBeforeUnmount(() => {
   stopTimers();
@@ -154,7 +164,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <Dialog :open="open" size="md" title="Sign in another device" @close="emit('close')">
+  <Dialog :open="ShowQrSignIn" size="md" title="Sign in another device" @close="dismiss">
     <!-- Waiting to be scanned -->
     <div v-if="phase === 'loading' || phase === 'waiting'" class="flex flex-col items-center text-center">
       <div class="flex h-56 w-56 items-center justify-center rounded-lg border border-line bg-surface p-3">
@@ -233,10 +243,10 @@ onBeforeUnmount(() => {
         </Button>
       </template>
       <template v-else-if="phase === 'done'">
-        <Button variant="primary" @click="emit('close')">Done</Button>
+        <Button variant="primary" @click="dismiss">Done</Button>
       </template>
       <template v-else>
-        <Button variant="ghost" @click="emit('close')">Close</Button>
+        <Button variant="ghost" @click="dismiss">Close</Button>
         <Button variant="primary" @click="start"><ArrowPathIcon class="h-4 w-4" />New code</Button>
       </template>
     </template>

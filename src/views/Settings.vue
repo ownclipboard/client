@@ -20,7 +20,7 @@ import Skeleton from "../components/ui/Skeleton.vue";
 import StorageSetupGuide from "../components/storage/StorageSetupGuide.vue";
 import SessionList from "../components/sessions/SessionList.vue";
 import TwoFactorCard from "../components/account/TwoFactorCard.vue";
-import QrSignInDialog from "../components/sessions/QrSignInDialog.vue";
+import { openQrSignIn } from "../components/sessions/QrSignInHandler";
 import Tabs, { type TabItem } from "../components/ui/Tabs.vue";
 
 const authUser = useAuthUser();
@@ -221,11 +221,6 @@ const CLOSE_PHRASE = "close my account";
 // the session is dropped and the browser leaves for the sign-in page.
 const closedUntil = ref("");
 
-/* ---------------- Devices signed in ---------------- */
-
-const qrOpen = ref(false);
-const sessionList = ref<InstanceType<typeof SessionList>>();
-
 const canClose = computed(
   () => !!closeForm.password && closeForm.confirmText.trim().toLowerCase() === CLOSE_PHRASE
 );
@@ -423,14 +418,6 @@ async function disconnect(btn: ILoadingButton) {
 
     <StorageSetupGuide :open="guideOpen" @close="guideOpen = false" />
 
-    <!-- The new session appears when the device collects its token, which is after
-         the approval, so the list is read again on the way out as well. -->
-    <QrSignInDialog
-      :open="qrOpen"
-      @close="qrOpen = false; sessionList?.reload()"
-      @signed-in="sessionList?.reload()"
-    />
-
     <div v-show="tab === 'account'" class="space-y-5">
     <Card title="Account">
       <dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
@@ -455,12 +442,12 @@ async function disconnect(btn: ILoadingButton) {
       description="Every device signed in to your account."
     >
       <template #header>
-        <Button size="sm" @click="qrOpen = true">
+        <Button size="sm" @click="openQrSignIn">
           <QrCodeIcon class="h-4 w-4" />Sign in a device
         </Button>
       </template>
 
-      <SessionList ref="sessionList" />
+      <SessionList />
     </Card>
 
     <Card
