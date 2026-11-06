@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /**
- * Where the account is signed in. The device name and the browser string are
- * whatever a client called itself, so they are rendered as plain text and
- * believed no further than that.
+ * Every session on the account: one per sign-in, named by whatever the client
+ * called itself. Not to be confused with Devices, which are api keys for apps.
+ * The name and the browser string are both client-supplied, so they are
+ * rendered as plain text and believed no further than that.
  */
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import {
@@ -43,7 +44,7 @@ async function load() {
 
 onMounted(load);
 
-// A device signed in by QR from anywhere in the app lands in this list.
+// A device signed in by QR from anywhere in the app gets a session in this list.
 $events.on("sessions:changed", load);
 onBeforeUnmount(() => $events.off("sessions:changed", load));
 
@@ -60,7 +61,7 @@ function iconFor(session: SessionInfo) {
 
 async function revoke(session: SessionInfo) {
   const ok = await askToConfirm({
-    title: session.current ? "Sign out this device?" : `Sign out ${session.deviceName || "this device"}?`,
+    title: session.current ? "Sign out this session?" : `Sign out ${session.deviceName || "this device"}?`,
     message: session.current
       ? "You will have to sign in again here."
       : "That device has to sign in again. Anything it saved stays.",
@@ -83,8 +84,8 @@ async function revoke(session: SessionInfo) {
 
 async function revokeOthers(btn: ILoadingButton) {
   const ok = await askToConfirm({
-    title: "Sign out every other device?",
-    message: "This device stays signed in. Every other one has to sign in again.",
+    title: "Sign out every other session?",
+    message: "This session stays signed in. Every other one has to sign in again.",
     confirmLabel: "Sign out others",
     danger: true
   });
@@ -117,7 +118,7 @@ async function revokeOthers(btn: ILoadingButton) {
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
               <span class="truncate text-sm font-medium text-fg">{{ session.deviceName || "Unnamed device" }}</span>
-              <Badge v-if="session.current" variant="accent">This device</Badge>
+              <Badge v-if="session.current" variant="accent">This session</Badge>
               <Badge v-if="session.method === 'qr'" variant="neutral">
                 <QrCodeIcon class="h-3 w-3" />Signed in by QR
               </Badge>
@@ -135,7 +136,7 @@ async function revokeOthers(btn: ILoadingButton) {
           <IconButton
             size="sm"
             variant="danger"
-            :label="session.current ? 'Sign out this device' : 'Sign out this device'"
+            label="Sign out this session"
             @click="revoke(session)"
           >
             <TrashIcon />
@@ -147,7 +148,7 @@ async function revokeOthers(btn: ILoadingButton) {
 
       <div class="flex flex-wrap gap-2">
         <Button size="sm" :click="revokeOthers" message="Signing out" :disabled="!others">
-          Sign out other devices<span v-if="others"> ({{ others }})</span>
+          Sign out other sessions<span v-if="others"> ({{ others }})</span>
         </Button>
         <Button size="sm" variant="danger" :click="authUser.signOutEverywhere" message="Signing out">
           Sign out everywhere

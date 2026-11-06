@@ -200,7 +200,7 @@ function submitRecovery(btn: ILoadingButton) {
           </template>
           <template v-else>
             <p class="text-xs text-muted">Set one up on your account first.</p>
-            <Button variant="primary" size="sm" :to="{ name: 'settings', query: { tab: 'account' } }">
+            <Button variant="primary" size="sm" :to="{ name: 'settings.security' }">
               <ShieldCheckIcon class="h-4 w-4" />Set up an authenticator
             </Button>
           </template>

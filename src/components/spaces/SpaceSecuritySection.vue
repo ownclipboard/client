@@ -234,7 +234,7 @@ const canDropMine = computed(
         <!-- Authenticator -->
         <form class="space-y-3 border-t border-line pt-4" @submit.prevent>
           <template v-if="!authUser.hasAuthenticator">
-            <Button size="sm" :to="{ name: 'settings', query: { tab: 'account' } }">
+            <Button size="sm" :to="{ name: 'settings.security' }">
               <ShieldCheckIcon class="h-4 w-4" />Set up an authenticator
             </Button>
           </template>

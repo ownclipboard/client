@@ -77,7 +77,7 @@ export const useAuthUser = defineStore("authUser", () => {
   async function signOutEverywhere(btn?: { stopLoading?: () => void }) {
     const ok = await askToConfirm({
       title: "Sign out everywhere?",
-      message: "Every device signed in to this account is signed out, including this one.",
+      message: "Every session on this account is signed out, including this one.",
       confirmLabel: "Sign out everywhere",
       danger: true
     });

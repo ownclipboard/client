@@ -3,6 +3,17 @@ import Index from "./views/Index.vue";
 import AuthLayout from "./views/AuthLayout.vue";
 import { $localStorage } from "./stores/native";
 
+/**
+ * Settings used to be a single page holding its section in "?tab=", so an old
+ * link is sent on to the page that section became.
+ */
+const SETTINGS_TABS: Record<string, string> = {
+  appearance: "settings.appearance",
+  storage: "settings.storage",
+  account: "settings.account",
+  sessions: "settings.sessions"
+};
+
 const routes: Array<RouteRecordRaw> = [
   { path: "/", name: "index", component: Index, meta: { title: "Sign in" } },
   { path: "/signup", name: "signup", component: () => import("./views/Signup.vue"), meta: { title: "Create account" } },
@@ -43,7 +54,49 @@ const routes: Array<RouteRecordRaw> = [
       { path: "spaces/:spaceId", name: "space", component: () => import("./views/Space.vue"), meta: { title: "Space" } },
       { path: "devices", name: "devices", component: () => import("./views/Devices.vue"), meta: { title: "Devices" } },
       { path: "plan", name: "pricing", component: () => import("./views/Pricing.vue"), meta: { title: "Plan" } },
-      { path: "settings", name: "settings", component: () => import("./views/Settings.vue"), meta: { title: "Settings" } }
+      {
+        path: "settings",
+        component: () => import("./views/settings/SettingsLayout.vue"),
+        meta: { title: "Settings" },
+        children: [
+          {
+            path: "",
+            name: "settings",
+            // The query goes with it: it named the section, and the path does that now.
+            redirect: (to) => ({ name: SETTINGS_TABS[String(to.query.tab)] || "settings.appearance", query: {} })
+          },
+          {
+            path: "appearance",
+            name: "settings.appearance",
+            component: () => import("./views/settings/Appearance.vue"),
+            meta: { title: "Appearance" }
+          },
+          {
+            path: "storage",
+            name: "settings.storage",
+            component: () => import("./views/settings/Storage.vue"),
+            meta: { title: "Storage" }
+          },
+          {
+            path: "account",
+            name: "settings.account",
+            component: () => import("./views/settings/Account.vue"),
+            meta: { title: "Account" }
+          },
+          {
+            path: "security",
+            name: "settings.security",
+            component: () => import("./views/settings/Security.vue"),
+            meta: { title: "Security" }
+          },
+          {
+            path: "sessions",
+            name: "settings.sessions",
+            component: () => import("./views/settings/Sessions.vue"),
+            meta: { title: "Sessions" }
+          }
+        ]
+      }
     ]
   },
 

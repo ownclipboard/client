@@ -134,14 +134,60 @@ export function setupTwoFactor() {
   return $http.post<any, components["schemas"]["TwoFactorSetupResponse"]>("/account/2fa/setup");
 }
 
-/** Finish enrolment by proving the app produces the right code. */
+/**
+ * Finish enrolment by proving the app produces the right code. The answer
+ * carries the account's one recovery code, and that is the only time it is ever
+ * shown, so the caller has to put it in front of the user before moving on.
+ */
 export function enableTwoFactor(code: string) {
-  return $http.post<any, components["schemas"]["MessageResponse"]>("/account/2fa/enable", { code });
+  return $http.post<any, components["schemas"]["TwoFactorEnableResponse"]>("/account/2fa/enable", { code });
+}
+
+/**
+ * A fresh recovery code for a saved copy that went missing while the
+ * authenticator still works. The old one dies, and the new one is shown once,
+ * exactly as at enrolment. Gated like `disableTwoFactor`, because handing a
+ * recovery code to a borrowed session would hand over the account.
+ */
+export function replaceRecoveryCode(password: string, code: string) {
+  return $http.post<any, components["schemas"]["TwoFactorEnableResponse"]>("/account/2fa/recovery-code", {
+    password,
+    code
+  });
+}
+
+/**
+ * The way back when the authenticator is gone but this session still works.
+ * Two factor is switched off rather than the recovery code standing in for a
+ * live one: whoever is here cannot produce codes any more, so leaving it on
+ * would only lock them out again. The code is spent either way, and enrolling
+ * again is what issues another.
+ */
+export function recoverTwoFactor(password: string, recoveryCode: string) {
+  return $http.post<any, components["schemas"]["TwoFactorDisableResponse"]>("/account/2fa/recover", {
+    password,
+    recoveryCode
+  });
 }
 
 /** Needs the password as well as a live code, so a stolen session cannot strip it. */
 export function disableTwoFactor(password: string, code: string) {
   return $http.post<any, components["schemas"]["MessageResponse"]>("/account/2fa/disable", { password, code });
+}
+
+/**
+ * Ask for a code at sign in as well, or stop asking. Enrolling an authenticator
+ * does not do this on its own: the code was only ever needed to unlock spaces,
+ * so logins keep working on the password alone until this is called.
+ *
+ * A live code is required either way, which proves the authenticator is in hand
+ * before anyone depends on it to get in at all.
+ */
+export function setTwoFactorOnLogin(enabled: boolean, code: string) {
+  return $http.post<any, components["schemas"]["TwoFactorLoginToggleResponse"]>("/account/2fa/login", {
+    enabled,
+    code
+  });
 }
 
 /** Whether a username is already taken. */
@@ -150,7 +196,6 @@ export async function usernameExists(username: string) {
   return !!res.exists;
 }
 
-/** Log in and store the token. Returns the user's plan (null when none chosen yet). */
 /**
  * What this browser calls itself in the account's session list. Guessed from
  * the user agent, which is all a browser can honestly offer, and kept short.
@@ -176,14 +221,71 @@ export function describeThisDevice() {
   return os ? `${browser} on ${os}` : browser;
 }
 
-export async function login(username: string, password: string) {
+/**
+ * Either the login is done, or the account asks for an authenticator code and
+ * hands back a challenge to finish with. Both arrive as a 200 from the api, so
+ * callers branch on this rather than on a status code.
+ */
+export type LoginResult =
+  | { status: "signed-in"; plan: "free" | "pro" | null; twoFactorDisabled: boolean }
+  | { status: "code-required"; challenge: string };
+
+function finishLogin(res: components["schemas"]["LoginResponse"]): LoginResult {
+  if (res.twoFactorRequired && res.challenge) return { status: "code-required", challenge: res.challenge };
+
+  // A 200 with neither a token nor a challenge is nothing anyone can act on.
+  // Rejected in the shape alertRequestError reads, so it is at least visible.
+  if (!res.token) {
+    throw { response: { status: 500, data: { error: "The server did not return a sign-in token." } } };
+  }
+
+  $localStorage.set("token", res.token);
+  // Only `auth/2fa/recover` sets this, and only the screen that sent someone
+  // there can explain why the factor it just asked about is gone.
+  return { status: "signed-in", plan: res.plan ?? null, twoFactorDisabled: !!res.twoFactorDisabled };
+}
+
+/** Log in. Stores the token unless the account still owes a code. */
+export async function login(username: string, password: string): Promise<LoginResult> {
   const res = await $http.post<any, components["schemas"]["LoginResponse"]>("/auth/login", {
     username,
     password,
     deviceName: describeThisDevice()
   });
-  $localStorage.set("token", res.token);
-  return res.plan;
+  return finishLogin(res);
+}
+
+/**
+ * The second half of a login that asked for a code. The challenge is opaque and
+ * useless on its own: it lasts five minutes, covers one login, and stops working
+ * if the password changes or the account signs out everywhere meanwhile. All of
+ * those come back as a 401, where the move is a fresh password rather than a
+ * retry. Codes are single use, and five wrong ones shut the step for fifteen
+ * minutes.
+ */
+export async function loginWithCode(challenge: string, code: string): Promise<LoginResult> {
+  const res = await $http.post<any, components["schemas"]["LoginResponse"]>("/auth/2fa", {
+    challenge,
+    code,
+    deviceName: describeThisDevice()
+  });
+  return finishLogin(res);
+}
+
+/**
+ * The same way back, for when it is the login itself that is blocked. Takes the
+ * challenge `login` answered with, in place of the six digits, and switches two
+ * factor off before finishing the login: the account signs in on its password
+ * alone from here, and spaces that asked it for a code stop asking. Wrong
+ * recovery codes count towards the same five-then-fifteen-minutes block.
+ */
+export async function loginWithRecoveryCode(challenge: string, recoveryCode: string): Promise<LoginResult> {
+  const res = await $http.post<any, components["schemas"]["LoginResponse"]>("/auth/2fa/recover", {
+    challenge,
+    recoveryCode,
+    deviceName: describeThisDevice()
+  });
+  return finishLogin(res);
 }
 
 /** Create an account. Email is optional and only used for password resets. The caller logs in afterwards. */

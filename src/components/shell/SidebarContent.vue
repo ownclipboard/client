@@ -54,7 +54,7 @@ const links = [
         @click="emit('navigate'); openQrSignIn()"
       >
         <QrCodeIcon class="h-4 w-4 opacity-80" />
-        <span class="flex-1 text-left text-fg/90">Sign in a device</span>
+        <span class="flex-1 text-left text-fg/90">Sign in another device</span>
       </button>
     </nav>
 

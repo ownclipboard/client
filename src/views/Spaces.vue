@@ -110,7 +110,7 @@ function open(spaceId: string) {
       <p class="min-w-0 flex-1">
         Confirm your email address first. It is the only way back into a space you lock yourself out of.
       </p>
-      <Button size="sm" :to="{ name: 'settings', query: { tab: 'account' } }">
+      <Button size="sm" :to="{ name: 'settings.account' }">
         {{ authUser.data?.email ? "Confirm my email" : "Add an email" }}
       </Button>
     </div>

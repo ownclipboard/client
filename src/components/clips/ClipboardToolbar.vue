@@ -108,7 +108,7 @@ const uploadResults = ref<UploadResults>({});
 function pickFile() {
   if (!authUser.canUpload) {
     $alert.warning(authUser.uploadBlockedReason);
-    return $router.push({ name: "settings", query: { tab: "storage" } });
+    return $router.push({ name: "settings.storage" });
   }
   fileInput.value?.click();
 }

@@ -517,6 +517,15 @@ export interface paths {
          *     app's own storage is in use, `storage.defaultAvailable` whether it is offered at all,
          *     and `storage.proRequired` appears when the default storage is picked but the Pro plan
          *     has lapsed. The full connection details live at `GET /client/v1/account/owns3`.
+         *
+         *     `twoFactor.enabled` says an authenticator is enrolled, which a space can ask for.
+         *     `twoFactor.onLogin` says signing in also asks for a code, the switch for which is
+         *     `POST /client/v1/account/2fa/login`. It is false whenever `enabled` is false, since
+         *     there is no authenticator to ask for.
+         *     `push.enabled` says this server can send push notifications at all: when it is false
+         *     there is nothing to register a device for and the notification settings can stay
+         *     hidden. What an account wants to be notified about lives at
+         *     `GET /client/v1/push/preferences`.
          */
         get: {
             parameters: {
@@ -567,8 +576,26 @@ export interface paths {
         /**
          * Login
          * @description Returns a JWT. Send it as the `oc-token` header on authenticated requests.
+         *
+         *     **This can answer in two shapes, and a client must handle both.** Normally you get
+         *     `token`. But an account that asks for an authenticator code at sign in gets no token
+         *     here: the answer is `{ twoFactorRequired: true, challenge }`, and the login is only
+         *     half done. Show a field for the 6 digit code, then post the challenge and the code to
+         *     `/auth/2fa` to get the token. Both shapes are 200, so branch on `twoFactorRequired`
+         *     rather than on the status code.
+         *
+         *     That code screen needs a second way out, or a user who has lost their authenticator
+         *     is stuck for good: the same `challenge` also goes to `/auth/2fa/recover` with the
+         *     recovery code from enrollment, which switches two factor off and finishes the login.
+         *     Build both before shipping this screen.
+         *
+         *     Most accounts never return the second shape. It applies only to accounts that
+         *     switched it on at `/account/2fa/login`; enrolling an authenticator does not switch
+         *     it on by itself.
+         *
          *     Logging in to a closed account (see `/account/close`) during its grace period reopens it,
-         *     and the response says so with `reopened`.
+         *     and the response says so with `reopened`. An account that owes a code is not reopened
+         *     until that code is given.
          */
         post: {
             parameters: {
@@ -589,7 +616,10 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Logged in. */
+                /**
+                 * @description Either logged in, with `token`, or a code is owed, with `twoFactorRequired`
+                 *     and `challenge` and no token. Check `twoFactorRequired` before using `token`.
+                 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -608,6 +638,181 @@ export interface paths {
                     };
                 };
                 /** @description Wrong password. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/auth/2fa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish a login that asked for an authenticator code
+         * @description The second half of a login, for accounts that ask for an authenticator code.
+         *     You only come here when `/auth/login` answered `twoFactorRequired` instead of a
+         *     token. Send back the `challenge` it gave you, plus the 6 digit code from the
+         *     user's authenticator app, and you get the same response `/auth/login` would
+         *     normally have returned.
+         *
+         *     The challenge is opaque: do not parse it, store it only for as long as the code
+         *     entry screen is open, and treat it as useless on its own, because it is. It is
+         *     good for five minutes. It also stops working if the password changes or the
+         *     account signs out everywhere while the screen is open. In every one of those
+         *     cases you get a 401 saying the sign in expired, and the right move is to send
+         *     the user back to the password screen rather than retry.
+         *
+         *     Codes are single use, so a resubmitted code is refused with "already used"
+         *     rather than accepted. After five **wrong** codes in a row the step stops
+         *     answering for fifteen minutes, including for a correct code; that exists so
+         *     that someone who already has the password cannot simply try all million
+         *     combinations.
+         *
+         *     **This screen also needs a "lost your authenticator?" way out.** Someone with no
+         *     authenticator can never produce a code here, and for an account that asks for one
+         *     at sign in there is no other door. Post the same `challenge` to
+         *     `/auth/2fa/recover` with the recovery code from enrollment instead; that switches
+         *     two factor off and answers exactly as this call does. Wrong recovery codes count
+         *     towards the same five-then-fifteen-minutes block as wrong codes here.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "challenge": "eyJ1Ijoi...",
+                     *       "code": "123456"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["TwoFactorLoginBody"];
+                };
+            };
+            responses: {
+                /** @description Logged in. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LoginResponse"];
+                    };
+                };
+                /** @description Validation error. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Wrong code, or a challenge that expired or no longer applies. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/auth/2fa/recover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish a login with the recovery code instead of a code
+         * @description The way back when the authenticator is gone. Comes after the same
+         *     `twoFactorRequired` answer from `/auth/login` as `/auth/2fa` does, and takes the
+         *     same `challenge`, but with the recovery code handed out at enrollment in place of
+         *     the 6 digits. Offer it as a "lost your authenticator?" link on the code screen,
+         *     not as the main path.
+         *
+         *     **Two factor is switched off and the recovery code is spent**, then the login
+         *     finishes exactly as `/auth/2fa` would, with the same response. Signing in will ask
+         *     for the password alone from now on, and spaces that asked this account for a code
+         *     stop asking. That is the point: whoever gets here no longer has the authenticator,
+         *     so leaving the factor on would lock them straight out again.
+         *
+         *     `twoFactorDisabled` is true in the response so the client can say what happened
+         *     and send the user to enroll again. Doing so issues a new recovery code; until
+         *     then the account has none.
+         *
+         *     The challenge rules are the ones `/auth/2fa` documents, and wrong recovery codes
+         *     count towards the same five-then-fifteen-minutes block.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "challenge": "eyJ1Ijoi...",
+                     *       "recoveryCode": "4T8GX-P1JQZ-7NMKD-W2YRH"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["TwoFactorRecoverLoginBody"];
+                };
+            };
+            responses: {
+                /** @description Logged in, with two factor now off. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LoginResponse"];
+                    };
+                };
+                /** @description Validation error. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Wrong recovery code, or a challenge that expired or no longer applies. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -3303,6 +3508,264 @@ export interface paths {
                 };
                 /** @description The user denied the request. `status` is `denied`. */
                 403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/push/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register this device for push notifications
+         * @description Stores the Firebase registration token of this app install, so the server can
+         *     notify it. Call this after the user grants notification permission, on every
+         *     launch, and again whenever Firebase rotates the token.
+         *
+         *     Safe to repeat: a token already stored is refreshed rather than duplicated.
+         *     Firebase issues one token per install, so registering a token that belonged to
+         *     another account moves it to this one instead of leaving both.
+         *
+         *     The registration is tied to the session that made this call, so revoking that
+         *     session from `account/sessions` also stops notifications reaching this device.
+         *     An account keeps at most 20 registrations; past that the least recently seen
+         *     one is dropped.
+         *
+         *     Check `push.enabled` in `ping` first: when it is false this server cannot send
+         *     notifications and there is nothing to register for.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "token": "fK3h...",
+                     *       "platform": "ios",
+                     *       "deviceName": "iPhone 15"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["PushRegisterBody"];
+                };
+            };
+            responses: {
+                /** @description Registered. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PushRegisterResponse"];
+                    };
+                };
+                /** @description Validation error. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/push/unregister": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop notifications to this device
+         * @description Removes this install's registration. Call it when the user signs out, before
+         *     the login token is discarded, so the device stops receiving this account's
+         *     notifications.
+         *
+         *     Answers the same whether or not the token was registered, so it is safe to call
+         *     blind on sign-out.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PushUnregisterBody"];
+                };
+            };
+            responses: {
+                /** @description Gone, whether or not it was there. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Validation error. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/push/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Notification preferences
+         * @description Which notifications this account wants, and how many devices are registered.
+         *
+         *     Every switch is resolved, so what comes back is what will actually happen: an
+         *     account that never set a preference gets the defaults, which are on for the two
+         *     account categories and off for announcements.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Preferences. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PushPreferencesResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Change notification preferences
+         * @description Switches one or more categories. Leave a category out to keep it as it is.
+         *
+         *     `spaceActivity` and `invites` are about this account's own spaces and are on by
+         *     default. `announcements` is product news and is off until it is asked for, so it
+         *     stays separate from the two above: turning news off never stops an invite.
+         *
+         *     Turning everything off keeps the device registered. The account simply stops
+         *     being notified, and nothing else about it changes.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "spaceActivity": true,
+                     *       "announcements": false
+                     *     }
+                     */
+                    "application/json": components["schemas"]["PushPreferencesBody"];
+                };
+            };
+            responses: {
+                /** @description Saved, with every switch as it now stands. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PushPreferencesResponse"];
+                    };
+                };
+                /** @description Validation error, or no category given. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -6150,7 +6613,11 @@ export interface paths {
          *     simply replaces the unconfirmed secret.
          *
          *     One enrollment covers the whole account, including every space that asks for a code.
-         *     There are no recovery codes: lose the authenticator and the factor is gone.
+         *
+         *     `2fa/enable` hands back a single recovery code, shown only in that one response.
+         *     It is the only way back if the authenticator is lost, so the enrollment screen has
+         *     to put it in front of the user and get it saved before finishing. Plan for that
+         *     step here, not after.
          */
         post: {
             parameters: {
@@ -6199,6 +6666,12 @@ export interface paths {
         /**
          * Confirm the authenticator
          * @description Finishes enrollment with a code from the app, proving it was set up correctly.
+         *
+         *     **The response carries a recovery code, and this is the only time it is shown.**
+         *     It is the one way back if the authenticator is lost, so put it in front of the
+         *     user and make them save it before moving on. Spending it at
+         *     `auth/2fa/recover` or `account/2fa/recover` switches two factor off; it does not
+         *     stand in for a code. Replace it any time with `account/2fa/recovery-code`.
          */
         post: {
             parameters: {
@@ -6213,17 +6686,95 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Enrolled. */
+                /** @description Enrolled, and the recovery code to show once. */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["MessageResponse"];
+                        "application/json": components["schemas"]["TwoFactorEnableResponse"];
                     };
                 };
                 /** @description Nothing to confirm, already enrolled, or a wrong code. */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/2fa/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for an authenticator code when signing in
+         * @description Asks for the authenticator code when signing in, or stops asking. Off by default.
+         *
+         *     Setting up an authenticator does **not** switch this on. The code was only ever
+         *     needed to unlock spaces, so an account that enrolled for that reason keeps signing
+         *     in with its password alone until someone turns this on here. Nothing about an
+         *     existing account's login changes unless this call is made.
+         *     A current code is required either way, which proves the authenticator is in hand
+         *     before login starts depending on it.
+         *     With this on, the recovery code from `2fa/enable` is the only way into the account
+         *     if the authenticator is lost, because `2fa/disable` needs a session and no session
+         *     can be opened without a code. Lose both and the account is gone. Worth saying out
+         *     loud in the interface that turns this on.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "enabled": true,
+                     *       "code": "123456"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["TwoFactorLoginToggleBody"];
+                };
+            };
+            responses: {
+                /** @description Saved. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TwoFactorLoginToggleResponse"];
+                    };
+                };
+                /** @description Validation error, no authenticator set up, or a wrong code. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -6253,6 +6804,10 @@ export interface paths {
          * @description Needs the account password and a live code, so a stolen session cannot strip the
          *     factor. Spaces that demand a code stay shut until an authenticator is enrolled
          *     again. Spaces where only this account asked for a code stop asking.
+         *
+         *     **If the authenticator is gone**, this is the wrong call: there is no code to give.
+         *     Use `account/2fa/recover` with the recovery code instead, which does the same thing
+         *     and spends that code. If signing in is what is blocked, go to `/auth/2fa/recover`.
          */
         post: {
             parameters: {
@@ -6278,6 +6833,150 @@ export interface paths {
                 };
                 /** @description Not enrolled, wrong password, or a wrong code. */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/2fa/recover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Switch off two factor with the recovery code
+         * @description For when the authenticator is gone but signing in still works, which is the case
+         *     unless `2fa/login` was switched on. Use this to get back into a space that asks
+         *     for a code. If signing in is what is blocked, recover at `/auth/2fa/recover`
+         *     instead, since this path needs a session.
+         *
+         *     Takes the account password and the recovery code handed out by `2fa/enable`.
+         *     **Two factor is switched off**, rather than the code standing in for a live one:
+         *     whoever is here has lost the authenticator, so leaving the factor on would only
+         *     lock them out again. Spaces that asked this account for a code stop asking; spaces
+         *     whose owner demands one stay shut until an authenticator is enrolled again.
+         *
+         *     The recovery code dies with it. Enroll again to get a new one.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "password": "secret123",
+                     *       "recoveryCode": "4T8GX-P1JQZ-7NMKD-W2YRH"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["TwoFactorRecoverBody"];
+                };
+            };
+            responses: {
+                /** @description Two factor switched off. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TwoFactorDisableResponse"];
+                    };
+                };
+                /** @description Not enrolled, wrong password, or a wrong recovery code. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/2fa/recovery-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace the recovery code
+         * @description Issues a new recovery code and throws the old one away, for when the saved copy is
+         *     lost but the authenticator still works. Needs the account password and a live
+         *     code, the same gate as `2fa/disable`: handing out a fresh recovery code to a
+         *     borrowed session would be handing over the account.
+         *
+         *     As with enrollment, the code is in the response and never shown again.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TwoFactorDisableBody"];
+                };
+            };
+            responses: {
+                /** @description The new recovery code, to show once. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TwoFactorEnableResponse"];
+                    };
+                };
+                /** @description Not enrolled, wrong password, or a wrong code. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -6477,6 +7176,8 @@ export interface components {
             realtime: components["schemas"]["RealtimeSummary"];
             /** @description Whether an authenticator is enrolled, which space locks can ask for. */
             twoFactor: components["schemas"]["TwoFactorSummary"];
+            /** @description Push notifications: whether this server can send them at all. */
+            push: components["schemas"]["PushSummary"];
             /** @description Latest active subscription, if any. */
             subscription?: components["schemas"]["Subscription"];
         };
@@ -6500,6 +7201,14 @@ export interface components {
         };
         /** @description Whether this account has an authenticator enrolled. */
         TwoFactorSummary: {
+            /** @description An authenticator is enrolled. Spaces can then ask for a code. */
+            enabled: boolean;
+            /** @description Signing in also asks for a code. Off by default even when `enabled`, and always false when `enabled` is false. Toggle it at `POST /client/v1/account/2fa/login`. */
+            onLogin: boolean;
+        };
+        /** @description Whether this server is configured to send push notifications. */
+        PushSummary: {
+            /** @description False when the server has no Firebase credentials. There is then nothing to register a device for, and the notification settings can stay hidden. */
             enabled: boolean;
         };
         /** @description Signed Ably TokenRequest. Pass it to the Ably SDK unchanged, it is not meant to be read. The token may only subscribe, and only to the user's own channel. */
@@ -6548,13 +7257,35 @@ export interface components {
             deviceName?: string;
         };
         LoginResponse: {
-            /** @description JWT to send in the `oc-token` header. */
-            token: string;
+            /** @description JWT to send in the `oc-token` header. Absent when a code is still owed. */
+            token?: string;
             /** @enum {string|null} */
-            plan: "free" | "pro" | null;
+            plan?: "free" | "pro" | null;
             /** @description True when this login reopened an account that was closed. */
             reopened?: boolean;
             message?: string;
+            /** @description Present and true when the account asks for an authenticator code. There is no token yet: post `challenge` and the code to `auth/2fa` to finish. */
+            twoFactorRequired?: boolean;
+            /** @description Opaque, single login, valid five minutes. Only meaningful to `auth/2fa`. */
+            challenge?: string;
+            /** @description Present and true only from `auth/2fa/recover`: the recovery code was spent, so two factor is now off and this account signs in with its password alone. Say so, and offer to enroll again, which is also what issues a new recovery code. */
+            twoFactorDisabled?: boolean;
+        };
+        TwoFactorLoginBody: {
+            /** @description The `challenge` that `login` answered with. */
+            challenge: string;
+            /** @description The 6 digit code from the authenticator app. */
+            code: string;
+            /** @description What this device is called in the account's list of sessions, e.g. "Chrome on Mac". */
+            deviceName?: string;
+        };
+        TwoFactorRecoverLoginBody: {
+            /** @description The `challenge` that `login` answered with. */
+            challenge: string;
+            /** @description The recovery code from enrollment. Dashes and case do not matter. */
+            recoveryCode: string;
+            /** @description What this device is called in the account's list of sessions, e.g. "Chrome on Mac". */
+            deviceName?: string;
         };
         SignupBody: {
             /** @description 3 to 250 alphanumeric characters. */
@@ -7225,6 +7956,17 @@ export interface components {
             /** @description The 6 digit code from the authenticator app. */
             code: string;
         };
+        TwoFactorLoginToggleBody: {
+            /** @description True to ask for a code when signing in, false to stop asking. */
+            enabled: boolean;
+            /** @description A live code, proving the authenticator is in hand before login depends on it. */
+            code: string;
+        };
+        TwoFactorLoginToggleResponse: {
+            /** @description Whether signing in now asks for a code. */
+            onLogin: boolean;
+            message: string;
+        };
         TwoFactorDisableBody: {
             /** @description The account password. */
             password: string;
@@ -7235,6 +7977,17 @@ export interface components {
             /** @description Spaces that stopped asking this account for a code. */
             spacesAffected: number;
             message: string;
+        };
+        TwoFactorEnableResponse: {
+            /** @description The one recovery code for this account, and the only time it is returned. It is what gets the user back in if the authenticator is lost, so show it and make them save it before moving on. Spending it switches two factor off; it is not a stand-in for a code. Replace it with `account/2fa/recovery-code`. */
+            recoveryCode: string;
+            message: string;
+        };
+        TwoFactorRecoverBody: {
+            /** @description The account password. */
+            password: string;
+            /** @description The recovery code from enrollment. Dashes and case do not matter. */
+            recoveryCode: string;
         };
         /**
          * @description A factor a space can ask for. Each one is personal to the member who sets it up.
@@ -7317,6 +8070,49 @@ export interface components {
             code: string;
             /** @description The account password. Both halves are required. */
             password: string;
+        };
+        PushRegisterBody: {
+            /** @description The Firebase registration token of this app install. */
+            token: string;
+            /** @enum {string} */
+            platform: "ios" | "android";
+            /** @description What to call this device in the user's own list, e.g. "iPhone 15". */
+            deviceName?: string;
+        };
+        PushRegisterResponse: {
+            /** @description Devices this account now has registered. */
+            devices: number;
+            /** @description Whether this server can actually send to them. */
+            enabled: boolean;
+            message: string;
+        };
+        PushUnregisterBody: {
+            /** @description The same token that was registered. */
+            token: string;
+        };
+        /** @description Every category as it will actually be applied, with defaults filled in, so this is what will happen rather than what was stored. */
+        PushPreferences: {
+            /** @description Someone else posted in a space this account is in. On by default. */
+            spaceActivity: boolean;
+            /** @description This account was invited to a space. On by default. */
+            invites: boolean;
+            /** @description Product news, which is not about this account. Off until asked for. */
+            announcements: boolean;
+        };
+        /** @description Only the categories sent are changed. Send at least one. */
+        PushPreferencesBody: {
+            spaceActivity?: boolean;
+            invites?: boolean;
+            announcements?: boolean;
+        };
+        PushPreferencesResponse: {
+            /** @description Whether this server can send notifications at all, regardless of these switches. */
+            enabled: boolean;
+            /** @description Devices registered to this account. */
+            devices: number;
+            preferences: components["schemas"]["PushPreferences"];
+            /** @description Present when the preferences were just changed. */
+            message?: string;
         };
     };
     responses: {
