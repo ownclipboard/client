@@ -64,9 +64,18 @@ export const PLAN_FAQ = [
     answer:
       "With crypto (BTC, USDT and many more) through NowPayments. You are redirected to their invoice page and back here when done."
   },
-  { question: "What happens when I cancel?", answer: "You are moved to the free plan and Pro features are disabled." },
   {
-    question: "Do I keep my files if I cancel?",
+    question: "Is the trial really free?",
+    answer:
+      `${TRIAL_MONTHS} months of Pro with no payment and no card. One per account, though: end it early and it cannot be started again.`
+  },
+  {
+    question: "What happens when Pro ends?",
+    answer:
+      "You are moved to the free plan and Pro features are disabled. Paid time is prepaid rather than a recurring charge, so there is nothing to cancel and it runs to its end."
+  },
+  {
+    question: "Do I keep my files when Pro ends?",
     answer:
       "Files on your own owns3 server are untouched. Files we host stay put, but uploads pause until you renew Pro or connect your own server."
   }

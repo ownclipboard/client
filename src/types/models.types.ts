@@ -6,6 +6,8 @@ export type OwnClip = {
   folder: string;
   /** The clip content. Ciphertext when encrypted. Always "File Clip" for file clips (the title holds the file name). */
   context: string;
+  /** Bytes of the content for text and url clips, of the upload for file clips. `human` is the same number already formatted. */
+  size: { human: string; bytes: number };
   /** Present on file clips. */
   /** `thumbnail` is true when a 200x200 version exists. Absent on clips uploaded before thumbnails did. */
   file?: { publicId: string; ext: string; thumbnail?: boolean };

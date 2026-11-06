@@ -139,7 +139,7 @@ function download() {
 
     <template #footer>
       <span v-if="clip" class="mr-auto text-xs text-muted">
-        <template v-if="isFile && clip.file?.ext">{{ clip.file.ext.toUpperCase() }} file</template>
+        <template v-if="isFile">{{ clip.size.human }}<span v-if="clip.file?.ext"> · {{ clip.file.ext.toUpperCase() }} file</span></template>
         <template v-else-if="clip">{{ clip.context.length.toLocaleString() }} characters</template>
       </span>
       <Button variant="ghost" @click="closeClipPreview">Close</Button>

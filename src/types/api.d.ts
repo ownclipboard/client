@@ -526,6 +526,13 @@ export interface paths {
          *     there is nothing to register a device for and the notification settings can stay
          *     hidden. What an account wants to be notified about lives at
          *     `GET /client/v1/push/preferences`.
+         *
+         *     `trial.used` says the free Pro trial has been taken on this account, which can only
+         *     happen once. Hide the offer when it is true: `POST /client/v1/account/set-plan` with
+         *     `pro` will refuse. It stays true for a trial that ran out **and** for one given up
+         *     early, neither of which `subscription` can be read for: a given up trial is
+         *     cancelled, and `subscription` only reports active ones. `trial.months` is how long
+         *     the trial runs, so button copy does not have to hardcode it.
          */
         get: {
             parameters: {
@@ -6032,8 +6039,27 @@ export interface paths {
         put?: never;
         /**
          * Set plan
-         * @description Sets the user's plan. Choosing `pro` creates a six month trial subscription.
-         *     Paid Pro time is bought through `/client/v1/account/subscribe`.
+         * @description Sets the user's plan. Choosing `pro` starts the six month free trial; paid Pro time
+         *     is bought through `/client/v1/account/subscribe`.
+         *
+         *     **The trial is once per account, ever.** Asking for `pro` again after the trial has
+         *     been used is a 400, whether it ran out or was given up early, and the only way on
+         *     to Pro from there is to subscribe.
+         *
+         *     Do not wait for that 400 to find out: `GET /client/v1/ping` answers `trial.used`,
+         *     which is true once the trial is spent. Read it and hide the offer, rather than
+         *     showing a button that fails. `trial.months` is the length, so the label does not
+         *     have to hardcode it.
+         *
+         *     Choosing `free` while the trial is running **gives up the rest of it**. There is no
+         *     pausing and no picking it back up later, so confirm it with the user before calling.
+         *     Choosing `free` while there is **paid** time left is a 400 instead: a paid period is
+         *     prepaid rather than a recurring charge, so there is nothing to stop, and dropping
+         *     the plan would only cut off access already paid for. It ends on its own.
+         *
+         *     Subscribing does not throw away trial days that are left: the paid period starts
+         *     when the trial ends, so six months of free Pro is six months of free Pro whenever
+         *     it is paid for.
          */
         post: {
             parameters: {
@@ -6062,7 +6088,12 @@ export interface paths {
                         "application/json": components["schemas"]["MessageResponse"];
                     };
                 };
-                /** @description Validation error or plan already set. */
+                /**
+                 * @description Validation error, the plan is already set, the trial has already been used
+                 *     (`ping.trial.used` says so in advance), or there is paid Pro time that cannot
+                 *     be given up. The paid case carries `expiresAt` so the client can say when it
+                 *     ends.
+                 */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -7090,7 +7121,12 @@ export interface components {
             folder: string;
             /** @description The clip content. Ciphertext when `encrypted` is true. Always "File Clip" for file clips. */
             context: string;
-            /** @description Present on file clips (`type` is `file`). The file name is the default title; size is on the clip. */
+            /** @description How big the clip is: bytes of the content for text and url clips, of the upload for file clips. `human` is the same number already formatted, e.g. "1.2 MB". */
+            size: {
+                human: string;
+                bytes: number;
+            };
+            /** @description Present on file clips (`type` is `file`). The file name is the clip's default title, and the clip's `size` is the file's size. */
             file?: components["schemas"]["FileSummary"];
             locked?: boolean | null;
             favorite?: boolean | null;
@@ -7178,6 +7214,8 @@ export interface components {
             twoFactor: components["schemas"]["TwoFactorSummary"];
             /** @description Push notifications: whether this server can send them at all. */
             push: components["schemas"]["PushSummary"];
+            /** @description The free Pro trial: whether it has been used, and how long it runs. */
+            trial: components["schemas"]["TrialSummary"];
             /** @description Latest active subscription, if any. */
             subscription?: components["schemas"]["Subscription"];
         };
@@ -7210,6 +7248,17 @@ export interface components {
         PushSummary: {
             /** @description False when the server has no Firebase credentials. There is then nothing to register a device for, and the notification settings can stay hidden. */
             enabled: boolean;
+        };
+        /** @description The once-per-account free Pro trial. */
+        TrialSummary: {
+            /**
+             * @description True once the trial has been taken, and it can only be taken once. Hide the offer when it is true, because `POST /client/v1/account/set-plan` with `pro` will refuse.
+             *
+             *     Covers a trial that ran out and one given up early, neither of which `subscription` is reliable for: a given up trial is cancelled, and only active ones are reported there.
+             */
+            used: boolean;
+            /** @description How many months the trial runs, so button copy need not hardcode it. */
+            months: number;
         };
         /** @description Signed Ably TokenRequest. Pass it to the Ably SDK unchanged, it is not meant to be read. The token may only subscribe, and only to the user's own channel. */
         RealtimeTokenResponse: {
@@ -7264,9 +7313,9 @@ export interface components {
             /** @description True when this login reopened an account that was closed. */
             reopened?: boolean;
             message?: string;
-            /** @description Present and true when the account asks for an authenticator code. There is no token yet: post `challenge` and the code to `auth/2fa` to finish. */
+            /** @description Present and true when the account asks for an authenticator code. There is no token yet: post `challenge` and the code to `auth/2fa` to finish, or `challenge` and the recovery code to `auth/2fa/recover` if the authenticator is lost. */
             twoFactorRequired?: boolean;
-            /** @description Opaque, single login, valid five minutes. Only meaningful to `auth/2fa`. */
+            /** @description Opaque, single login, valid five minutes. Only meaningful to `auth/2fa` and `auth/2fa/recover`. */
             challenge?: string;
             /** @description Present and true only from `auth/2fa/recover`: the recovery code was spent, so two factor is now off and this account signs in with its password alone. Say so, and offer to enroll again, which is also what issues a new recovery code. */
             twoFactorDisabled?: boolean;

@@ -35,6 +35,13 @@ export const useAuthUser = defineStore("authUser", () => {
   const twoFactor = ref<components["schemas"]["TwoFactorSummary"]>();
   const hasAuthenticator = computed(() => !!twoFactor.value?.enabled);
 
+  /**
+   * The free Pro trial: whether it is spent, and how many months it runs.
+   * `subscription` cannot answer the first question, because a trial given up
+   * early is cancelled and only active subscriptions are reported there.
+   */
+  const trial = ref<components["schemas"]["TrialSummary"]>();
+
   /** Files can only be uploaded once storage is connected and usable. */
   const canUpload = computed(() => !!storage.value?.connected);
 
@@ -93,7 +100,7 @@ export const useAuthUser = defineStore("authUser", () => {
     clearSession();
   }
 
-  return { data, isLogged, subscription, pending, storage, realtime, twoFactor, hasAuthenticator, canUpload, uploadBlockedReason, clearSession, signOut, signOutEverywhere };
+  return { data, isLogged, subscription, pending, storage, realtime, twoFactor, hasAuthenticator, trial, canUpload, uploadBlockedReason, clearSession, signOut, signOutEverywhere };
 });
 
 export type AuthUserStore = ReturnType<typeof useAuthUser>;

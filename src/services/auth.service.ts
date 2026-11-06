@@ -10,6 +10,7 @@ type PingResponse = {
   storage: StorageSummary;
   realtime: components["schemas"]["RealtimeSummary"];
   twoFactor: components["schemas"]["TwoFactorSummary"];
+  trial: components["schemas"]["TrialSummary"];
   subscription: SubStat;
 };
 
@@ -29,7 +30,7 @@ export async function refreshAuthData(st: AuthUserStore): Promise<AuthRefresh> {
   }
 
   try {
-    const { user, storage, realtime, twoFactor, subscription } = await $http.get<any, PingResponse>("/ping");
+    const { user, storage, realtime, twoFactor, trial, subscription } = await $http.get<any, PingResponse>("/ping");
 
     // A null user is a 200 that still means signed out. Without this the app
     // sits on its loading screen with no session and no way out of it.
@@ -42,6 +43,7 @@ export async function refreshAuthData(st: AuthUserStore): Promise<AuthRefresh> {
     st.storage = storage;
     st.realtime = realtime;
     st.twoFactor = twoFactor;
+    st.trial = trial;
     st.subscription = subscription;
     return "ok";
   } catch (e: any) {

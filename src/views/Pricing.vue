@@ -36,6 +36,7 @@ import Badge from "../components/ui/Badge.vue";
 import Dialog from "../components/ui/Dialog.vue";
 import Select from "../components/ui/Select.vue";
 import PlanComparison from "../components/pricing/PlanComparison.vue";
+import { askToConfirm } from "../components/ConfirmHandler";
 import { MONTHLY_PRICE, PLAN_FAQ, TRIAL_MONTHS, YEARLY_PRICE } from "../data/plans";
 import StorageSetupGuide from "../components/storage/StorageSetupGuide.vue";
 
@@ -53,6 +54,25 @@ const subscribeForm = reactive({
 
 const hasActiveSubscription = computed(() => !!authUser.subscription && !authUser.subscription.expired);
 const isPro = computed(() => authUser.data?.plan === "pro");
+
+// The trial is a subscription too, so Pro time on the account is either free
+// time that can be given up or paid time that cannot. The two are offered and
+// ended differently, and only `type` tells them apart.
+const sub = computed(() => authUser.subscription);
+const onTrial = computed(() => hasActiveSubscription.value && sub.value?.type === "trial");
+const onPaidPro = computed(() => hasActiveSubscription.value && sub.value?.type !== "trial");
+
+// Whether the one trial this account gets is spent. `ping` answers it outright,
+// because nothing else can: a trial given up early is cancelled, and only
+// active subscriptions are reported. A server too old to say falls back to the
+// old guess, that any subscription on record means the trial is gone.
+const trialUsed = computed(() => authUser.trial?.used ?? !!authUser.subscription);
+const trialMonths = computed(() => authUser.trial?.months ?? TRIAL_MONTHS);
+
+function onDate(date?: string) {
+  if (!date) return "";
+  return new Date(date).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+}
 
 const computedPrice = computed(() => {
   const price = subscribeForm.type === "monthly" ? MONTHLY_PRICE : YEARLY_PRICE;
@@ -157,19 +177,36 @@ function startPolling() {
 async function choosePlan(btn: ILoadingButton<"free" | "pro">) {
   const plan = btn.data;
 
-  // Users who already had a subscription (trial used) pay via NowPayments.
-  if (plan === "pro" && authUser.subscription) {
+  // The trial is once per account, so once it is spent Pro is paid for through
+  // NowPayments. Asking for it again would only be refused.
+  if (plan === "pro" && trialUsed.value) {
     btn.stopLoading();
     showPaymentModal.value = true;
     return;
+  }
+
+  // Free during the trial gives up the days that are left, and the trial is one
+  // per account for good, so there is no starting it again afterwards.
+  if (plan === "free" && onTrial.value) {
+    const ok = await askToConfirm({
+      title: "End your trial now?",
+      message: `Your free Pro trial runs to ${onDate(sub.value?.expiresAt)}. Switching gives up the rest of it, and the trial is once per account, so it cannot be started again.`,
+      confirmLabel: "End trial",
+      danger: true
+    });
+    if (!ok) return btn.stopLoading();
   }
 
   try {
     await $http.post("account/set-plan", { plan });
     await refreshAuthData(authUser);
     await $router.push({ name: "clipboard" });
-  } catch (res) {
+  } catch (res: any) {
     btn.stopLoading();
+    // Paid Pro time is prepaid rather than a recurring charge, so the api
+    // refuses to drop it and says when it runs out instead.
+    const until = res?.response?.data?.expiresAt;
+    if (until) return $alert.warning(`Your paid Pro time runs to ${onDate(until)}. It ends on its own, so there is nothing to cancel.`);
     return alertRequestError(res);
   }
 }
@@ -244,9 +281,11 @@ onBeforeUnmount(stopPolling);
 
 const proCta = computed(() => {
   if (hasPendingInvoice.value) return { label: "Payment pending", hint: "Complete or cancel it above" };
+  // Paid time is added after the trial rather than over it, so no free days are lost.
+  if (onTrial.value) return { label: "Subscribe to Pro", hint: "Starts when your trial ends" };
   if (hasActiveSubscription.value) return { label: "Extend Pro", hint: "Added to your current expiry" };
-  if (authUser.subscription) return { label: "Subscribe to Pro", hint: MONTHLY_ENABLED ? "Monthly or yearly" : "Billed yearly" };
-  return { label: "Try Pro free", hint: `${TRIAL_MONTHS} months, no payment` };
+  if (trialUsed.value) return { label: "Subscribe to Pro", hint: MONTHLY_ENABLED ? "Monthly or yearly" : "Billed yearly" };
+  return { label: "Try Pro free", hint: `${trialMonths.value} months, no payment` };
 });
 </script>
 
@@ -328,16 +367,21 @@ const proCta = computed(() => {
           <div class="mt-3 text-3xl font-semibold tracking-tight text-fg">$0</div>
           <p class="mt-1 text-sm text-muted">Forever. Clips, folders, encryption, and file uploads to your own owns3 server.</p>
           <Button
-            v-if="!hasActiveSubscription"
+            v-if="!onPaidPro"
             class="mt-5"
             block
+            :variant="onTrial ? 'danger' : 'secondary'"
             :click="choosePlan"
             data="free"
             :disabled="authUser.data?.plan === 'free'"
             message="Switching"
           >
-            {{ authUser.data?.plan === "free" ? "Your current plan" : "Use the free plan" }}
+            {{ authUser.data?.plan === "free" ? "Your current plan" : onTrial ? "End trial and use Free" : "Use the free plan" }}
           </Button>
+          <p v-if="onTrial" class="mt-2 text-center text-xs text-faint">Gives up the rest of your trial, for good</p>
+          <p v-else-if="onPaidPro" class="mt-5 text-sm text-muted">
+            Your paid Pro time runs to {{ onDate(sub?.expiresAt) }}. It ends on its own, so there is nothing to cancel.
+          </p>
         </div>
       </Card>
 
@@ -378,6 +422,10 @@ const proCta = computed(() => {
   <!-- Subscribe dialog -->
   <Dialog :open="showPaymentModal" title="Subscribe to Pro" description="Paid in crypto through NowPayments. You'll be sent to their invoice page." @close="showPaymentModal = false">
     <form class="space-y-5" @submit.prevent>
+      <p v-if="onTrial" class="rounded-md bg-sunken px-3 py-2 text-xs text-muted">
+        Your trial runs to {{ onDate(sub?.expiresAt) }}. Paid time starts from there, so none of the free months are lost.
+      </p>
+
       <div class="grid grid-cols-2 gap-3">
         <Select v-model.number="subscribeForm.duration" label="Duration">
           <option v-for="i in 5" :key="i" :value="i">{{ i }}</option>

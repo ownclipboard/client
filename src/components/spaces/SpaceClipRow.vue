@@ -103,6 +103,7 @@ const asOwnClip = computed<OwnClip>(() => ({
   type: props.clip.type as OwnClip["type"],
   folder: props.clip.folder,
   context: props.clip.context,
+  size: props.clip.size,
   file: props.clip.file ? { publicId: props.clip.file.name, ext: props.clip.file.ext } : undefined,
   locked: false,
   favorite: false,
