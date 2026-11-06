@@ -16,7 +16,7 @@ function isOpen(publicId: string) {
 
 <template>
   <nav aria-label="Spaces" class="flex flex-col gap-0.5">
-    <div class="mb-1 flex items-center justify-between px-2">
+    <div class="mb-0.5 flex items-center justify-between px-2">
       <RouterLink
         :to="{ name: 'spaces' }"
         class="text-[11px] font-medium uppercase tracking-wider text-faint hover:text-fg"
@@ -35,12 +35,12 @@ function isOpen(publicId: string) {
       </RouterLink>
     </div>
 
-    <Skeleton v-if="!spacesLoaded" class="mx-2 my-1 h-7" />
+    <Skeleton v-if="!spacesLoaded" class="mx-2 my-0.5 h-6" />
 
     <RouterLink
       v-if="invites.length"
       :to="{ name: 'spaces' }"
-      class="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] text-warn hover:bg-raised"
+      class="flex items-center gap-2.5 rounded-md px-2 py-1 text-[13px] text-warn hover:bg-raised"
       @click="emit('navigate')"
     >
       <span class="flex-1 truncate">{{ invites.length }} {{ invites.length === 1 ? "invitation" : "invitations" }}</span>
@@ -52,7 +52,7 @@ function isOpen(publicId: string) {
       :key="space.publicId"
       :to="{ name: 'space', params: { spaceId: space.publicId } }"
       :class="[
-        'flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] transition-colors',
+        'flex items-center gap-2.5 rounded-md px-2 py-1 text-[13px] transition-colors',
         isOpen(space.publicId) ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-raised hover:text-fg'
       ]"
       @click="emit('navigate')"

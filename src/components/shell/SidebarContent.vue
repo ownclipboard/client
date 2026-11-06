@@ -20,45 +20,51 @@ const links = [
 </script>
 
 <template>
-  <div class="flex h-full flex-col gap-4 p-3">
+  <div class="flex h-full flex-col p-3">
     <Brand />
 
-    <FolderNav @navigate="emit('navigate')" />
+    <!-- The lists are the only part that scrolls, so however many folders and
+         spaces there are, the account menu stays where it is on a short screen.
+         min-h-0 is what lets this shrink inside the column instead of pushing
+         the menu off the bottom. -->
+    <div class="scroll-thin -mr-2 mt-3 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-2">
+      <FolderNav @navigate="emit('navigate')" />
 
-    <SpaceNav @navigate="emit('navigate')" />
+      <SpaceNav @navigate="emit('navigate')" />
 
-    <nav aria-label="Account" class="flex flex-col gap-0.5">
-      <span class="mb-1 px-2 text-[11px] font-medium uppercase tracking-wider text-faint">Account</span>
-      <RouterLink v-for="link in links" :key="link.name" :to="link.route" custom v-slot="{ isActive, href, navigate }">
-        <a
-          :href="href"
-          :class="[
-            'flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] transition-colors',
-            isActive ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-raised hover:text-fg'
-          ]"
-          @click="navigate($event); emit('navigate')"
+      <nav aria-label="Account" class="flex flex-col gap-0.5">
+        <span class="mb-0.5 px-2 text-[11px] font-medium uppercase tracking-wider text-faint">Account</span>
+        <RouterLink v-for="link in links" :key="link.name" :to="link.route" custom v-slot="{ isActive, href, navigate }">
+          <a
+            :href="href"
+            :class="[
+              'flex items-center gap-2.5 rounded-md px-2 py-1 text-[13px] transition-colors',
+              isActive ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-raised hover:text-fg'
+            ]"
+            @click="navigate($event); emit('navigate')"
+          >
+            <component :is="link.icon" class="h-4 w-4 opacity-80" />
+            <span :class="['flex-1', isActive ? 'font-medium text-fg' : 'text-fg/90']">{{ link.name }}</span>
+            <Badge v-if="link.name === 'Plan' && authUser.data?.plan" :variant="authUser.data.plan === 'pro' ? 'accent' : 'neutral'" uppercase>
+              {{ authUser.data.plan }}
+            </Badge>
+          </a>
+        </RouterLink>
+
+        <!-- Not a route: it opens the dialog mounted on the shell. Closing the
+             mobile drawer first keeps the dialog from opening behind it. -->
+        <button
+          type="button"
+          class="flex items-center gap-2.5 rounded-md px-2 py-1 text-[13px] text-muted transition-colors hover:bg-raised hover:text-fg"
+          @click="emit('navigate'); openQrSignIn()"
         >
-          <component :is="link.icon" class="h-4 w-4 opacity-80" />
-          <span :class="['flex-1', isActive ? 'font-medium text-fg' : 'text-fg/90']">{{ link.name }}</span>
-          <Badge v-if="link.name === 'Plan' && authUser.data?.plan" :variant="authUser.data.plan === 'pro' ? 'accent' : 'neutral'" uppercase>
-            {{ authUser.data.plan }}
-          </Badge>
-        </a>
-      </RouterLink>
+          <QrCodeIcon class="h-4 w-4 opacity-80" />
+          <span class="flex-1 text-left text-fg/90">Sign in another device</span>
+        </button>
+      </nav>
+    </div>
 
-      <!-- Not a route: it opens the dialog mounted on the shell. Closing the
-           mobile drawer first keeps the dialog from opening behind it. -->
-      <button
-        type="button"
-        class="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] text-muted transition-colors hover:bg-raised hover:text-fg"
-        @click="emit('navigate'); openQrSignIn()"
-      >
-        <QrCodeIcon class="h-4 w-4 opacity-80" />
-        <span class="flex-1 text-left text-fg/90">Sign in another device</span>
-      </button>
-    </nav>
-
-    <div class="mt-auto border-t border-line pt-3">
+    <div class="mt-2 border-t border-line pt-2">
       <UserMenu />
     </div>
   </div>

@@ -91,7 +91,7 @@ function createFolder(btn: ILoadingButton) {
 
 <template>
   <nav aria-label="Folders" class="flex flex-col gap-0.5">
-    <div class="mb-1 flex items-center justify-between px-2">
+    <div class="mb-0.5 flex items-center justify-between px-2">
       <span class="text-[11px] font-medium uppercase tracking-wider text-faint">Folders</span>
       <button
         type="button"
@@ -105,7 +105,7 @@ function createFolder(btn: ILoadingButton) {
     </div>
 
     <template v-if="!foldersLoaded">
-      <Skeleton v-for="i in 3" :key="i" class="mx-2 my-1 h-7" />
+      <Skeleton v-for="i in 3" :key="i" class="mx-2 my-0.5 h-6" />
     </template>
 
     <template v-for="folder in folders" :key="folder.slug">
@@ -117,7 +117,7 @@ function createFolder(btn: ILoadingButton) {
       >
         <button
           type="button"
-          class="flex min-w-0 flex-1 items-center gap-2.5 px-2 py-1.5 text-left text-[13px]"
+          class="flex min-w-0 flex-1 items-center gap-2.5 px-2 py-1 text-left text-[13px]"
           :aria-current="folder.slug === currentTab ? 'page' : undefined"
           @click="select(folder)"
         >
