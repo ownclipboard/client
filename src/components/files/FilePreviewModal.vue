@@ -5,7 +5,7 @@
  * click rather than something opening the moment a card is picked.
  */
 import { computed, ref, watch } from "vue";
-import { ArrowDownTrayIcon, DocumentIcon } from "@heroicons/vue/20/solid";
+import { ArrowDownTrayIcon, DocumentIcon, TrashIcon } from "@heroicons/vue/20/solid";
 import { getFileUrl, humanFileSize, type StoredFile } from "../../services/files.service";
 import { alertRequestError } from "../../http";
 import { foldersAsObject } from "../../stores/tabs.store";
@@ -15,7 +15,8 @@ import Badge from "../ui/Badge.vue";
 import Spinner from "../ui/Spinner.vue";
 
 const props = defineProps<{ file: StoredFile | null; open: boolean }>();
-const emit = defineEmits<{ (e: "close"): void }>();
+// Deleting is the page's job: it owns the list this file is in.
+const emit = defineEmits<{ (e: "close"): void; (e: "delete"): void }>();
 
 /** Text types the browser reports as something else, e.g. application/json. */
 const TEXT_EXT = ["txt", "md", "json", "csv", "log", "xml", "yml", "yaml", "js", "ts", "css", "html", "sh"];
@@ -143,9 +144,13 @@ async function download() {
     </div>
 
     <template #footer>
-      <span v-if="file" class="mr-auto text-xs text-muted">
+      <span v-if="file" class="text-xs text-muted">
         {{ humanFileSize(file.size) }}<template v-if="file.ext"> · {{ file.ext.toUpperCase() }} file</template>
       </span>
+      <!-- Kept on the left, away from Download: the two are one slip apart otherwise. -->
+      <Button variant="danger" size="sm" class="mr-auto" @click="emit('delete')">
+        <TrashIcon class="h-4 w-4" /> Delete
+      </Button>
       <Button variant="ghost" @click="emit('close')">Close</Button>
       <Button variant="primary" :disabled="file?.status === 'pending'" @click="download">
         <ArrowDownTrayIcon class="h-4 w-4" /> Download

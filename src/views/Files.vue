@@ -14,11 +14,13 @@
  */
 import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { ArrowDownTrayIcon, ArrowPathIcon, DocumentIcon, FilmIcon, MusicalNoteIcon, PhotoIcon } from "@heroicons/vue/20/solid";
+import { ArrowDownTrayIcon, ArrowPathIcon, DocumentIcon, FilmIcon, MusicalNoteIcon, PhotoIcon, TrashIcon } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
-import { alertRequestError } from "../http";
-import { listFiles, getFileUrl, humanFileSize, type FilePreview, type StoredFile } from "../services/files.service";
-import { folders } from "../stores/tabs.store";
+import { alertDeleteError, alertRequestError } from "../http";
+import { deleteFile, listFiles, getFileUrl, humanFileSize, type FilePreview, type StoredFile } from "../services/files.service";
+import { folders, foldersAsObject } from "../stores/tabs.store";
+import { askToConfirm } from "../components/ConfirmHandler";
+import { askForPassword } from "../components/PasswordPromptHandler";
 import { $events } from "../events";
 import type { RealtimeChange } from "../services/realtime.service";
 import { useAuthUser } from "../stores/auth.store";
@@ -134,6 +136,54 @@ function openPreview(file: StoredFile) {
 }
 
 /**
+ * Deleting the file deletes the clip it arrived as, which is what takes the
+ * object out of storage too. The clipboard asks the same way, so a folder with
+ * a password asks for it here instead of for a confirmation.
+ */
+async function removeFile(file: StoredFile, btn?: ILoadingButton) {
+  const folder = foldersAsObject.value[file.folder];
+  let password: string | undefined;
+
+  if (folder?.hasPassword) {
+    password = await askForPassword("Enter the folder password to delete this file.");
+    if (!password) return btn?.stopLoading();
+  } else {
+    const ok = await askToConfirm({
+      title: "Delete this file?",
+      message: `"${file.title || file.name}" is taken out of your storage as well, and that cannot be undone.`,
+      confirmLabel: "Delete",
+      danger: true
+    });
+    if (!ok) return btn?.stopLoading();
+  }
+
+  try {
+    await deleteFile(file.publicId, password);
+    files.value.data = files.value.data.filter((f) => f.publicId !== file.publicId);
+    files.value.total = Math.max(0, files.value.total - 1);
+    if (folder) folder.contents = Math.max(0, folder.contents - 1);
+    // The last file on a page leaves nothing to look at, so step back a page.
+    if (!files.value.data.length && files.value.page > 1) await loadFiles(files.value.page - 1);
+  } catch (e) {
+    // Storage is what holds the file, so a disconnected one is the likely cause.
+    alertDeleteError(e, !!authUser.storage?.connected);
+  } finally {
+    btn?.stopLoading();
+  }
+}
+
+function deleteFromTile(btn: ILoadingButton, file: StoredFile) {
+  return removeFile(file, btn);
+}
+
+/** Closed first: the file it is showing is on its way out. */
+function deleteFromPreview() {
+  const file = previewing.value;
+  previewOpen.value = false;
+  if (file) removeFile(file);
+}
+
+/**
  * Download one file. The tab is opened before the signed url is fetched, so the
  * browser does not treat the later navigation as a popup. The signed url is used
  * rather than the preview one: that key expires and may be cached.
@@ -232,22 +282,34 @@ async function downloadFile(btn: ILoadingButton, file: StoredFile) {
         </div>
         </button>
 
-        <IconButton
-          label="Download"
-          size="sm"
-          variant="subtle"
-          class="absolute right-2 top-2 shadow-card"
-          :disabled="file.status === 'pending'"
-          :click="downloadFile"
-          :data="file"
-        >
-          <ArrowDownTrayIcon />
-        </IconButton>
+        <div class="absolute right-2 top-2 flex gap-1">
+          <IconButton
+            label="Download"
+            size="sm"
+            variant="subtle"
+            class="shadow-card"
+            :disabled="file.status === 'pending'"
+            :click="downloadFile"
+            :data="file"
+          >
+            <ArrowDownTrayIcon />
+          </IconButton>
+          <IconButton
+            label="Delete"
+            size="sm"
+            variant="subtle"
+            class="shadow-card"
+            :click="deleteFromTile"
+            :data="file"
+          >
+            <TrashIcon />
+          </IconButton>
+        </div>
       </div>
     </div>
 
     <Paginator :data="files" @on-page-change="loadFiles" />
 
-    <FilePreviewModal :file="previewing" :open="previewOpen" @close="previewOpen = false" />
+    <FilePreviewModal :file="previewing" :open="previewOpen" @close="previewOpen = false" @delete="deleteFromPreview" />
   </div>
 </template>

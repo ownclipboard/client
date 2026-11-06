@@ -122,6 +122,15 @@ export async function getFileUrl(filePublicId: string, thumb = false) {
   return url;
 }
 
+/**
+ * Remove a file. An upload arrives as a clip of its own, so this is the clip
+ * delete, which is also what takes the object out of storage. A folder with a
+ * password wants that password, exactly as deleting any other clip does.
+ */
+export function deleteFile(filePublicId: string, password?: string) {
+  return $http.post<any, components["schemas"]["MessageResponse"]>(`clip/${filePublicId}/delete`, { password });
+}
+
 export function getOwns3Status() {
   return $http.get<any, Owns3Status>("account/owns3");
 }
