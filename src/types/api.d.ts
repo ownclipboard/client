@@ -1738,6 +1738,11 @@ export interface paths {
         /**
          * Invite an account by username (owner)
          * @description The invitee has to accept. Up to 10 members on a free owner, 100 on Pro, pending invites included.
+         *
+         *     A block between the two accounts refuses the invite, whichever side made it. The
+         *     403 for that case deliberately does not say a block is why, because telling the
+         *     owner would tell them who blocked them: show the message as it comes back and do
+         *     not reword it into a block, a sign-up problem or a retry prompt.
          */
         post: {
             parameters: {
@@ -1773,7 +1778,10 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description The space is full. */
+                /**
+                 * @description The space is full, or the invite is refused between these two accounts.
+                 *     Show the message as returned; it will not distinguish the two.
+                 */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2511,6 +2519,140 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client/v1/space/{space}/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Clips reported in this space, for its owner
+         * @description What members have reported in this space, newest first, for the owner to act on.
+         *     Owner only. `status` filters by `open`, `dismissed` or `actioned`, and defaults to
+         *     `open`, which is the queue.
+         *
+         *     Each report carries who reported it, who wrote the clip, the reason, the member's
+         *     note, and a `snapshot` of what the clip said when it was reported. The snapshot is
+         *     the point: it is still there if the author edits or deletes the clip afterwards.
+         *     `clip` is the clip's publicId, or null once the clip is gone.
+         *
+         *     Two ways to answer one: delete the clip with
+         *     `POST space/{space}/clip/{clip}/delete`, which resolves every report about it as
+         *     `actioned`, or leave the clip and close the report with
+         *     `POST space/{space}/report/{report}/dismiss`.
+         *
+         *     If the complaint is about the owner, or about a member who keeps coming back, it
+         *     belongs at `POST account/report`, which reaches the operator instead.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    status?: "open" | "dismissed" | "actioned";
+                };
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Reports, newest first, and how many are still open. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceReportsResponse"];
+                    };
+                };
+                /**
+                 * @description Space not found, or the caller is not its owner. A member who is not the
+                 *     owner gets this and not a 403, so owning a space cannot be probed for.
+                 */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                423: components["responses"]["SpaceLocked"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/report/{report}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close a report without deleting the clip
+         * @description The owner's answer when a reported clip is to stay. Owner only, and only for
+         *     reports in this space. Deleting the clip resolves its reports on its own, so this
+         *     is for the other outcome.
+         *
+         *     A dismissed report is kept, not deleted: it is the record of what was decided.
+         *     Dismissing an already resolved report answers 200 and changes nothing.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                    /** @description Report publicId. */
+                    report: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Dismissed. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /**
+                 * @description No such report in this space, or the space was not found, or the caller is
+                 *     not its owner. A non-owner gets this and not a 403.
+                 */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                423: components["responses"]["SpaceLocked"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/client/v1/space/{space}/clips/{folder}": {
         parameters: {
             query?: never;
@@ -2521,6 +2663,12 @@ export interface paths {
         /**
          * List clips of a space folder
          * @description `folder` is optional and defaults to `clipboard`. Files still being uploaded are not listed.
+         *
+         *     Clips by an account this one has blocked, or that has blocked this one, are left
+         *     out, so two members of the same space can be shown different lists of it. Nothing
+         *     marks the gap and the counts and paging are of what this account can see, so do
+         *     not treat a short page as the end of the space or cache one member's list for
+         *     another. `GET account/blocks` is what explains a missing author to the user.
          */
         get: {
             parameters: {
@@ -2577,6 +2725,10 @@ export interface paths {
         /**
          * Search the clips of a space
          * @description Case-insensitive substring search. `title` is searched on every clip, content only on text and link clips.
+         *
+         *     Blocked either way, the author's clips are left out here too, on the same terms as
+         *     `GET space/{space}/clips/{folder}`: a member can search a space and not find a clip
+         *     another member can see.
          */
         get: {
             parameters: {
@@ -2891,8 +3043,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Delete your clip
-         * @description Only the author can, not even the space owner. A file is removed from storage too.
+         * Delete a clip, as its author or the space owner
+         * @description The clip's author can delete it, and so can the space's owner, which is what
+         *     makes a report the owner upholds mean anything. Editing stays the author's
+         *     alone: see `POST space/{space}/clip/{clip}/update`. A file is removed from
+         *     storage too.
+         *
+         *     When the owner deletes a reported clip, every open report about it is resolved
+         *     as `actioned` and `reportsResolved` says how many, so an owner acting from the
+         *     queue at `GET space/{space}/reports` does not have to close them by hand. The
+         *     reports are kept, with their snapshot of what was reported, as the record of
+         *     what was done. Deleting an unreported clip returns no such field.
          */
         post: {
             parameters: {
@@ -2908,16 +3069,16 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Deleted. */
+                /** @description Deleted, with `reportsResolved` when reports about it were closed. */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["MessageResponse"];
+                        "application/json": components["schemas"]["DeleteSpaceClipResponse"];
                     };
                 };
-                /** @description Not the clip's author. */
+                /** @description Neither the clip's author nor the owner of this space. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3141,6 +3302,351 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/clip/{clip}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report a clip to the space owner
+         * @description Hands a clip to the space's owner to deal with, who can delete it or leave it:
+         *     see `GET space/{space}/reports`. Any member can report any clip except their own.
+         *
+         *     What was reported is copied into the report, so the owner still sees what the
+         *     complaint was about if the author edits or deletes the clip first.
+         *
+         *     Reporting is not blocking and does not hide anything by itself. Offer
+         *     `POST account/blocks/add` alongside it, which stops the author's clips reaching
+         *     this member at once without waiting on the owner. If the owner is the problem,
+         *     `POST account/report` goes to the operator instead.
+         *
+         *     Reporting the same clip twice answers 200 without adding a second report.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                    /** @description Clip publicId. */
+                    clip: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "reason": "sexual",
+                     *       "note": "Explicit image posted in a shared folder."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ReportClipBody"];
+                };
+            };
+            responses: {
+                /** @description Report recorded. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReportResponse"];
+                    };
+                };
+                /** @description Validation error, or reporting your own clip. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description No such clip, or the space was not found, or the caller has no part in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                423: components["responses"]["SpaceLocked"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Accounts this account has blocked
+         * @description The accounts this one has blocked, newest first. Blocks made *against* this account
+         *     are deliberately not listed: being told who has blocked you is an invitation to go
+         *     round it.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The block list. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BlockListResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/blocks/add": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Block an account
+         * @description Stops an account reaching this one. Blocking takes effect both ways, whichever
+         *     side made it:
+         *
+         *     - Neither can invite the other to a space, and the invite is refused without
+         *       saying a block is why.
+         *     - In a space they already share, neither sees the other's clips, in listings or
+         *       in search, and neither is notified about them.
+         *
+         *     Nobody is removed from a space by this, so a member keeps their own clips and
+         *     access; leave the space, or ask its owner to remove them, if that is wanted too.
+         *     The blocked account is not told. Blocking twice is not an error.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "username": "someone"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["BlockBody"];
+                };
+            };
+            responses: {
+                /** @description Blocked. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description Validation error, or blocking yourself. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description No account with that username. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/blocks/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unblock an account
+         * @description Undoes this account's own block. If the other side blocked back, that one stands
+         *     and they stay hidden from each other, because a block is only ever the blocker's
+         *     to lift.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BlockBody"];
+                };
+            };
+            responses: {
+                /** @description Unblocked, or there was nothing to undo. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageResponse"];
+                    };
+                };
+                /** @description No account with that username. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report an account or a space
+         * @description For a complaint that no space owner can answer, because the owner may be the
+         *     problem: an abusive username, an invite to a space named to harass, a member who
+         *     keeps coming back. Send `username`, or `space` as a space publicId, or both when
+         *     the complaint is about what someone did in a particular space. A space can be
+         *     reported from an invite, before it is accepted.
+         *
+         *     One clip is reported at `POST space/{space}/clip/{clip}/report` instead, which
+         *     puts it in that space owner's queue.
+         *
+         *     These reach the operator, not another user. Reporting the same thing twice
+         *     answers 200 without adding a second report.
+         *
+         *     **Blocking is the immediate remedy** and is separate: reporting does not stop
+         *     someone reaching you, so offer both in the same place.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "username": "someone",
+                     *       "reason": "abuse",
+                     *       "note": "Invited me to a space named to harass me."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ReportAccountBody"];
+                };
+            };
+            responses: {
+                /** @description Report recorded. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReportResponse"];
+                    };
+                };
+                /** @description Validation error, nothing named to report, or reporting yourself. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description No such account or space. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -8162,6 +8668,78 @@ export interface components {
             preferences: components["schemas"]["PushPreferences"];
             /** @description Present when the preferences were just changed. */
             message?: string;
+        };
+        /**
+         * @description Why something was reported.
+         * @enum {string}
+         */
+        ReportReason: "spam" | "abuse" | "sexual" | "violence" | "illegal" | "other";
+        BlockBody: {
+            /** @description Username of the account to block or unblock. */
+            username: string;
+        };
+        BlockedAccount: {
+            username: string;
+            createdAt: string;
+        };
+        BlockListResponse: {
+            /** @description Accounts this one has blocked, newest first. Blocks made *against* this account are not listed: telling someone who has blocked them is an invitation to go round it. */
+            blocks: components["schemas"]["BlockedAccount"][];
+        };
+        ReportAccountBody: {
+            /** @description Username being reported. Give this, or `space`, or both. */
+            username?: string;
+            /** @description Space publicId being reported. Can be a space this account was only invited to. */
+            space?: string;
+            reason: components["schemas"]["ReportReason"];
+            /** @description The reporter's own words, up to 1000 characters. Never shown to whoever was reported. */
+            note?: string;
+        };
+        ReportClipBody: {
+            reason: components["schemas"]["ReportReason"];
+            /** @description The reporter's own words, up to 1000 characters. Shown to the space owner. */
+            note?: string;
+        };
+        ReportResponse: {
+            /** @description The report's publicId. */
+            report: string;
+            message: string;
+        };
+        /** @description What a clip said when it was reported, kept in case it is edited or deleted after. */
+        ReportSnapshot: {
+            title?: string;
+            /** @description Text of the clip, first 2000 characters. Absent on file clips. */
+            context?: string;
+            /** @description File name, on file clips. */
+            fileName?: string;
+        };
+        /** @description A report in a space, as its owner sees it. */
+        SpaceReport: {
+            publicId: string;
+            reason: components["schemas"]["ReportReason"];
+            note?: string;
+            /** @enum {string} */
+            status: "open" | "dismissed" | "actioned";
+            /** @description Username of the member who reported it. */
+            reportedBy?: string;
+            /** @description Username of the member who wrote the clip. */
+            author?: string;
+            /** @description The clip's publicId, or null once the clip has gone. */
+            clip: string | null;
+            snapshot?: components["schemas"]["ReportSnapshot"];
+            createdAt: string;
+            resolvedAt?: string;
+        };
+        SpaceReportsResponse: {
+            /** @description How many reports in this space are still open, whatever `status` was asked for. */
+            open: number;
+            reports: components["schemas"]["SpaceReport"][];
+        };
+        /** @description Deleting a clip in a space. `reportsResolved` only appears when the clip had open reports against it, which is the owner acting on the queue rather than an author tidying up after themselves. */
+        DeleteSpaceClipResponse: {
+            message: string;
+            /** @description Open reports about this clip that its removal just resolved as `actioned`. */
+            reportsResolved?: number;
         };
     };
     responses: {

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
  * One clip inside a space. Everyone sees every clip, but only its author can
- * edit or delete it, so the row shows who added it and offers those actions to
- * them alone. Anyone can take a copy into another folder of the space, or into
- * their own clipboard.
+ * edit it, so the row shows who added it and offers that to them alone. The
+ * space's owner can delete any clip, which is how a report is acted on.
+ * Anyone can take a copy into another folder of the space, or into their own
+ * clipboard, and anyone can report or block someone else's.
  */
 import { computed, nextTick, onMounted, ref } from "vue";
 import { useClipboard } from "@vueuse/core";
@@ -17,26 +18,31 @@ import {
   DocumentIcon,
   EllipsisHorizontalIcon,
   EyeIcon,
+  FlagIcon,
   InboxArrowDownIcon,
   LinkIcon,
+  NoSymbolIcon,
   PencilSquareIcon,
   TrashIcon
 } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../../http";
 import { askToConfirm } from "../ConfirmHandler";
+import { askToReport } from "../ReportHandler";
 import { askForFolder } from "../FolderPickerHandler";
+import { blockAccount } from "../../services/moderation.service";
 import { previewClip } from "../ClipPreviewHandler";
 import { $alert } from "../ws-alert/ws-alert";
 import {
   deleteSpaceClip,
   getSpaceFileUrl,
   moveSpaceClips,
+  reportSpaceClip,
   transferSpaceClip,
   updateSpaceClip,
   type SpaceClip
 } from "../../services/spaces.service";
-import { currentSpaceFolders } from "../../stores/spaces.store";
+import { currentSpaceFolders, isSpaceOwner, refreshSpaceReports } from "../../stores/spaces.store";
 import { getFolders } from "../../stores/tabs.store";
 import type { OwnClip } from "../../types/models.types";
 import Badge from "../ui/Badge.vue";
@@ -64,6 +70,14 @@ const folderName = computed(
 );
 
 const busy = ref(false);
+
+// The author can delete their own, and the owner can delete anyone's. Only the
+// author can edit, so the two are no longer the same question.
+const canDelete = computed(() => props.clip.mine || isSpaceOwner.value);
+// Anyone's clip but your own, the owner's included: the api's only guard.
+const canReport = computed(() => !props.clip.mine);
+// Blocking needs someone to block, and a clip from before authors were kept has nobody.
+const canBlock = computed(() => !props.clip.mine && !!props.clip.author);
 
 /**
  * The api makes a 200x200 thumbnail for every image, so a row can show one
@@ -218,19 +232,75 @@ function saveClip(btn: ILoadingButton) {
 }
 
 async function remove() {
+  const what = props.clip.title ? `"${props.clip.title}"` : "The clip";
+  const mine = props.clip.mine;
+
   const ok = await askToConfirm({
-    title: "Delete this clip?",
-    message: props.clip.title
-      ? `"${props.clip.title}" is removed for everyone in the space.`
-      : "The clip is removed for everyone in the space.",
+    title: mine ? "Delete this clip?" : `Delete ${props.clip.author || "this member"}'s clip?`,
+    message: mine
+      ? `${what} is removed for everyone in the space.`
+      : `${what} is removed for everyone, and any reports about it are closed. You can do this because you own the space.`,
     confirmLabel: "Delete",
     danger: true
   });
   if (!ok) return;
 
   return run(async () => {
-    await deleteSpaceClip(props.spaceId, props.clip.publicId);
+    const res = await deleteSpaceClip(props.spaceId, props.clip.publicId);
+    // Reports it closed are off the owner's queue now, so the badge is stale.
+    if (res.reportsResolved) refreshSpaceReports(props.spaceId);
     emit("deleted", props.clip.publicId);
+  });
+}
+
+/* ---------------- Report and block ---------------- */
+
+/**
+ * To the space's owner, who decides. The owner can report one too, and it
+ * lands in their own queue: a record of what was wrong with a clip, which
+ * deleting it on the spot would leave nowhere.
+ */
+async function report() {
+  const owner = isSpaceOwner.value;
+
+  const answer = await askToReport({
+    title: "Report this clip",
+    description: owner
+      ? "You own this space, so it goes to your own queue of reported clips, with a copy of what the clip says now."
+      : "It goes to the owner of this space, who can delete the clip or leave it. They are shown that you reported it.",
+    noteLabel: owner ? "Anything to add? It is kept with the report." : "Anything to add? The space owner reads this.",
+    confirmLabel: owner ? "Add to the queue" : "Report to the owner"
+  });
+  if (!answer) return;
+
+  return run(async () => {
+    await reportSpaceClip(props.spaceId, props.clip.publicId, answer);
+    // The owner's own report is one more on their queue, so the badge moved.
+    if (owner) refreshSpaceReports(props.spaceId);
+  });
+}
+
+/**
+ * The remedy that does not wait on anyone: a report sits with the owner until
+ * they act, while a block takes the author out of this member's view at once.
+ */
+async function block() {
+  const username = props.clip.author;
+  if (!username) return;
+
+  const ok = await askToConfirm({
+    title: `Block ${username}?`,
+    message:
+      "You stop seeing each other's clips in every space you share, and neither of you can invite the other anywhere. Nobody leaves this space over it, and they are not told.",
+    confirmLabel: "Block",
+    danger: true
+  });
+  if (!ok) return;
+
+  return run(async () => {
+    await blockAccount(username);
+    // Their clips are gone from this member's view of the space now.
+    emit("changed");
   });
 }
 </script>
@@ -344,7 +414,13 @@ async function remove() {
         <DropdownItem @click="keepACopy">
           <template #icon><InboxArrowDownIcon /></template>Keep a copy in my clips
         </DropdownItem>
-        <DropdownItem v-if="clip.mine" danger @click="remove">
+        <DropdownItem v-if="canReport" @click="report">
+          <template #icon><FlagIcon /></template>{{ isSpaceOwner ? "Report" : "Report to the owner" }}
+        </DropdownItem>
+        <DropdownItem v-if="canBlock" danger @click="block">
+          <template #icon><NoSymbolIcon /></template>Block {{ clip.author }}
+        </DropdownItem>
+        <DropdownItem v-if="canDelete" danger @click="remove">
           <template #icon><TrashIcon /></template>Delete
         </DropdownItem>
       </DropdownMenu>

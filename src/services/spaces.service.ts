@@ -1,9 +1,14 @@
 /**
  * Shared spaces. A space has one owner and any number of members, and every
  * member sees everything in it. Authorship decides who may change what: only
- * the member who added a clip can edit or delete it, and only the member who
- * made a folder can rename or delete it. The owner's powers are over the space
- * itself, not over other people's content.
+ * the member who added a clip can edit it, and only the member who made a
+ * folder can rename or delete it. The owner's powers are over the space
+ * itself, with one reach into its content: they can delete any clip, which is
+ * what makes a report they uphold mean anything.
+ *
+ * Every member sees everything in it *that reaches them*: clips by an account
+ * either side has blocked are left out, with nothing to mark the gap, so two
+ * members can be shown different lists of the same space.
  */
 import { $http } from "../http";
 import type { components } from "../types/api";
@@ -114,9 +119,18 @@ export function updateSpaceClip(spaceId: string, clipId: string, body: component
   return $http.post<any, MessageResponse>(`space/${spaceId}/clip/${clipId}/update`, body);
 }
 
-/** Author only, not even the owner. A file goes from storage too, so allow for that. */
+/**
+ * The clip's author, or the space's owner. A file goes from storage too, so
+ * allow for that. An owner deleting a reported clip closes the reports about it
+ * as well, and `reportsResolved` says how many; deleting an unreported clip
+ * leaves the field off.
+ */
 export function deleteSpaceClip(spaceId: string, clipId: string) {
-  return $http.post<any, MessageResponse>(`space/${spaceId}/clip/${clipId}/delete`, undefined, { timeout: 30_000 });
+  return $http.post<any, components["schemas"]["DeleteSpaceClipResponse"]>(
+    `space/${spaceId}/clip/${clipId}/delete`,
+    undefined,
+    { timeout: 30_000 }
+  );
 }
 
 /** Move clips into another folder of the same space. Only their author can. */
@@ -135,6 +149,40 @@ export function transferSpaceClip(spaceId: string, clipId: string, folder?: stri
     { folder },
     { timeout: 30_000 }
   );
+}
+
+/* ---------------- Reports ---------------- */
+
+export type SpaceReport = components["schemas"]["SpaceReport"];
+
+/**
+ * Owner only, and a member who is not the owner gets a 404 rather than a 403,
+ * so owning a space cannot be probed for. Defaults to the open ones, which is
+ * the queue; `open` counts those whatever was asked for.
+ */
+export function getSpaceReports(spaceId: string, status?: SpaceReport["status"]) {
+  return $http.get<any, components["schemas"]["SpaceReportsResponse"]>(`space/${spaceId}/reports`, {
+    params: status ? { status } : undefined
+  });
+}
+
+/**
+ * Hands a clip to the space's owner. Any member can report any clip but their
+ * own, and what it said is copied into the report, so the owner still sees the
+ * complaint if the author edits or deletes it first. Reporting the same clip
+ * twice adds nothing.
+ */
+export function reportSpaceClip(spaceId: string, clipId: string, body: components["schemas"]["ReportClipBody"]) {
+  return $http.post<any, components["schemas"]["ReportResponse"]>(`space/${spaceId}/clip/${clipId}/report`, body);
+}
+
+/**
+ * The owner's other answer: the clip stays and the report is closed. Deleting
+ * the clip resolves its reports on its own, so this is for the other outcome.
+ * A dismissed report is kept as the record of what was decided.
+ */
+export function dismissSpaceReport(spaceId: string, reportId: string) {
+  return $http.post<any, MessageResponse>(`space/${spaceId}/report/${reportId}/dismiss`);
 }
 
 /* ---------------- Files ---------------- */

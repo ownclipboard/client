@@ -6,6 +6,7 @@ import FolderPicker from "../components/FolderPicker.vue";
 import StorageCorsModal from "../components/StorageCorsModal.vue";
 import ClipPreviewModal from "../components/ClipPreviewModal.vue";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
+import ReportDialog from "../components/ReportDialog.vue";
 import QrSignInDialog from "../components/sessions/QrSignInDialog.vue";
 import FolderSettingsDialog from "../components/folders/FolderSettingsDialog.vue";
 import Spinner from "../components/ui/Spinner.vue";
@@ -131,6 +132,7 @@ onBeforeUnmount(() => {
     <StorageCorsModal />
     <ClipPreviewModal />
     <ConfirmDialog />
+    <ReportDialog />
     <QrSignInDialog />
     <DebugDock v-if="isDev" />
   </AppShell>

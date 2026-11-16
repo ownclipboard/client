@@ -9,6 +9,7 @@ import {
   ClipboardIcon,
   CloudArrowUpIcon,
   Cog6ToothIcon,
+  FlagIcon,
   FolderPlusIcon,
   PencilSquareIcon,
   UsersIcon
@@ -29,6 +30,8 @@ import {
   currentSpace,
   currentSpaceFolder,
   currentSpaceFolders,
+  isSpaceOwner,
+  openSpaceReports,
   refreshSpaceFolders,
   spaceUploadIssue
 } from "../../stores/spaces.store";
@@ -41,7 +44,11 @@ import UploadDialog, { type UploadItem, type UploadResults } from "../clips/Uplo
 import SpaceComposer from "./SpaceComposer.vue";
 
 const props = defineProps<{ spaceId: string }>();
-const emit = defineEmits<{ (e: "settings"): void; (e: "update:query", q: string): void }>();
+const emit = defineEmits<{
+  (e: "settings"): void;
+  (e: "reports"): void;
+  (e: "update:query", q: string): void;
+}>();
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 const query = ref("");
@@ -349,6 +356,23 @@ const folderName = computed(
           </Button>
           <Button size="sm" :disabled="isUploading" :title="spaceUploadIssue || undefined" @click="pickFile">
             <CloudArrowUpIcon class="h-4 w-4" />Upload
+          </Button>
+          <!-- Owner only, and the count is the only thing that says the queue has anything in it. -->
+          <Button
+            v-if="isSpaceOwner"
+            size="sm"
+            variant="ghost"
+            class="relative"
+            :title="openSpaceReports ? `${openSpaceReports} clips reported here` : 'Reported clips'"
+            @click="emit('reports')"
+          >
+            <FlagIcon class="h-4 w-4" />
+            <span
+              v-if="openSpaceReports"
+              class="absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold tabular-nums text-white"
+            >
+              {{ openSpaceReports }}
+            </span>
           </Button>
           <Button size="sm" variant="ghost" title="Space settings" @click="emit('settings')">
             <Cog6ToothIcon class="h-4 w-4" />

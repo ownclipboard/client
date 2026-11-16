@@ -94,6 +94,12 @@ const routes: Array<RouteRecordRaw> = [
             name: "settings.sessions",
             component: () => import("./views/settings/Sessions.vue"),
             meta: { title: "Sessions" }
+          },
+          {
+            path: "blocked",
+            name: "settings.blocked",
+            component: () => import("./views/settings/Blocked.vue"),
+            meta: { title: "Blocked" }
           }
         ]
       }

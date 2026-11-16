@@ -9,6 +9,7 @@ import { computed, ref } from "vue";
 import {
   getSpace,
   getSpaceFolders,
+  getSpaceReports,
   getSpaces,
   type Space,
   type SpaceDetail,
@@ -26,6 +27,22 @@ export const currentSpaceFolders = ref<SpaceFolder[]>([]);
 export const currentSpaceFolder = ref("clipboard");
 
 export const isSpaceOwner = computed(() => currentSpace.value?.role === "owner");
+
+/**
+ * Clips members have reported here and the owner has not answered yet. Only
+ * the owner can ask, and only the owner is shown it: without a count on the
+ * toolbar there is nothing to tell them the queue has anything in it.
+ */
+export const openSpaceReports = ref(0);
+
+export async function refreshSpaceReports(spaceId: string) {
+  if (!isSpaceOwner.value) return;
+  try {
+    openSpaceReports.value = (await getSpaceReports(spaceId, "open")).open;
+  } catch {
+    // A badge is a courtesy. A space whose reports will not load still opens.
+  }
+}
 
 /** Files need the owner on Pro, and the space has a storage ceiling of its own. */
 export const spaceCanUpload = computed(() => !!currentSpace.value?.limits.uploads);
@@ -64,6 +81,10 @@ export async function openSpace(spaceId: string) {
 
   // The folder we were on may have been deleted by its author in the meantime.
   if (!folders.some((f) => f.slug === currentSpaceFolder.value)) currentSpaceFolder.value = "clipboard";
+
+  // Not awaited: the space is ready to show, and the badge can arrive after it.
+  openSpaceReports.value = 0;
+  refreshSpaceReports(spaceId);
   return space;
 }
 
@@ -83,4 +104,5 @@ export function clearCurrentSpace() {
   currentSpace.value = null;
   currentSpaceFolders.value = [];
   currentSpaceFolder.value = "clipboard";
+  openSpaceReports.value = 0;
 }

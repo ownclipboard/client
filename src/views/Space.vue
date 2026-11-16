@@ -9,6 +9,7 @@ import SpaceLockGate from "../components/spaces/SpaceLockGate.vue";
 import SpaceToolbar from "../components/spaces/SpaceToolbar.vue";
 import SpaceClipList from "../components/spaces/SpaceClipList.vue";
 import SpaceSettingsDialog from "../components/spaces/SpaceSettingsDialog.vue";
+import SpaceReportsDialog from "../components/spaces/SpaceReportsDialog.vue";
 import Skeleton from "../components/ui/Skeleton.vue";
 import EmptyState from "../components/ui/EmptyState.vue";
 import Button from "../components/ui/Button.vue";
@@ -21,6 +22,7 @@ const loading = ref(true);
 const gone = ref(false);
 const query = ref("");
 const settingsOpen = ref(false);
+const reportsOpen = ref(false);
 // Set when the space refuses until this session passes its factors.
 const lock = ref<SpaceLockState | null>(null);
 
@@ -94,9 +96,15 @@ onBeforeUnmount(clearCurrentSpace);
     </EmptyState>
 
     <template v-else-if="currentSpace">
-      <SpaceToolbar :space-id="spaceId" @settings="settingsOpen = true" @update:query="query = $event" />
+      <SpaceToolbar
+        :space-id="spaceId"
+        @settings="settingsOpen = true"
+        @reports="reportsOpen = true"
+        @update:query="query = $event"
+      />
       <SpaceClipList :space-id="spaceId" :query="query" />
       <SpaceSettingsDialog :open="settingsOpen" :space-id="spaceId" @close="settingsOpen = false" />
+      <SpaceReportsDialog :open="reportsOpen" :space-id="spaceId" @close="reportsOpen = false" />
     </template>
   </div>
 </template>

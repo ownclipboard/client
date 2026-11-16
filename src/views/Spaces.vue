@@ -2,10 +2,20 @@
 /** The spaces the user is in, the invites waiting on them, and the way to start one. */
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { PlusIcon, UserGroupIcon, UsersIcon } from "@heroicons/vue/20/solid";
+import {
+  EllipsisHorizontalIcon,
+  FlagIcon,
+  NoSymbolIcon,
+  PlusIcon,
+  UserGroupIcon,
+  UsersIcon
+} from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../http";
-import { acceptSpaceInvite, createSpace, declineSpaceInvite } from "../services/spaces.service";
+import { acceptSpaceInvite, createSpace, declineSpaceInvite, type SpaceInvite } from "../services/spaces.service";
+import { blockAccount, reportAccount } from "../services/moderation.service";
+import { askToConfirm } from "../components/ConfirmHandler";
+import { askToReport } from "../components/ReportHandler";
 import { invites, loadSpaces, spaces, spacesLoaded } from "../stores/spaces.store";
 import { useAuthUser } from "../stores/auth.store";
 import PageHeader from "../components/ui/PageHeader.vue";
@@ -16,6 +26,9 @@ import Input from "../components/ui/Input.vue";
 import Skeleton from "../components/ui/Skeleton.vue";
 import EmptyState from "../components/ui/EmptyState.vue";
 import Dialog from "../components/ui/Dialog.vue";
+import IconButton from "../components/ui/IconButton.vue";
+import DropdownMenu from "../components/ui/DropdownMenu.vue";
+import DropdownItem from "../components/ui/DropdownItem.vue";
 
 const $router = useRouter();
 const authUser = useAuthUser();
@@ -42,6 +55,61 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+/* ---------------- An invite nobody wanted ---------------- */
+
+/**
+ * A space can be reported before it is accepted, which is the point: the name
+ * of a space, or an invite to one, can be the whole of the problem. Both the
+ * inviter and the space go on the report when we know who sent it.
+ */
+async function reportInvite(invite: SpaceInvite) {
+  const answer = await askToReport({
+    title: `Report ${invite.space.name}`,
+    description: "This goes to us. You can report it without accepting or declining first.",
+    noteLabel: "What is wrong with it? Only we read this.",
+    confirmLabel: "Send report"
+  });
+  if (!answer) return;
+
+  try {
+    await reportAccount({ space: invite.space.publicId, username: invite.invitedBy, ...answer });
+  } catch (e) {
+    alertRequestError(e);
+  }
+}
+
+/**
+ * Blocking is what stops it happening again: a declined invite can be sent
+ * afresh, and a block refuses the next one without saying why. The invite goes
+ * with it, best effort, since leaving one pending from someone just blocked
+ * would be its own small insult.
+ */
+async function blockInviter(invite: SpaceInvite) {
+  const username = invite.invitedBy;
+  if (!username) return;
+
+  const ok = await askToConfirm({
+    title: `Block ${username}?`,
+    message:
+      "This invite is declined and they cannot send another. You stop seeing each other's clips in any space you share, and they are not told.",
+    confirmLabel: "Block and decline",
+    danger: true
+  });
+  if (!ok) return;
+
+  answering.value = invite.space.publicId;
+  try {
+    await blockAccount(username);
+    // The api may have refused the invite along with the block; either way it goes.
+    await declineSpaceInvite(invite.space.publicId).catch(() => {});
+    await loadSpaces();
+  } catch (e) {
+    alertRequestError(e);
+  } finally {
+    answering.value = "";
+  }
+}
 
 function openCreate() {
   newName.value = "";
@@ -133,6 +201,17 @@ function open(spaceId: string) {
           </div>
           <Button size="sm" variant="ghost" @click="answer(invite.space.publicId, false)">Decline</Button>
           <Button size="sm" variant="primary" @click="answer(invite.space.publicId, true)">Accept</Button>
+          <DropdownMenu>
+            <template #trigger>
+              <IconButton label="More about this invite" size="sm"><EllipsisHorizontalIcon /></IconButton>
+            </template>
+            <DropdownItem @click="reportInvite(invite)">
+              <template #icon><FlagIcon /></template>Report this space
+            </DropdownItem>
+            <DropdownItem v-if="invite.invitedBy" danger @click="blockInviter(invite)">
+              <template #icon><NoSymbolIcon /></template>Block {{ invite.invitedBy }}
+            </DropdownItem>
+          </DropdownMenu>
         </li>
       </ul>
     </Card>

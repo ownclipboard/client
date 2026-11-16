@@ -3,14 +3,29 @@
  * Everything about the space itself: its name, who is in it, and the way out.
  * The owner can rename, invite, remove and delete. A member can only leave.
  * Neither can touch anyone else's clips from here.
+ *
+ * Blocking and reporting are here too, aimed at a person rather than a clip.
+ * Reporting from here reaches the operator and not the owner, which is the
+ * point: the owner is in this list as well, and may be who it is about.
  */
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { ArrowRightStartOnRectangleIcon, TrashIcon, UserPlusIcon } from "@heroicons/vue/20/solid";
+import {
+  ArrowRightStartOnRectangleIcon,
+  EllipsisHorizontalIcon,
+  FlagIcon,
+  NoSymbolIcon,
+  TrashIcon,
+  UserPlusIcon
+} from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../../http";
 import { $alert } from "../ws-alert/ws-alert";
 import { askToConfirm } from "../ConfirmHandler";
+import { askToReport } from "../ReportHandler";
+import { $events } from "../../events";
+import { blockAccount, reportAccount } from "../../services/moderation.service";
+import { useAuthUser } from "../../stores/auth.store";
 import { humanFileSize } from "../../services/files.service";
 import {
   deleteSpace,
@@ -29,12 +44,15 @@ import Badge from "../ui/Badge.vue";
 import Divider from "../ui/Divider.vue";
 import Skeleton from "../ui/Skeleton.vue";
 import IconButton from "../ui/IconButton.vue";
+import DropdownMenu from "../ui/DropdownMenu.vue";
+import DropdownItem from "../ui/DropdownItem.vue";
 import SpaceSecuritySection from "./SpaceSecuritySection.vue";
 
 const props = defineProps<{ open: boolean; spaceId: string }>();
 const emit = defineEmits<{ (e: "close"): void }>();
 
 const $router = useRouter();
+const authUser = useAuthUser();
 
 const name = ref("");
 const members = ref<SpaceMember[]>([]);
@@ -42,6 +60,8 @@ const loadingMembers = ref(true);
 const inviteName = ref("");
 
 const space = computed(() => currentSpace.value);
+// Nobody blocks or reports themselves, and the api refuses both anyway.
+const me = computed(() => authUser.data?.username);
 const limits = computed(() => space.value?.limits);
 const seatsUsed = computed(() => members.value.length);
 const seatsFull = computed(() => !!limits.value && seatsUsed.value >= limits.value.members);
@@ -153,6 +173,78 @@ async function leave(btn: ILoadingButton) {
     .finally(btn.stopLoading);
 }
 
+/* ---------------- Blocking and reporting ---------------- */
+
+/**
+ * Takes a member out of this account's view at once, which is what removing
+ * them cannot do for anyone but the owner. They stay in the space.
+ */
+async function block(member: SpaceMember) {
+  if (!member.username) return;
+
+  const ok = await askToConfirm({
+    title: `Block ${member.username}?`,
+    message:
+      "You stop seeing each other's clips in every space you share, and neither of you can invite the other anywhere. They stay in this space, and they are not told.",
+    confirmLabel: "Block",
+    danger: true
+  });
+  if (!ok) return;
+
+  working.value = member.username;
+  try {
+    await blockAccount(member.username);
+    // Their clips have just left this account's view of the space.
+    $events.emit("space:clips-changed");
+  } catch (e) {
+    alertRequestError(e);
+  } finally {
+    working.value = "";
+  }
+}
+
+/** To the operator. One bad clip goes to the owner instead, from the clip itself. */
+async function report(member: SpaceMember) {
+  if (!member.username) return;
+
+  const answer = await askToReport({
+    title: `Report ${member.username}`,
+    description:
+      member.role === "owner"
+        ? "This goes to us, not to the owner of this space, because that is who you are reporting."
+        : "This goes to us rather than to the space owner. For a single clip, report the clip instead: the owner can take that down.",
+    noteLabel: "What happened? Only we read this.",
+    confirmLabel: "Send report"
+  });
+  if (!answer) return;
+
+  working.value = member.username;
+  try {
+    await reportAccount({ username: member.username, space: props.spaceId, ...answer });
+  } catch (e) {
+    alertRequestError(e);
+  } finally {
+    working.value = "";
+  }
+}
+
+/** The space itself: its name, or what it is being used for. */
+async function reportSpace() {
+  const answer = await askToReport({
+    title: `Report ${space.value?.name || "this space"}`,
+    description: "This goes to us. Leaving the space is separate, and you can do both.",
+    noteLabel: "What is wrong with it? Only we read this.",
+    confirmLabel: "Send report"
+  });
+  if (!answer) return;
+
+  try {
+    await reportAccount({ space: props.spaceId, ...answer });
+  } catch (e) {
+    alertRequestError(e);
+  }
+}
+
 const deleteName = ref("");
 
 async function destroy(btn: ILoadingButton) {
@@ -234,6 +326,17 @@ const ROLE_LABEL: Record<string, string> = { owner: "Owner", member: "Member", i
             >
               <TrashIcon />
             </IconButton>
+            <DropdownMenu v-if="member.username && member.username !== me">
+              <template #trigger>
+                <IconButton :label="`More about ${member.username}`" size="sm"><EllipsisHorizontalIcon /></IconButton>
+              </template>
+              <DropdownItem @click="report(member)">
+                <template #icon><FlagIcon /></template>Report to us
+              </DropdownItem>
+              <DropdownItem danger @click="block(member)">
+                <template #icon><NoSymbolIcon /></template>Block {{ member.username }}
+              </DropdownItem>
+            </DropdownMenu>
           </li>
         </ul>
 
@@ -266,9 +369,14 @@ const ROLE_LABEL: Record<string, string> = { owner: "Owner", member: "Member", i
       <section v-if="!isSpaceOwner">
         <h3 class="text-sm font-medium text-fg">Leave this space</h3>
         <p class="mt-0.5 text-sm text-muted">Clips you added stay here for everyone else.</p>
-        <Button class="mt-3" variant="danger" size="sm" :click="leave" message="Leaving">
-          <ArrowRightStartOnRectangleIcon class="h-4 w-4" />Leave space
-        </Button>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <Button variant="danger" size="sm" :click="leave" message="Leaving">
+            <ArrowRightStartOnRectangleIcon class="h-4 w-4" />Leave space
+          </Button>
+          <Button size="sm" @click="reportSpace">
+            <FlagIcon class="h-4 w-4" />Report this space
+          </Button>
+        </div>
       </section>
 
       <section v-else class="space-y-3">
