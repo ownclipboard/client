@@ -60,6 +60,12 @@ const routes: Array<RouteRecordRaw> = [
           // space already points.
           { path: "", name: "space", component: () => import("./views/spaces/SpaceClips.vue") },
           {
+            path: "files",
+            name: "space.files",
+            component: () => import("./views/spaces/SpaceFiles.vue"),
+            meta: { title: "Files" }
+          },
+          {
             path: "members",
             name: "space.members",
             component: () => import("./views/spaces/SpaceMembers.vue"),

@@ -10,7 +10,7 @@
  */
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ChatBubbleLeftRightIcon, FlagIcon, UsersIcon } from "@heroicons/vue/20/solid";
+import { ChatBubbleLeftRightIcon, FlagIcon, PhotoIcon, UsersIcon } from "@heroicons/vue/20/solid";
 import { alertRequestError } from "../../http";
 import { clearCurrentSpace, currentSpace, isSpaceOwner, openSpace, openSpaceReports } from "../../stores/spaces.store";
 import { getSpaceLock, type SpaceLockState } from "../../services/spaces.service";
@@ -89,6 +89,7 @@ const tabs = computed<TabItem[]>(() => {
 
   const items: TabItem[] = [
     { key: "space", label: "Clips", icon: ChatBubbleLeftRightIcon, to: { name: "space", params } },
+    { key: "space.files", label: "Files", icon: PhotoIcon, to: { name: "space.files", params } },
     { key: "space.members", label: "Members", icon: UsersIcon, to: { name: "space.members", params } }
   ];
 

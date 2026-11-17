@@ -35,7 +35,7 @@ import { previewClip } from "../ClipPreviewHandler";
 import { $alert } from "../ws-alert/ws-alert";
 import {
   deleteSpaceClip,
-  getSpaceFileUrl,
+  getSpaceClipFileUrl,
   moveSpaceClips,
   reportSpaceClip,
   transferSpaceClip,
@@ -88,7 +88,7 @@ const thumbUrl = ref("");
 
 onMounted(() => {
   if (!props.clip.file?.thumbnail) return;
-  getSpaceFileUrl(props.spaceId, props.clip.publicId, true)
+  getSpaceClipFileUrl(props.spaceId, props.clip.publicId, true)
     .then((url) => (thumbUrl.value = url))
     .catch(() => undefined);
 });
@@ -126,14 +126,14 @@ const asOwnClip = computed<OwnClip>(() => ({
 }));
 
 function openPreview() {
-  previewClip(asOwnClip.value, () => getSpaceFileUrl(props.spaceId, props.clip.publicId));
+  previewClip(asOwnClip.value, () => getSpaceClipFileUrl(props.spaceId, props.clip.publicId));
 }
 
 async function download(btn: ILoadingButton) {
   // Opened first, so the browser does not treat the url that arrives later as a popup.
   const tab = window.open("", "_blank");
   try {
-    const url = await getSpaceFileUrl(props.spaceId, props.clip.publicId);
+    const url = await getSpaceClipFileUrl(props.spaceId, props.clip.publicId);
     if (tab) tab.location.href = url;
     else window.location.href = url;
   } catch (e) {

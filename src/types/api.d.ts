@@ -5207,6 +5207,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client/v1/space/{space}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the files of a space
+         * @description Every file uploaded to this space, by any member, newest first. Open to the owner
+         *     and to active members; the same `folder` and `type` filters as `GET /files`.
+         *
+         *     This is the same listing as `GET /files` against a space instead of the caller's
+         *     own files, so the shape is identical, with two additions: `author` is the member
+         *     who uploaded the file and `mine` is true when that is the caller.
+         *
+         *     Files uploaded by a member this one has blocked, or who has blocked them, are left
+         *     out, exactly as they are in the clips listing. A listing that ignored blocks would
+         *     be a way around them.
+         *
+         *     `preview` works the same as on `GET /files`: when it is present, every file has a
+         *     `previewUrl`, and every image with `hasThumbnail` a `thumbUrl`, both needing no
+         *     authentication, so they go straight into an `img` or `video` tag. The key is the
+         *     shared storage's and rotates, so re-fetch the listing at `preview.expiresAt`.
+         *
+         *     Because a preview url carries no authentication, it keeps working for anyone
+         *     holding it until the key rotates, even if they are blocked or leave the space in
+         *     the meantime. Use `GET space/{space}/file/{file}/url` instead where that matters:
+         *     it is presigned per request, and `?thumb=1` gets the thumbnail.
+         *
+         *     `preview` is null when preview links are disabled on the shared storage, or it is
+         *     not configured. Fall back to the same per-file route in that case.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    page?: number;
+                    perPage?: number;
+                    /** @description Space folder slug. */
+                    folder?: string;
+                    /** @description Content type prefix, e.g. `image`. */
+                    type?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of the space's files. `preview` is null. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FileListResponse"];
+                    };
+                };
+                /**
+                 * @description Space not found, or the caller has no role in it. A non-member gets this and
+                 *     not a 403, so a space cannot be found by guessing ids.
+                 */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                423: components["responses"]["SpaceLocked"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/client/v1/files/upload": {
         parameters: {
             query?: never;
@@ -5404,6 +5488,82 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/space/{space}/file/{file}/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Temporary download url of a file in a space
+         * @description The same as `GET /file/{file}/url`, for a file belonging to this space rather than
+         *     to the caller. Open to the owner and to active members, since a space's files are
+         *     shared: the file is found by space, not by who uploaded it. Add `?thumb=1` for the
+         *     200x200 thumbnail of an image.
+         *
+         *     Presigned against the shared default storage, valid for one hour, and fetched with
+         *     no api key. A personal file's id does not resolve here, nor a space file's on the
+         *     personal route: both answer 404.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Get the thumbnail instead of the file. 404 when it has none. */
+                    thumb?: boolean;
+                };
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                    /** @description File publicId. */
+                    file: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Download url. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FileUrlResponse"];
+                    };
+                };
+                /** @description Not uploaded yet, or space storage is unavailable. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /**
+                 * @description No such file in this space, or the caller has no role in the space, or the file
+                 *     has no thumbnail when `thumb=1` was asked for.
+                 */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                423: components["responses"]["SpaceLocked"];
             };
         };
         put?: never;
@@ -8020,12 +8180,20 @@ export interface components {
             status: "pending" | "uploaded";
             createdAt: string;
             uploadedAt?: string | null;
-            /** @description Public url that needs no authentication, present only when the user's owns3 app has preview links enabled. Stops working when `FilePreview.expiresAt` passes. */
+            /**
+             * @description Public url that needs no authentication, present only when the owns3 app holding the file has preview links enabled. Stops working when `FilePreview.expiresAt` passes.
+             *
+             *     In a space listing this is the shared storage's key, so the url keeps working for anyone holding it until the key rotates, whether or not they are still a member.
+             */
             previewUrl?: string;
             /** @description True when a 200x200 thumbnail was generated (images only). It is stored as `name.thumb.ext` next to the image and is not listed as a file of its own. */
             hasThumbnail?: boolean;
             /** @description Public url of the thumbnail, present when `hasThumbnail` is true and preview links are enabled. */
             thumbUrl?: string;
+            /** @description Username of the member who uploaded it. Only in a space listing (`GET space/{space}/files`), where the files are not all the caller's own. */
+            author?: string;
+            /** @description True when the caller uploaded it. Only in a space listing. */
+            mine?: boolean;
         };
         /** @description Rotating owns3 preview key, shared by every file in the response. */
         FilePreview: {
@@ -8043,7 +8211,7 @@ export interface components {
                 lastPage: number;
                 data: components["schemas"]["File"][];
             };
-            /** @description Null when preview links are off for the app, or no storage is connected. */
+            /** @description Null when preview links are off for the app, or no storage is connected. A space listing carries the shared storage's key, so it is present there on the same terms. */
             preview: components["schemas"]["FilePreview"] | null;
         };
         FileUploadBody: {

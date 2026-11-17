@@ -3,10 +3,14 @@
  * Full view of one uploaded file. Mirrors the clip preview: the file is shown
  * inline where the browser can render it, and downloading stays a deliberate
  * click rather than something opening the moment a card is picked.
+ *
+ * `space` points the url at that space's storage instead of the account's. A
+ * space file has no preview url, so it is always fetched.
  */
 import { computed, ref, watch } from "vue";
 import { ArrowDownTrayIcon, DocumentIcon, TrashIcon } from "@heroicons/vue/20/solid";
 import { getFileUrl, humanFileSize, type StoredFile } from "../../services/files.service";
+import { getSpaceFileUrl } from "../../services/spaces.service";
 import { alertRequestError } from "../../http";
 import { foldersAsObject } from "../../stores/tabs.store";
 import Dialog from "../ui/Dialog.vue";
@@ -14,7 +18,18 @@ import Button from "../ui/Button.vue";
 import Badge from "../ui/Badge.vue";
 import Spinner from "../ui/Spinner.vue";
 
-const props = defineProps<{ file: StoredFile | null; open: boolean }>();
+const props = withDefaults(
+  defineProps<{
+    file: StoredFile | null;
+    open: boolean;
+    /** A space's publicId, when the file is one of that space's. */
+    space?: string;
+    /** The folder's name, which only the list above knows for a space. */
+    folderName?: string;
+    canDelete?: boolean;
+  }>(),
+  { space: "", folderName: "", canDelete: true }
+);
 // Deleting is the page's job: it owns the list this file is in.
 const emit = defineEmits<{ (e: "close"): void; (e: "delete"): void }>();
 
@@ -35,9 +50,15 @@ const fileKind = computed<FileKind>(() => {
   return "other";
 });
 
-const folderName = computed(() =>
-  props.file ? foldersAsObject.value[props.file.folder]?.name || props.file.folder : ""
-);
+const folderLabel = computed(() => {
+  if (props.folderName) return props.folderName;
+  return props.file ? foldersAsObject.value[props.file.folder]?.name || props.file.folder : "";
+});
+
+/** The account's own file, or the space's. */
+function urlOf(file: StoredFile) {
+  return props.space ? getSpaceFileUrl(props.space, file.publicId) : getFileUrl(file.publicId);
+}
 
 // `src` draws the preview, `downloadUrl` is the signed one, fetched only when
 // it is actually needed: a preview url costs no round trip.
@@ -61,7 +82,7 @@ watch(
     } else {
       loading.value = true;
       try {
-        downloadUrl.value = await getFileUrl(file.publicId);
+        downloadUrl.value = await urlOf(file);
         src.value = downloadUrl.value;
       } catch (e) {
         alertRequestError(e);
@@ -93,7 +114,7 @@ async function download() {
   const tab = window.open("", "_blank");
   try {
     // The signed url is the real file; the preview key expires and may be cached.
-    downloadUrl.value = downloadUrl.value || (await getFileUrl(props.file.publicId));
+    downloadUrl.value = downloadUrl.value || (await urlOf(props.file));
     if (tab) tab.location.href = downloadUrl.value;
     else window.location.href = downloadUrl.value;
   } catch (e) {
@@ -109,7 +130,7 @@ async function download() {
       <div v-if="file" class="min-w-0">
         <div class="flex items-center gap-2 text-xs text-muted">
           <Badge variant="outline" uppercase>{{ file.ext || "file" }}</Badge>
-          <span>{{ folderName }}</span>
+          <span>{{ folderLabel }}</span>
           <span class="text-faint">·</span>
           <TimeAgo :date="file.uploadedAt || file.createdAt" />
         </div>
@@ -148,7 +169,7 @@ async function download() {
         {{ humanFileSize(file.size) }}<template v-if="file.ext"> · {{ file.ext.toUpperCase() }} file</template>
       </span>
       <!-- Kept on the left, away from Download: the two are one slip apart otherwise. -->
-      <Button variant="danger" size="sm" class="mr-auto" @click="emit('delete')">
+      <Button v-if="canDelete" variant="danger" size="sm" class="mr-auto" @click="emit('delete')">
         <TrashIcon class="h-4 w-4" /> Delete
       </Button>
       <Button variant="ghost" @click="emit('close')">Close</Button>

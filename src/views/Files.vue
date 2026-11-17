@@ -1,38 +1,24 @@
 <script setup lang="ts">
 /**
- * Every uploaded file, newest first, with folder and type filters.
+ * Every file this account has uploaded, newest first.
  *
- * Tiles are drawn from the 200x200 thumbnail the api makes for every image, so
- * the grid costs a few kilobytes a tile instead of the whole picture. An image
- * with no thumbnail, because of its type or its size, falls back to the full
- * one under a size cap.
- *
- * Both urls need no authentication but stop working when the shared preview key
- * rotates, so the listing refreshes itself just before `preview.expiresAt`. When
- * the api sends no preview block at all, tiles are icons and a file's url is
- * fetched only when it is opened.
+ * The grid itself is FileBrowser, which a space's files page uses too. What
+ * stays here is where the files come from, and the one thing only an account's
+ * own files have: the storage it connected.
  */
-import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { ArrowDownTrayIcon, ArrowPathIcon, DocumentIcon, FilmIcon, MusicalNoteIcon, PhotoIcon, TrashIcon } from "@heroicons/vue/20/solid";
-import type { ILoadingButton } from "revue-components/vues/component-types";
-import { alertDeleteError, alertRequestError } from "../http";
-import { deleteFile, listFiles, getFileUrl, humanFileSize, type FilePreview, type StoredFile } from "../services/files.service";
+import { ArrowPathIcon } from "@heroicons/vue/20/solid";
+import { alertRequestError } from "../http";
+import { listFiles, type FilePreview, type StoredFile } from "../services/files.service";
 import { folders, foldersAsObject } from "../stores/tabs.store";
-import { askToConfirm } from "../components/ConfirmHandler";
-import { askForPassword } from "../components/PasswordPromptHandler";
 import { $events } from "../events";
 import type { RealtimeChange } from "../services/realtime.service";
 import { useAuthUser } from "../stores/auth.store";
 import PageHeader from "../components/ui/PageHeader.vue";
-import Select from "../components/ui/Select.vue";
-import Badge from "../components/ui/Badge.vue";
 import Button from "../components/ui/Button.vue";
-import IconButton from "../components/ui/IconButton.vue";
-import Skeleton from "../components/ui/Skeleton.vue";
-import EmptyState from "../components/ui/EmptyState.vue";
-import Paginator, { Pagination } from "../components/paginator/Paginator.vue";
-import FilePreviewModal from "../components/files/FilePreviewModal.vue";
+import { Pagination } from "../components/paginator/Paginator.vue";
+import FileBrowser from "../components/files/FileBrowser.vue";
 
 const $route = useRoute();
 const authUser = useAuthUser();
@@ -43,47 +29,8 @@ const loading = ref(true);
 const folder = ref("");
 const type = ref("");
 
-// Kept separate from `open` so the dialog holds its content while it animates out.
-const previewing = ref<StoredFile | null>(null);
-const previewOpen = ref(false);
-
-/**
- * Thumbnails are drawn at a fraction of their size, so a large image costs a lot
- * of bandwidth for a few hundred pixels. Past this the icon stands in; opening
- * the file still fetches the real thing. Matches the 1024-based sizes shown.
- */
-const PREVIEW_MAX_BYTES = 2 * 1024 * 1024;
-
-const TYPES = [
-  { value: "", label: "All types" },
-  { value: "image", label: "Images" },
-  { value: "video", label: "Video" },
-  { value: "audio", label: "Audio" },
-  { value: "application/pdf", label: "PDF" }
-];
-
-const isFiltered = computed(() => !!folder.value || !!type.value);
 /** Without a preview block nothing can be drawn inline; urls are fetched per file instead. */
 const previewsOff = computed(() => !loading.value && files.value.data.length > 0 && !preview.value);
-
-function iconFor(file: StoredFile) {
-  if (file.contentType.startsWith("image/")) return PhotoIcon;
-  if (file.contentType.startsWith("video/")) return FilmIcon;
-  if (file.contentType.startsWith("audio/")) return MusicalNoteIcon;
-  return DocumentIcon;
-}
-
-/**
- * Only images are drawn inline: a video or pdf would pull the whole file. The
- * thumbnail is tiny whatever the original weighs, so the size cap applies only
- * to the full image behind it.
- */
-function thumbnailOf(file: StoredFile) {
-  if (file.status !== "uploaded") return "";
-  if (file.hasThumbnail && file.thumbUrl) return file.thumbUrl;
-  if (!file.previewUrl || !file.contentType.startsWith("image/")) return "";
-  return file.size <= PREVIEW_MAX_BYTES ? file.previewUrl : "";
-}
 
 async function loadFiles(page = Number($route.query.page) || 1) {
   loading.value = true;
@@ -95,7 +42,6 @@ async function loadFiles(page = Number($route.query.page) || 1) {
     });
     files.value = res.files;
     preview.value = res.preview;
-    scheduleRefresh();
   } catch (e) {
     alertRequestError(e);
   } finally {
@@ -103,19 +49,8 @@ async function loadFiles(page = Number($route.query.page) || 1) {
   }
 }
 
-// The preview key rotates, so the urls in hand die with it. Re-fetch a little
-// early; a key that is already spent is refreshed on the next tick instead.
-let refreshTimer: ReturnType<typeof setTimeout> | undefined;
-function scheduleRefresh() {
-  clearTimeout(refreshTimer);
-  if (!preview.value?.expiresAt) return;
-  const remaining = new Date(preview.value.expiresAt).getTime() - Date.now();
-  if (Number.isNaN(remaining)) return;
-  refreshTimer = setTimeout(() => loadFiles(files.value.page), Math.min(Math.max(remaining - 30_000, 5_000), 2_000_000_000));
-}
-
 watch([folder, type], () => loadFiles(1));
-onMounted(loadFiles);
+onMounted(() => loadFiles());
 
 /**
  * A file clip changed elsewhere. `clips.changed` carries no kind, so a bulk
@@ -128,78 +63,17 @@ $events.on("realtime:clips", (change: RealtimeChange) => {
 });
 
 $events.on("realtime:resync", () => loadFiles(files.value.page));
-onBeforeUnmount(() => clearTimeout(refreshTimer));
 
-function openPreview(file: StoredFile) {
-  previewing.value = file;
-  previewOpen.value = true;
-}
+/** The browser deleted it; the list is this page's, so the counts are too. */
+function onDeleted(file: StoredFile) {
+  files.value.data = files.value.data.filter((f) => f.publicId !== file.publicId);
+  files.value.total = Math.max(0, files.value.total - 1);
 
-/**
- * Deleting the file deletes the clip it arrived as, which is what takes the
- * object out of storage too. The clipboard asks the same way, so a folder with
- * a password asks for it here instead of for a confirmation.
- */
-async function removeFile(file: StoredFile, btn?: ILoadingButton) {
-  const folder = foldersAsObject.value[file.folder];
-  let password: string | undefined;
+  const folderRow = foldersAsObject.value[file.folder];
+  if (folderRow) folderRow.contents = Math.max(0, folderRow.contents - 1);
 
-  if (folder?.hasPassword) {
-    password = await askForPassword("Enter the folder password to delete this file.");
-    if (!password) return btn?.stopLoading();
-  } else {
-    const ok = await askToConfirm({
-      title: "Delete this file?",
-      message: `"${file.title || file.name}" is taken out of your storage as well, and that cannot be undone.`,
-      confirmLabel: "Delete",
-      danger: true
-    });
-    if (!ok) return btn?.stopLoading();
-  }
-
-  try {
-    await deleteFile(file.publicId, password);
-    files.value.data = files.value.data.filter((f) => f.publicId !== file.publicId);
-    files.value.total = Math.max(0, files.value.total - 1);
-    if (folder) folder.contents = Math.max(0, folder.contents - 1);
-    // The last file on a page leaves nothing to look at, so step back a page.
-    if (!files.value.data.length && files.value.page > 1) await loadFiles(files.value.page - 1);
-  } catch (e) {
-    // Storage is what holds the file, so a disconnected one is the likely cause.
-    alertDeleteError(e, !!authUser.storage?.connected);
-  } finally {
-    btn?.stopLoading();
-  }
-}
-
-function deleteFromTile(btn: ILoadingButton, file: StoredFile) {
-  return removeFile(file, btn);
-}
-
-/** Closed first: the file it is showing is on its way out. */
-function deleteFromPreview() {
-  const file = previewing.value;
-  previewOpen.value = false;
-  if (file) removeFile(file);
-}
-
-/**
- * Download one file. The tab is opened before the signed url is fetched, so the
- * browser does not treat the later navigation as a popup. The signed url is used
- * rather than the preview one: that key expires and may be cached.
- */
-async function downloadFile(btn: ILoadingButton, file: StoredFile) {
-  const tab = window.open("", "_blank");
-  try {
-    const url = await getFileUrl(file.publicId);
-    if (tab) tab.location.href = url;
-    else window.location.href = url;
-  } catch (e) {
-    tab?.close();
-    alertRequestError(e);
-  } finally {
-    btn.stopLoading();
-  }
+  // The last file on a page leaves nothing to look at, so step back a page.
+  if (!files.value.data.length && files.value.page > 1) loadFiles(files.value.page - 1);
 }
 </script>
 
@@ -216,100 +90,22 @@ async function downloadFile(btn: ILoadingButton, file: StoredFile) {
       Reconnect your file storage in Settings to open or preview these files.
     </div>
 
-    <div class="mb-5 flex flex-wrap items-end gap-3">
-      <Select v-model="folder" label="Folder" class="w-44">
-        <option value="">All folders</option>
-        <option v-for="f in folders" :key="f.slug" :value="f.slug">{{ f.name }}</option>
-      </Select>
-      <Select v-model="type" label="Type" class="w-44">
-        <option v-for="t in TYPES" :key="t.value" :value="t.value">{{ t.label }}</option>
-      </Select>
-      <p v-if="!loading && files.total" class="ml-auto text-xs text-muted">
-        {{ files.total }} file<span v-if="files.total !== 1">s</span>
-      </p>
-    </div>
-
-    <p v-if="previewsOff" class="mb-4 text-xs text-faint">
-      Inline previews are off for your storage, so files open in a new tab instead.
-    </p>
-
-    <div v-if="loading" class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-      <div v-for="n in 8" :key="n" class="overflow-hidden rounded-lg border border-line bg-surface">
-        <Skeleton class="aspect-square w-full rounded-none" />
-        <div class="space-y-1.5 p-2.5">
-          <Skeleton class="h-3 w-3/4" />
-          <Skeleton class="h-2.5 w-1/2" />
-        </div>
-      </div>
-    </div>
-
-    <EmptyState
-      v-else-if="!files.data.length"
-      :title="isFiltered ? 'No files match these filters' : 'No files yet'"
-      :description="isFiltered ? 'Try another folder or type.' : 'Files you upload into a folder show up here.'"
+    <FileBrowser
+      v-model:folder="folder"
+      v-model:type="type"
+      :files="files"
+      :loading="loading"
+      :folders="folders"
+      :preview="preview"
+      @page="loadFiles"
+      @refresh="loadFiles(files.page)"
+      @deleted="onDeleted"
     >
-      <template #icon><PhotoIcon /></template>
-      <Button v-if="isFiltered" variant="ghost" size="sm" @click="folder = ''; type = ''">Clear filters</Button>
-    </EmptyState>
-
-    <div v-else class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-      <div
-        v-for="file in files.data"
-        :key="file.publicId"
-        class="group relative overflow-hidden rounded-lg border border-line bg-surface transition-colors hover:border-line-strong"
-      >
-        <button type="button" class="block w-full text-left" :title="file.name" @click="openPreview(file)">
-        <div class="relative flex aspect-square items-center justify-center bg-sunken">
-          <img
-            v-if="thumbnailOf(file)"
-            :src="thumbnailOf(file)"
-            :alt="file.name"
-            loading="lazy"
-            class="h-full w-full object-cover transition-opacity group-hover:opacity-90"
-          />
-          <component :is="iconFor(file)" v-else class="h-8 w-8 text-faint" />
-          <Badge v-if="file.status === 'pending'" variant="neutral" class="absolute left-2 top-2">Pending</Badge>
-          <span
-            v-else-if="file.ext"
-            class="absolute left-2 top-2 rounded bg-bg/70 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted"
-          >{{ file.ext }}</span>
-        </div>
-        <div class="p-2.5">
-          <p class="truncate text-[13px] text-fg">{{ file.title || file.name }}</p>
-          <p class="mt-0.5 truncate text-[11px] text-faint">
-            {{ humanFileSize(file.size) }} · <TimeAgo :date="file.uploadedAt || file.createdAt" />
-          </p>
-        </div>
-        </button>
-
-        <div class="absolute right-2 top-2 flex gap-1">
-          <IconButton
-            label="Download"
-            size="sm"
-            variant="subtle"
-            class="shadow-card"
-            :disabled="file.status === 'pending'"
-            :click="downloadFile"
-            :data="file"
-          >
-            <ArrowDownTrayIcon />
-          </IconButton>
-          <IconButton
-            label="Delete"
-            size="sm"
-            variant="subtle"
-            class="shadow-card"
-            :click="deleteFromTile"
-            :data="file"
-          >
-            <TrashIcon />
-          </IconButton>
-        </div>
-      </div>
-    </div>
-
-    <Paginator :data="files" @on-page-change="loadFiles" />
-
-    <FilePreviewModal :file="previewing" :open="previewOpen" @close="previewOpen = false" @delete="deleteFromPreview" />
+      <template #notice>
+        <p v-if="previewsOff" class="mb-4 text-xs text-faint">
+          Inline previews are off for your storage, so files open in a new tab instead.
+        </p>
+      </template>
+    </FileBrowser>
   </div>
 </template>

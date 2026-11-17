@@ -24,7 +24,7 @@ import { REASON_LABELS } from "../../data/reports";
 import {
   deleteSpaceClip,
   dismissSpaceReport,
-  getSpaceFileUrl,
+  getSpaceClipFileUrl,
   getSpaceReports,
   type SpaceReport
 } from "../../services/spaces.service";
@@ -88,7 +88,7 @@ function loadThumbs() {
   for (const report of reports.value) {
     if (!report.clip || !report.file?.thumbnail) continue;
     const id = report.publicId;
-    getSpaceFileUrl(props.spaceId, report.clip, true)
+    getSpaceClipFileUrl(props.spaceId, report.clip, true)
       .then((url) => (thumbs.value[id] = url))
       .catch(() => undefined);
   }
@@ -100,7 +100,7 @@ async function openFile(report: SpaceReport) {
 
   working.value = report.publicId;
   try {
-    const url = await getSpaceFileUrl(props.spaceId, report.clip);
+    const url = await getSpaceClipFileUrl(props.spaceId, report.clip);
     window.open(url, "_blank", "noopener");
   } catch (e) {
     alertRequestError(e);

@@ -12,6 +12,7 @@
  */
 import { $http } from "../http";
 import type { components } from "../types/api";
+import type { ListFilesOptions } from "./files.service";
 
 export type Space = components["schemas"]["SpaceSummary"];
 export type SpaceDetail = components["schemas"]["SpaceDetail"];
@@ -202,10 +203,37 @@ export function confirmSpaceUpload(spaceId: string, clipId: string) {
   );
 }
 
-/** `thumb` asks for the 200x200 version, which exists only for images. */
-export async function getSpaceFileUrl(spaceId: string, clipId: string, thumb = false) {
+/**
+ * By clip, for a file shown as a clip of the space. `thumb` asks for the
+ * 200x200 version, which exists only for images.
+ */
+export async function getSpaceClipFileUrl(spaceId: string, clipId: string, thumb = false) {
   const { url } = await $http.get<any, components["schemas"]["FileUrlResponse"]>(
     `space/${spaceId}/clip/${clipId}/url`,
+    { timeout: 30_000, params: thumb ? { thumb: 1 } : undefined }
+  );
+  return url;
+}
+
+/* ---------------- Files ---------------- */
+
+/**
+ * Every file in the space, by any member, newest first. The same response the
+ * personal `GET files` returns, so the same grid draws it, with two additions:
+ * `author` says who uploaded each one and `mine` whether that is the caller.
+ *
+ * `preview` is the shared storage's key on the same terms as the personal
+ * listing: present unless preview links are off, and the rows then carry urls
+ * that need no authentication. Without it, ask per file with `getSpaceFileUrl`.
+ */
+export function listSpaceFiles(spaceId: string, options: ListFilesOptions = {}) {
+  return $http.get<any, components["schemas"]["FileListResponse"]>(`space/${spaceId}/files`, { params: options });
+}
+
+/** By file, for the space's own storage. `thumb` asks for the 200x200 image. */
+export async function getSpaceFileUrl(spaceId: string, fileId: string, thumb = false) {
+  const { url } = await $http.get<any, components["schemas"]["FileUrlResponse"]>(
+    `space/${spaceId}/file/${fileId}/url`,
     { timeout: 30_000, params: thumb ? { thumb: 1 } : undefined }
   );
   return url;
