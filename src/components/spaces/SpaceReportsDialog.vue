@@ -69,14 +69,14 @@ watch(
 
 watch(status, () => props.open && load());
 
-/** Upholding it. The clip goes for everyone, and its reports close with it. */
+/** Deletes the clip for everyone in the space and closes its reports. */
 async function removeClip(report: SpaceReport) {
   if (!report.clip) return;
 
   const ok = await askToConfirm({
     title: `Delete ${report.author || "this member"}'s clip?`,
-    message: "It is removed for everyone in the space, and every report about it is closed.",
-    confirmLabel: "Delete the clip",
+    message: "The clip is deleted for everyone in the space and its reports are closed.",
+    confirmLabel: "Delete",
     danger: true
   });
   if (!ok) return;
@@ -93,7 +93,7 @@ async function removeClip(report: SpaceReport) {
   }
 }
 
-/** The other answer: the clip stays, and the report is kept as the record of it. */
+/** Keeps the clip and closes the report. */
 async function dismiss(report: SpaceReport) {
   working.value = report.publicId;
   try {
@@ -113,9 +113,9 @@ const STATUS_BADGE: Record<Status, "warn" | "danger" | "neutral"> = {
 };
 
 const EMPTY: Record<Status, string> = {
-  open: "Nothing is waiting on you. Members can report a clip from its menu.",
-  actioned: "No report here has been answered by deleting the clip.",
-  dismissed: "No report here has been looked at and left alone."
+  open: "No open reports.",
+  actioned: "No reports where the clip was deleted.",
+  dismissed: "No dismissed reports."
 };
 </script>
 

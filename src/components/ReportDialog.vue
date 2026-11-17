@@ -59,7 +59,7 @@ function answer(sent: boolean) {
       <div>
         <Textarea
           v-model="note"
-          :label="ReportOptionsRef.noteLabel"
+          label="Note"
           :rows="3"
           :mono="false"
           :maxlength="REPORT_NOTE_MAX"
@@ -72,7 +72,7 @@ function answer(sent: boolean) {
     <template #footer>
       <Button variant="ghost" @click="answer(false)">Cancel</Button>
       <Button variant="danger" :disabled="!reason" @click="answer(true)">
-        {{ ReportOptionsRef.confirmLabel || "Send report" }}
+        Report
       </Button>
     </template>
   </Dialog>

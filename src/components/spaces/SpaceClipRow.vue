@@ -255,27 +255,21 @@ async function remove() {
 
 /* ---------------- Report and block ---------------- */
 
-/**
- * To the space's owner, who decides. The owner can report one too, and it
- * lands in their own queue: a record of what was wrong with a clip, which
- * deleting it on the spot would leave nowhere.
- */
+/** Goes to the space owner, who can delete the clip. An owner reports into their own list. */
 async function report() {
   const owner = isSpaceOwner.value;
 
   const answer = await askToReport({
     title: "Report this clip",
     description: owner
-      ? "You own this space, so it goes to your own queue of reported clips, with a copy of what the clip says now."
-      : "It goes to the owner of this space, who can delete the clip or leave it. They are shown that you reported it.",
-    noteLabel: owner ? "Anything to add? It is kept with the report." : "Anything to add? The space owner reads this.",
-    confirmLabel: owner ? "Add to the queue" : "Report to the owner"
+      ? "This report is added to the reported clips of this space."
+      : "This report is sent to the owner of this space."
   });
   if (!answer) return;
 
   return run(async () => {
     await reportSpaceClip(props.spaceId, props.clip.publicId, answer);
-    // The owner's own report is one more on their queue, so the badge moved.
+    // The owner's own report changes their count.
     if (owner) refreshSpaceReports(props.spaceId);
   });
 }
@@ -415,7 +409,7 @@ async function block() {
           <template #icon><InboxArrowDownIcon /></template>Keep a copy in my clips
         </DropdownItem>
         <DropdownItem v-if="canReport" @click="report">
-          <template #icon><FlagIcon /></template>{{ isSpaceOwner ? "Report" : "Report to the owner" }}
+          <template #icon><FlagIcon /></template>Report
         </DropdownItem>
         <DropdownItem v-if="canBlock" danger @click="block">
           <template #icon><NoSymbolIcon /></template>Block {{ clip.author }}

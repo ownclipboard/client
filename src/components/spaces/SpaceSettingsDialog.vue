@@ -5,8 +5,7 @@
  * Neither can touch anyone else's clips from here.
  *
  * Blocking and reporting are here too, aimed at a person rather than a clip.
- * Reporting from here reaches the operator and not the owner, which is the
- * point: the owner is in this list as well, and may be who it is about.
+ * They are sent to us, not to the owner, who may be who the report is about.
  */
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
@@ -203,18 +202,13 @@ async function block(member: SpaceMember) {
   }
 }
 
-/** To the operator. One bad clip goes to the owner instead, from the clip itself. */
+/** Goes to us, not to the space owner. A single clip is reported from the clip itself. */
 async function report(member: SpaceMember) {
   if (!member.username) return;
 
   const answer = await askToReport({
     title: `Report ${member.username}`,
-    description:
-      member.role === "owner"
-        ? "This goes to us, not to the owner of this space, because that is who you are reporting."
-        : "This goes to us rather than to the space owner. For a single clip, report the clip instead: the owner can take that down.",
-    noteLabel: "What happened? Only we read this.",
-    confirmLabel: "Send report"
+    description: "This report is sent to us."
   });
   if (!answer) return;
 
@@ -228,13 +222,11 @@ async function report(member: SpaceMember) {
   }
 }
 
-/** The space itself: its name, or what it is being used for. */
+/** The space itself, rather than one of its members. */
 async function reportSpace() {
   const answer = await askToReport({
     title: `Report ${space.value?.name || "this space"}`,
-    description: "This goes to us. Leaving the space is separate, and you can do both.",
-    noteLabel: "What is wrong with it? Only we read this.",
-    confirmLabel: "Send report"
+    description: "This report is sent to us. You can report and stay in the space."
   });
   if (!answer) return;
 
@@ -331,7 +323,7 @@ const ROLE_LABEL: Record<string, string> = { owner: "Owner", member: "Member", i
                 <IconButton :label="`More about ${member.username}`" size="sm"><EllipsisHorizontalIcon /></IconButton>
               </template>
               <DropdownItem @click="report(member)">
-                <template #icon><FlagIcon /></template>Report to us
+                <template #icon><FlagIcon /></template>Report
               </DropdownItem>
               <DropdownItem danger @click="block(member)">
                 <template #icon><NoSymbolIcon /></template>Block {{ member.username }}
@@ -374,7 +366,7 @@ const ROLE_LABEL: Record<string, string> = { owner: "Owner", member: "Member", i
             <ArrowRightStartOnRectangleIcon class="h-4 w-4" />Leave space
           </Button>
           <Button size="sm" @click="reportSpace">
-            <FlagIcon class="h-4 w-4" />Report this space
+            <FlagIcon class="h-4 w-4" />Report
           </Button>
         </div>
       </section>

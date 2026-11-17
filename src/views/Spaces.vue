@@ -58,17 +58,11 @@ onMounted(async () => {
 
 /* ---------------- An invite nobody wanted ---------------- */
 
-/**
- * A space can be reported before it is accepted, which is the point: the name
- * of a space, or an invite to one, can be the whole of the problem. Both the
- * inviter and the space go on the report when we know who sent it.
- */
+/** An invite can be reported before it is accepted or declined. */
 async function reportInvite(invite: SpaceInvite) {
   const answer = await askToReport({
     title: `Report ${invite.space.name}`,
-    description: "This goes to us. You can report it without accepting or declining first.",
-    noteLabel: "What is wrong with it? Only we read this.",
-    confirmLabel: "Send report"
+    description: "This report is sent to us."
   });
   if (!answer) return;
 
@@ -206,7 +200,7 @@ function open(spaceId: string) {
               <IconButton label="More about this invite" size="sm"><EllipsisHorizontalIcon /></IconButton>
             </template>
             <DropdownItem @click="reportInvite(invite)">
-              <template #icon><FlagIcon /></template>Report this space
+              <template #icon><FlagIcon /></template>Report
             </DropdownItem>
             <DropdownItem v-if="invite.invitedBy" danger @click="blockInviter(invite)">
               <template #icon><NoSymbolIcon /></template>Block {{ invite.invitedBy }}
