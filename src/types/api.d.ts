@@ -2537,6 +2537,13 @@ export interface paths {
          *     the point: it is still there if the author edits or deletes the clip afterwards.
          *     `clip` is the clip's publicId, or null once the clip is gone.
          *
+         *     A reported file comes back as `file`, in the same shape a clip listing uses, so
+         *     the queue shows the thing being complained about instead of just its name. Get a
+         *     url for it with `GET space/{space}/clip/{clip}/url` using the report's `clip`,
+         *     and prefer `?thumb=1` when `file.thumbnail` is true: triaging a queue should not
+         *     mean downloading full-size material. `file` is absent once the clip is deleted,
+         *     because the file is deleted with it, and `snapshot.fileName` is what remains.
+         *
          *     Two ways to answer one: delete the clip with
          *     `POST space/{space}/clip/{clip}/delete`, which resolves every report about it as
          *     `actioned`, or leave the clip and close the report with
@@ -8726,6 +8733,13 @@ export interface components {
             author?: string;
             /** @description The clip's publicId, or null once the clip has gone. */
             clip: string | null;
+            /** @description Present while a reported file clip is still there, and the same shape a clip listing returns: show it with `GET space/{space}/clip/{clip}/url`, `?thumb=1` for the preview. Absent once the clip is deleted, since its file goes with it; `snapshot.fileName` is then all that is left of it. */
+            file?: {
+                name: string;
+                ext: string;
+                contentType: string;
+                thumbnail: boolean;
+            };
             snapshot?: components["schemas"]["ReportSnapshot"];
             createdAt: string;
             resolvedAt?: string;

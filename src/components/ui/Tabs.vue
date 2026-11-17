@@ -11,6 +11,8 @@ export type TabItem = {
   label: string;
   icon?: any;
   to?: RouteLocationRaw;
+  /** Shown beside the label when there is anything to count, and hidden at zero. */
+  count?: number;
 };
 
 defineProps({
@@ -52,6 +54,12 @@ function attrsFor(tab: TabItem, active: boolean) {
           :class="['h-4 w-4', modelValue === tab.key ? 'text-accent' : 'text-faint']"
         />
         {{ tab.label }}
+        <span
+          v-if="tab.count"
+          class="flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold tabular-nums text-white"
+        >
+          {{ tab.count }}
+        </span>
       </component>
     </nav>
   </div>

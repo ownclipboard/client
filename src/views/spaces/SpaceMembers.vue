@@ -7,7 +7,7 @@
  * Blocking and reporting are here too, aimed at a person rather than a clip.
  * They are sent to us, not to the owner, who may be who the report is about.
  */
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import {
   ArrowRightStartOnRectangleIcon,
@@ -19,9 +19,9 @@ import {
 } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../../http";
-import { $alert } from "../ws-alert/ws-alert";
-import { askToConfirm } from "../ConfirmHandler";
-import { askToReport } from "../ReportHandler";
+import { $alert } from "../../components/ws-alert/ws-alert";
+import { askToConfirm } from "../../components/ConfirmHandler";
+import { askToReport } from "../../components/ReportHandler";
 import { $events } from "../../events";
 import { blockAccount, reportAccount } from "../../services/moderation.service";
 import { useAuthUser } from "../../stores/auth.store";
@@ -36,19 +36,17 @@ import {
   type SpaceMember
 } from "../../services/spaces.service";
 import { currentSpace, isSpaceOwner, loadSpaces, refreshSpace } from "../../stores/spaces.store";
-import Dialog from "../ui/Dialog.vue";
-import Button from "../ui/Button.vue";
-import Input from "../ui/Input.vue";
-import Badge from "../ui/Badge.vue";
-import Divider from "../ui/Divider.vue";
-import Skeleton from "../ui/Skeleton.vue";
-import IconButton from "../ui/IconButton.vue";
-import DropdownMenu from "../ui/DropdownMenu.vue";
-import DropdownItem from "../ui/DropdownItem.vue";
-import SpaceSecuritySection from "./SpaceSecuritySection.vue";
+import Button from "../../components/ui/Button.vue";
+import Input from "../../components/ui/Input.vue";
+import Badge from "../../components/ui/Badge.vue";
+import Divider from "../../components/ui/Divider.vue";
+import Skeleton from "../../components/ui/Skeleton.vue";
+import IconButton from "../../components/ui/IconButton.vue";
+import DropdownMenu from "../../components/ui/DropdownMenu.vue";
+import DropdownItem from "../../components/ui/DropdownItem.vue";
+import SpaceSecuritySection from "../../components/spaces/SpaceSecuritySection.vue";
 
-const props = defineProps<{ open: boolean; spaceId: string }>();
-const emit = defineEmits<{ (e: "close"): void }>();
+const props = defineProps<{ spaceId: string }>();
 
 const $router = useRouter();
 const authUser = useAuthUser();
@@ -71,16 +69,10 @@ const storagePercent = computed(() => {
   return Math.min(100, Math.round((s.used / s.max) * 100));
 });
 
-watch(
-  () => props.open,
-  async (open) => {
-    if (!open) return;
-    name.value = space.value?.name || "";
-    inviteName.value = "";
-    await loadMembers();
-  },
-  { immediate: true }
-);
+onMounted(() => {
+  name.value = space.value?.name || "";
+  loadMembers();
+});
 
 async function loadMembers() {
   loadingMembers.value = true;
@@ -164,7 +156,6 @@ async function leave(btn: ILoadingButton) {
 
   return leaveSpace(props.spaceId)
     .then(async () => {
-      emit("close");
       await loadSpaces();
       $router.push({ name: "spaces" });
     })
@@ -246,7 +237,6 @@ async function destroy(btn: ILoadingButton) {
 
   return deleteSpace(props.spaceId)
     .then(async () => {
-      emit("close");
       await loadSpaces();
       $router.push({ name: "spaces" });
     })
@@ -258,8 +248,7 @@ const ROLE_LABEL: Record<string, string> = { owner: "Owner", member: "Member", i
 </script>
 
 <template>
-  <Dialog :open="open" size="lg" :title="space?.name || 'Space'" @close="emit('close')">
-    <div v-if="space" class="space-y-6">
+  <div v-if="space" class="max-w-2xl space-y-6">
       <div class="flex flex-wrap items-center gap-2 text-xs text-muted">
         <Badge :variant="isSpaceOwner ? 'accent' : 'neutral'" uppercase>{{ isSpaceOwner ? "Owner" : "Member" }}</Badge>
         <span v-if="space.owner && !isSpaceOwner">owned by {{ space.owner }}</span>
@@ -353,7 +342,7 @@ const ROLE_LABEL: Record<string, string> = { owner: "Owner", member: "Member", i
 
       <Divider />
 
-      <SpaceSecuritySection :open="open" :space-id="spaceId" />
+      <SpaceSecuritySection :space-id="spaceId" />
 
       <Divider />
 
@@ -386,6 +375,5 @@ const ROLE_LABEL: Record<string, string> = { owner: "Owner", member: "Member", i
           </Button>
         </form>
       </section>
-    </div>
-  </Dialog>
+  </div>
 </template>

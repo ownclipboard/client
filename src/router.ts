@@ -51,7 +51,28 @@ const routes: Array<RouteRecordRaw> = [
       { path: "clipboard", name: "clipboard", component: () => import("./views/Clipboard.vue"), meta: { title: "Clipboard" } },
       { path: "files", name: "files", component: () => import("./views/Files.vue"), meta: { title: "Files" } },
       { path: "spaces", name: "spaces", component: () => import("./views/Spaces.vue"), meta: { title: "Spaces" } },
-      { path: "spaces/:spaceId", name: "space", component: () => import("./views/Space.vue"), meta: { title: "Space" } },
+      {
+        path: "spaces/:spaceId",
+        component: () => import("./views/spaces/SpaceLayout.vue"),
+        meta: { title: "Space" },
+        children: [
+          // The clips keep the space's own path: it is where every link to a
+          // space already points.
+          { path: "", name: "space", component: () => import("./views/spaces/SpaceClips.vue") },
+          {
+            path: "members",
+            name: "space.members",
+            component: () => import("./views/spaces/SpaceMembers.vue"),
+            meta: { title: "Members" }
+          },
+          {
+            path: "reports",
+            name: "space.reports",
+            component: () => import("./views/spaces/SpaceReports.vue"),
+            meta: { title: "Reports" }
+          }
+        ]
+      },
       { path: "devices", name: "devices", component: () => import("./views/Devices.vue"), meta: { title: "Devices" } },
       { path: "plan", name: "pricing", component: () => import("./views/Pricing.vue"), meta: { title: "Plan" } },
       {

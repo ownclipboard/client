@@ -9,8 +9,9 @@ import Badge from "../ui/Badge.vue";
 const emit = defineEmits<{ (e: "navigate"): void }>();
 const $route = useRoute();
 
+// "space", and "space.members" and the rest under it.
 function isOpen(publicId: string) {
-  return $route.name === "space" && $route.params.spaceId === publicId;
+  return String($route.name ?? "").startsWith("space") && $route.params.spaceId === publicId;
 }
 </script>
 

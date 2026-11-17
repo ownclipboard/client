@@ -7,7 +7,7 @@
  * member sets one of their own, which is why raising the bar can only tell
  * people to go and do that.
  */
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { KeyIcon, ShieldCheckIcon } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../../http";
@@ -31,7 +31,7 @@ import Badge from "../ui/Badge.vue";
 import Select from "../ui/Select.vue";
 import Skeleton from "../ui/Skeleton.vue";
 
-const props = defineProps<{ open: boolean; spaceId: string }>();
+const props = defineProps<{ spaceId: string }>();
 
 const authUser = useAuthUser();
 
@@ -51,11 +51,7 @@ const REQUIREMENTS: { value: SpaceRequirement; label: string }[] = [
   { value: "both", label: "Both" }
 ];
 
-watch(
-  () => props.open,
-  (open) => open && load(),
-  { immediate: true }
-);
+onMounted(load);
 
 async function load() {
   loading.value = true;

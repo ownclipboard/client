@@ -1,18 +1,15 @@
 <script setup lang="ts">
 /**
- * Header of a space: its name and folders on one side, search and the ways to
- * add a clip on the other. Owns the paste, compose and upload flows, the same
- * three the personal clipboard has, pointed at the space endpoints.
+ * Above the clips of a space: search, folders, and the ways to add one. Owns
+ * the paste, compose and upload flows, the same three the personal clipboard
+ * has, pointed at the space endpoints.
  */
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import {
   ClipboardIcon,
   CloudArrowUpIcon,
-  Cog6ToothIcon,
-  FlagIcon,
   FolderPlusIcon,
-  PencilSquareIcon,
-  UsersIcon
+  PencilSquareIcon
 } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../../http";
@@ -30,25 +27,18 @@ import {
   currentSpace,
   currentSpaceFolder,
   currentSpaceFolders,
-  isSpaceOwner,
-  openSpaceReports,
   refreshSpaceFolders,
   spaceUploadIssue
 } from "../../stores/spaces.store";
-import { putToStorage, StorageUploadBlockedError, humanFileSize } from "../../services/files.service";
+import { putToStorage, StorageUploadBlockedError } from "../../services/files.service";
 import { showStorageCorsHelp } from "../StorageCorsHandler";
 import Button from "../ui/Button.vue";
 import Input from "../ui/Input.vue";
-import Badge from "../ui/Badge.vue";
 import UploadDialog, { type UploadItem, type UploadResults } from "../clips/UploadDialog.vue";
 import SpaceComposer from "./SpaceComposer.vue";
 
 const props = defineProps<{ spaceId: string }>();
-const emit = defineEmits<{
-  (e: "settings"): void;
-  (e: "reports"): void;
-  (e: "update:query", q: string): void;
-}>();
+const emit = defineEmits<{ (e: "update:query", q: string): void }>();
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 const query = ref("");
@@ -308,14 +298,6 @@ onBeforeUnmount(() => {
   hideDropTarget();
 });
 
-/* ---------------- Header figures ---------------- */
-
-const storageLabel = computed(() => {
-  const storage = currentSpace.value?.limits.storage;
-  if (!storage) return "";
-  return `${humanFileSize(storage.used)} of ${humanFileSize(storage.max)}`;
-});
-
 const folderName = computed(
   () => currentSpaceFolders.value.find((f) => f.slug === currentSpaceFolder.value)?.name || "Clipboard"
 );
@@ -324,26 +306,15 @@ const folderName = computed(
 <template>
   <div class="space-y-3">
     <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-      <div class="min-w-0">
-        <div class="flex items-center gap-2">
-          <h1 class="truncate text-lg font-semibold tracking-tight text-fg">{{ currentSpace?.name }}</h1>
-          <Badge variant="accent" uppercase>Space</Badge>
-        </div>
-        <p class="flex items-center gap-2 font-mono text-[11px] text-faint">
-          <span class="inline-flex items-center gap-1"><UsersIcon class="h-3 w-3" />{{ currentSpace?.members }}</span>
-          <span v-if="storageLabel">· {{ storageLabel }}</span>
-        </p>
-      </div>
-
-      <div class="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+      <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-1">
         <Input
           :model-value="query"
           size="sm"
-          class="w-full sm:w-56"
+          class="w-full sm:w-64"
           :placeholder="`Search in ${currentSpace?.name || 'space'}`"
           @update:model-value="onSearch"
         />
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 sm:ml-auto">
           <Button variant="primary" size="sm" :click="pasteFromButton" message="Pasting">
             <ClipboardIcon class="h-4 w-4" />
             Paste
@@ -356,26 +327,6 @@ const folderName = computed(
           </Button>
           <Button size="sm" :disabled="isUploading" :title="spaceUploadIssue || undefined" @click="pickFile">
             <CloudArrowUpIcon class="h-4 w-4" />Upload
-          </Button>
-          <!-- Owner only, and the count is the only thing that says the queue has anything in it. -->
-          <Button
-            v-if="isSpaceOwner"
-            size="sm"
-            variant="ghost"
-            class="relative"
-            :title="openSpaceReports ? `${openSpaceReports} clips reported here` : 'Reported clips'"
-            @click="emit('reports')"
-          >
-            <FlagIcon class="h-4 w-4" />
-            <span
-              v-if="openSpaceReports"
-              class="absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold tabular-nums text-white"
-            >
-              {{ openSpaceReports }}
-            </span>
-          </Button>
-          <Button size="sm" variant="ghost" title="Space settings" @click="emit('settings')">
-            <Cog6ToothIcon class="h-4 w-4" />
           </Button>
           <input ref="fileInput" type="file" multiple class="hidden" @change="onFilePicked" />
         </div>
