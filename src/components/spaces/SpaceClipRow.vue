@@ -42,7 +42,7 @@ import {
   updateSpaceClip,
   type SpaceClip
 } from "../../services/spaces.service";
-import { currentSpaceFolders, isSpaceOwner, refreshSpaceReports } from "../../stores/spaces.store";
+import { currentSpaceFolders, isSpaceOwner, refreshSpaceStats } from "../../stores/spaces.store";
 import { getFolders } from "../../stores/tabs.store";
 import type { OwnClip } from "../../types/models.types";
 import Badge from "../ui/Badge.vue";
@@ -248,7 +248,7 @@ async function remove() {
   return run(async () => {
     const res = await deleteSpaceClip(props.spaceId, props.clip.publicId);
     // Reports it closed are off the owner's queue now, so the badge is stale.
-    if (res.reportsResolved) refreshSpaceReports(props.spaceId);
+    if (res.reportsResolved) refreshSpaceStats(props.spaceId);
     emit("deleted", props.clip.publicId);
   });
 }
@@ -270,7 +270,7 @@ async function report() {
   return run(async () => {
     await reportSpaceClip(props.spaceId, props.clip.publicId, answer);
     // The owner's own report changes their count.
-    if (owner) refreshSpaceReports(props.spaceId);
+    if (owner) refreshSpaceStats(props.spaceId);
   });
 }
 

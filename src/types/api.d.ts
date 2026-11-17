@@ -1560,6 +1560,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client/v1/space/{space}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Counters for a space
+         * @description How much is in this space, for a header or a dashboard. Open to the owner and to
+         *     active members.
+         *
+         *     `clips` is every clip in the space and `files` is how many of those are file
+         *     clips, so `files` is a part of `clips` and not a separate total. Clips still
+         *     waiting on their upload are in neither. `members` counts the owner and the active
+         *     members, matching the `members` of `GET space/{space}`.
+         *
+         *     `reports` is the number of open reports, and is **present only for the owner**.
+         *     The reports queue is the owner's alone, and a member who asks for it gets a 404 so
+         *     that owning a space cannot be probed for; a counter would answer the same
+         *     question, so members do not get the field at all. Read `role` from
+         *     `GET space/{space}` to know which shape to expect.
+         *
+         *     These are totals for the whole space and are not filtered by blocks, so they can
+         *     be larger than what the clips listing returns to a member who has blocked someone.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Space publicId. */
+                    space: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The counters. `reports` only for the owner. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SpaceStatsResponse"];
+                    };
+                };
+                /**
+                 * @description Space not found, or the caller has no role in it. A non-member gets this and
+                 *     not a 403, so a space cannot be found by guessing ids.
+                 */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                423: components["responses"]["SpaceLocked"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/client/v1/space/{space}/rename": {
         parameters: {
             query?: never;
@@ -8911,6 +8981,20 @@ export interface components {
             snapshot?: components["schemas"]["ReportSnapshot"];
             createdAt: string;
             resolvedAt?: string;
+        };
+        /** @description Counters for a space. `files` is the part of `clips` that are file clips, not a separate total, and both leave out clips still waiting on an upload. Totals for the whole space: unlike the clips listing, they are not filtered by blocks. */
+        SpaceStats: {
+            /** @description Every clip in the space, file clips included. */
+            clips: number;
+            /** @description How many of `clips` are file clips. */
+            files: number;
+            /** @description The owner plus active members, the same figure as `SpaceInfo.members`. */
+            members: number;
+            /** @description Open reports in this space. Present only for the owner: the queue is theirs alone, and a member asking for it gets a 404 so that owning a space cannot be probed for. */
+            reports?: number;
+        };
+        SpaceStatsResponse: {
+            stats: components["schemas"]["SpaceStats"];
         };
         SpaceReportsResponse: {
             /** @description How many reports in this space are still open, whatever `status` was asked for. */

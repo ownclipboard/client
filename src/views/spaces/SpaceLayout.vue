@@ -12,7 +12,14 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ChatBubbleLeftRightIcon, FlagIcon, PhotoIcon, UsersIcon } from "@heroicons/vue/20/solid";
 import { alertRequestError } from "../../http";
-import { clearCurrentSpace, currentSpace, isSpaceOwner, openSpace, openSpaceReports } from "../../stores/spaces.store";
+import {
+  clearCurrentSpace,
+  currentSpace,
+  currentSpaceStats,
+  isSpaceOwner,
+  openSpace,
+  openSpaceReports
+} from "../../stores/spaces.store";
 import { getSpaceLock, type SpaceLockState } from "../../services/spaces.service";
 import { humanFileSize } from "../../services/files.service";
 import SpaceLockGate from "../../components/spaces/SpaceLockGate.vue";
@@ -84,13 +91,37 @@ const storageLabel = computed(() => {
   return `${humanFileSize(storage.used)} of ${humanFileSize(storage.max)}`;
 });
 
+/**
+ * The counters are the space's stats, except the members, which the space
+ * detail already carries and keeps up to date on its own. Files are the part
+ * of the clips that are files, so the two figures overlap by design.
+ */
 const tabs = computed<TabItem[]>(() => {
   const params = { spaceId: spaceId.value };
+  const stats = currentSpaceStats.value;
 
   const items: TabItem[] = [
-    { key: "space", label: "Clips", icon: ChatBubbleLeftRightIcon, to: { name: "space", params } },
-    { key: "space.files", label: "Files", icon: PhotoIcon, to: { name: "space.files", params } },
-    { key: "space.members", label: "Members", icon: UsersIcon, to: { name: "space.members", params } }
+    {
+      key: "space",
+      label: "Clips",
+      icon: ChatBubbleLeftRightIcon,
+      to: { name: "space", params },
+      count: stats?.clips
+    },
+    {
+      key: "space.files",
+      label: "Files",
+      icon: PhotoIcon,
+      to: { name: "space.files", params },
+      count: stats?.files
+    },
+    {
+      key: "space.members",
+      label: "Members",
+      icon: UsersIcon,
+      to: { name: "space.members", params },
+      count: currentSpace.value?.members
+    }
   ];
 
   // The queue is the owner's, and the count is what says it has anything in it.
@@ -100,7 +131,8 @@ const tabs = computed<TabItem[]>(() => {
       label: "Reports",
       icon: FlagIcon,
       to: { name: "space.reports", params },
-      count: openSpaceReports.value
+      count: openSpaceReports.value,
+      alert: true
     });
   }
 
@@ -140,10 +172,8 @@ const openTab = computed(() => String($route.name ?? ""));
           <h1 class="truncate text-lg font-semibold tracking-tight text-fg">{{ currentSpace.name }}</h1>
           <Badge variant="accent" uppercase>Space</Badge>
         </div>
-        <p class="flex items-center gap-2 font-mono text-[11px] text-faint">
-          <span class="inline-flex items-center gap-1"><UsersIcon class="h-3 w-3" />{{ currentSpace.members }}</span>
-          <span v-if="storageLabel">· {{ storageLabel }}</span>
-        </p>
+        <!-- The members are counted on their own tab now; the storage is nowhere else. -->
+        <p v-if="storageLabel" class="font-mono text-[11px] text-faint">{{ storageLabel }}</p>
       </div>
 
       <Tabs :model-value="openTab" :tabs="tabs" label="Space pages" />

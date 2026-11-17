@@ -6,7 +6,13 @@ import { ClipboardIcon, MagnifyingGlassIcon } from "@heroicons/vue/24/outline";
 import { alertRequestError } from "../../http";
 import { $events } from "../../events";
 import { getSpaceClips, searchSpaceClips, type SpaceClip } from "../../services/spaces.service";
-import { currentSpace, currentSpaceFolder, refreshSpace, refreshSpaceFolders } from "../../stores/spaces.store";
+import {
+  currentSpace,
+  currentSpaceFolder,
+  refreshSpace,
+  refreshSpaceFolders,
+  refreshSpaceStats
+} from "../../stores/spaces.store";
 import Paginator, { Pagination } from "../paginator/Paginator.vue";
 import SpaceClipRow from "./SpaceClipRow.vue";
 import EmptyState from "../ui/EmptyState.vue";
@@ -80,16 +86,18 @@ onBeforeUnmount(() => $events.off("space:clips-changed", onChanged));
 
 async function onChanged() {
   await load();
-  // A clip arriving or leaving moves the folder counts and the storage figure,
-  // both of which the toolbar shows.
+  // A clip arriving or leaving moves the folder counts, the storage figure and
+  // the counts on the tabs, none of which this list owns.
   refreshSpaceFolders(props.spaceId).catch(() => {});
   refreshSpace(props.spaceId).catch(() => {});
+  refreshSpaceStats(props.spaceId).catch(() => {});
 }
 
 function onDeleted(publicId: string) {
   clips.value.data = clips.value.data.filter((c) => c.publicId !== publicId);
   refreshSpaceFolders(props.spaceId).catch(() => {});
   refreshSpace(props.spaceId).catch(() => {});
+  refreshSpaceStats(props.spaceId).catch(() => {});
 }
 
 function clearSearch() {

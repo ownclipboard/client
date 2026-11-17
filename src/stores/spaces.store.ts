@@ -9,12 +9,13 @@ import { computed, ref } from "vue";
 import {
   getSpace,
   getSpaceFolders,
-  getSpaceReports,
+  getSpaceStats,
   getSpaces,
   type Space,
   type SpaceDetail,
   type SpaceFolder,
-  type SpaceInvite
+  type SpaceInvite,
+  type SpaceStats
 } from "../services/spaces.service";
 
 export const spaces = ref<Space[]>([]);
@@ -28,20 +29,36 @@ export const currentSpaceFolder = ref("clipboard");
 
 export const isSpaceOwner = computed(() => currentSpace.value?.role === "owner");
 
-/**
- * Clips members have reported here and the owner has not answered yet. Only
- * the owner can ask, and only the owner is shown it: without a count on the
- * toolbar there is nothing to tell them the queue has anything in it.
- */
-export const openSpaceReports = ref(0);
+/** How much is in the open space: its clips, its files, and the owner's reports. */
+export const currentSpaceStats = ref<SpaceStats | null>(null);
 
-export async function refreshSpaceReports(spaceId: string) {
-  if (!isSpaceOwner.value) return;
+/**
+ * One request for every figure the space's tabs show. It moves whenever a clip
+ * arrives or leaves, so it is asked for again alongside the folder counts.
+ */
+export async function refreshSpaceStats(spaceId: string) {
   try {
-    openSpaceReports.value = (await getSpaceReports(spaceId, "open")).open;
+    currentSpaceStats.value = (await getSpaceStats(spaceId)).stats;
   } catch {
-    // A badge is a courtesy. A space whose reports will not load still opens.
+    // Counters are a courtesy. A space whose stats will not load still opens.
   }
+}
+
+/**
+ * Clips members have reported here and the owner has not answered yet. The api
+ * leaves the field out for everyone else, so a member counts zero without
+ * having to ask for a queue that is not theirs. Without the count there is
+ * nothing to tell the owner the queue has anything in it.
+ */
+export const openSpaceReports = computed(() => currentSpaceStats.value?.reports ?? 0);
+
+/**
+ * The reports page counted them while fetching the queue, so take its figure
+ * rather than ask for the same number again. Nothing to patch before the stats
+ * arrive, and nothing lost: they bring the count with them.
+ */
+export function noteOpenSpaceReports(open: number) {
+  if (currentSpaceStats.value) currentSpaceStats.value.reports = open;
 }
 
 /** Files need the owner on Pro, and the space has a storage ceiling of its own. */
@@ -82,9 +99,9 @@ export async function openSpace(spaceId: string) {
   // The folder we were on may have been deleted by its author in the meantime.
   if (!folders.some((f) => f.slug === currentSpaceFolder.value)) currentSpaceFolder.value = "clipboard";
 
-  // Not awaited: the space is ready to show, and the badge can arrive after it.
-  openSpaceReports.value = 0;
-  refreshSpaceReports(spaceId);
+  // Not awaited: the space is ready to show, and its counters can follow.
+  currentSpaceStats.value = null;
+  refreshSpaceStats(spaceId);
   return space;
 }
 
@@ -104,5 +121,5 @@ export function clearCurrentSpace() {
   currentSpace.value = null;
   currentSpaceFolders.value = [];
   currentSpaceFolder.value = "clipboard";
-  openSpaceReports.value = 0;
+  currentSpaceStats.value = null;
 }

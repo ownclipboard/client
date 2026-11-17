@@ -28,7 +28,7 @@ import {
   getSpaceReports,
   type SpaceReport
 } from "../../services/spaces.service";
-import { currentSpace, isSpaceOwner, refreshSpaceReports } from "../../stores/spaces.store";
+import { currentSpace, isSpaceOwner, noteOpenSpaceReports, refreshSpaceStats } from "../../stores/spaces.store";
 import Badge from "../../components/ui/Badge.vue";
 import Button from "../../components/ui/Button.vue";
 import Skeleton from "../../components/ui/Skeleton.vue";
@@ -74,8 +74,9 @@ async function load() {
     reports.value = res.reports;
     thumbs.value = {};
     loadThumbs();
-    // `open` counts them whatever was asked for, so the badge is right either way.
-    refreshSpaceReports(props.spaceId);
+    // `open` counts them whatever was asked for, so the badge is right either
+    // way, and nothing has to be asked for twice.
+    noteOpenSpaceReports(res.open);
   } catch (e) {
     alertRequestError(e);
   } finally {
@@ -142,6 +143,8 @@ async function removeClip(report: SpaceReport) {
     await deleteSpaceClip(props.spaceId, report.clip);
     $events.emit("space:clips-changed");
     await load();
+    // One clip fewer in the space, and a file with it if that is what it was.
+    refreshSpaceStats(props.spaceId).catch(() => {});
   } catch (e) {
     alertRequestError(e);
   } finally {

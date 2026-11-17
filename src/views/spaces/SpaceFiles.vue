@@ -12,7 +12,7 @@ import { useRoute } from "vue-router";
 import { alertRequestError } from "../../http";
 import { $events } from "../../events";
 import { listSpaceFiles } from "../../services/spaces.service";
-import { currentSpaceFolders } from "../../stores/spaces.store";
+import { currentSpaceFolders, refreshSpaceStats } from "../../stores/spaces.store";
 import type { FilePreview, StoredFile } from "../../services/files.service";
 import { Pagination } from "../../components/paginator/Paginator.vue";
 import FileBrowser from "../../components/files/FileBrowser.vue";
@@ -51,9 +51,11 @@ async function loadFiles(page = Number($route.query.page) || 1) {
 watch([folder, type], () => loadFiles(1));
 onMounted(() => loadFiles());
 
-// An upload or a delete anywhere in the space changes this list too.
+// An upload or a delete anywhere in the space changes this list too, and the
+// counts on the tabs with it.
 function onClipsChanged() {
   loadFiles(files.value.page);
+  refreshSpaceStats(props.spaceId).catch(() => {});
 }
 $events.on("space:clips-changed", onClipsChanged);
 onBeforeUnmount(() => $events.off("space:clips-changed", onClipsChanged));

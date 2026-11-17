@@ -13,6 +13,8 @@ export type TabItem = {
   to?: RouteLocationRaw;
   /** Shown beside the label when there is anything to count, and hidden at zero. */
   count?: number;
+  /** A count waiting to be answered rather than described: a red pill, not a figure. */
+  alert?: boolean;
 };
 
 defineProps({
@@ -55,8 +57,14 @@ function attrsFor(tab: TabItem, active: boolean) {
         />
         {{ tab.label }}
         <span
-          v-if="tab.count"
+          v-if="tab.count && tab.alert"
           class="flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold tabular-nums text-white"
+        >
+          {{ tab.count }}
+        </span>
+        <span
+          v-else-if="tab.count"
+          :class="['font-mono text-[11px] tabular-nums', modelValue === tab.key ? 'text-muted' : 'text-faint']"
         >
           {{ tab.count }}
         </span>

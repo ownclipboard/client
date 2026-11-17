@@ -40,6 +40,22 @@ export function getSpace(spaceId: string) {
   return $http.get<any, components["schemas"]["SpaceDetailResponse"]>(`space/${spaceId}`);
 }
 
+export type SpaceStats = components["schemas"]["SpaceStats"];
+
+/**
+ * Every counter the space shows, in one request. `files` is the part of
+ * `clips` that are files rather than a total beside it, and a clip still
+ * waiting on its upload is in neither. `reports` comes back for the owner
+ * only, which is also why a member asking for the queue itself gets a 404.
+ *
+ * Totals for the whole space: unlike the clips listing they are not filtered
+ * by blocks, so a member who has blocked someone can be shown a figure larger
+ * than the list they get.
+ */
+export function getSpaceStats(spaceId: string) {
+  return $http.get<any, components["schemas"]["SpaceStatsResponse"]>(`space/${spaceId}/stats`);
+}
+
 export function renameSpace(spaceId: string, name: string) {
   return $http.post<any, MessageResponse>(`space/${spaceId}/rename`, { name });
 }
