@@ -35,6 +35,22 @@ export function folderNeedsPassword(folder?: OwnFolder) {
 
 export const currentFolderNeedsPassword = computed(() => folderNeedsPassword(currentFolder.value));
 
+/**
+ * A folder's auto-delete in one line, or "" when it keeps everything. The two
+ * caps are independent, so a folder can have either or both.
+ */
+export function retentionLabel(folder?: OwnFolder) {
+  if (!folder) return "";
+
+  const parts: string[] = [];
+  if (folder.retentionDays) {
+    parts.push(`deletes after ${folder.retentionDays} ${folder.retentionDays === 1 ? "day" : "days"}`);
+  }
+  if (folder.maxClips) parts.push(`keeps the newest ${folder.maxClips.toLocaleString()}`);
+
+  return parts.join(", ");
+}
+
 // Get folders
 export async function getFolders() {
   folders.value = await $http.get<any, OwnFolder[]>("/folders");

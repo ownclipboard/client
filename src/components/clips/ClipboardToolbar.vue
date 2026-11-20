@@ -7,7 +7,7 @@ import { computed, ref, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import { ClipboardIcon, CloudArrowUpIcon, ExclamationTriangleIcon, LockClosedIcon, PencilSquareIcon } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
-import { currentFolder, currentFolderNeedsPassword, currentTab, getFolders } from "../../stores/tabs.store";
+import { currentFolder, currentFolderNeedsPassword, currentTab, getFolders, retentionLabel } from "../../stores/tabs.store";
 import { composerOpen, openComposer } from "../../stores/composer.store";
 import { openFolderSettings } from "../../stores/folder-settings.store";
 import { searchQuery, searchAllFolders } from "../../stores/search.store";
@@ -23,6 +23,9 @@ import UploadDialog, { type UploadItem, type UploadResults } from "./UploadDialo
 import Button from "../ui/Button.vue";
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
+
+/** What this folder throws away on its own, when it throws anything away. */
+const retentionNote = computed(() => retentionLabel(currentFolder.value));
 const authUser = useAuthUser();
 const $router = useRouter();
 
@@ -284,7 +287,11 @@ const needsPassword = computed(() => currentFolderNeedsPassword.value);
     <div class="flex flex-wrap items-center gap-2 sm:gap-3">
       <div class="min-w-0">
         <h1 class="truncate text-lg font-semibold tracking-tight text-fg">{{ currentFolder?.name || "Clipboard" }}</h1>
-        <p class="text-[11px] text-faint">{{ currentFolder?.contents ?? 0 }} clips</p>
+        <p class="text-[11px] text-faint">
+          {{ currentFolder?.contents ?? 0 }} clips
+          <!-- Said here because this is where the clips are, and they are leaving. -->
+          <span v-if="retentionNote">· {{ retentionNote }}</span>
+        </p>
       </div>
 
       <div class="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">

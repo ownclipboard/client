@@ -27,6 +27,10 @@ export type OwnFolder = {
   visibility: "public" | "private" | "encrypted";
   publicPaste?: { id: string; date: string };
   hasPassword?: boolean;
+  /** Clips older than this many days are deleted hourly. Absent: nothing expires. */
+  retentionDays?: number;
+  /** Only the newest this many clips are kept. Absent: no cap. */
+  maxClips?: number;
 };
 
 

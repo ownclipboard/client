@@ -4602,10 +4602,18 @@ export interface paths {
         /**
          * List folders
          * @description All folders of the user with their clip counts.
+         *
+         *     Pass `?retention=1` to list only the folders that have an auto-delete cap set
+         *     (`retentionDays` or `maxClips`), which is what a client managing those folders —
+         *     the desktop clipboard push, say — wants rather than filtering the whole list itself.
+         *     Any other value, or no value, lists everything.
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Only folders with an auto-delete cap set. */
+                    retention?: "1" | "true";
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -4709,6 +4717,14 @@ export interface paths {
          * Set folder password
          * @description Stores the password used to encrypt clips in this folder. The client must send the
          *     MD5 hash of the password, never the plain text. Folders with a password cannot be deleted.
+         *
+         *     **Refused with a 400 on a folder that auto-deletes its clips.** A password and
+         *     auto-delete are mutually exclusive, because the hourly sweep flushes without anyone's
+         *     password. Clear the caps first with
+         *     `POST /client/v1/folder/{folder}/retention` and `{ "days": 0, "maxClips": 0 }`.
+         *
+         *     Note there is no endpoint that removes a folder password, so this is one way only:
+         *     once a folder has a password it can never be given auto-delete.
          */
         post: {
             parameters: {
@@ -4740,7 +4756,7 @@ export interface paths {
                         "application/json": components["schemas"]["MessageResponse"];
                     };
                 };
-                /** @description Validation error. */
+                /** @description Validation error, or the folder auto-deletes its clips. */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -4813,6 +4829,108 @@ export interface paths {
                 };
                 /** @description Validation error, protected folder, or a folder with that name already exists. */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Folder not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/folder/{folder}/retention": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set a folder to auto-delete its clips
+         * @description Gives the folder up to two independent caps, and clips that fall outside either are
+         *     deleted by a sweep that runs **hourly**:
+         *
+         *     - `days` (1-30) — clips older than this many days are flushed, counted from when the
+         *       clip was saved. Editing a clip does not reset its clock, and neither does a
+         *       de-duplicated paste of the same content, which only touches `updatedAt`: such a
+         *       clip still expires on its original clock although it sorts as recently updated.
+         *     - `maxClips` (50-10000) — only the newest this many clips are kept.
+         *
+         *     Send either, or both. `0` turns one off. Sending neither is a 400.
+         *
+         *     **This is permanent.** A flushed clip is gone; there is no trash to restore it from,
+         *     and a file clip takes its uploaded file with it. If the owner's owns3 server cannot
+         *     be reached, those file clips are left alone and retried on the next sweep, so a
+         *     folder can briefly hold more than its cap.
+         *
+         *     Favorited and locked clips are never flushed, and they do not count towards
+         *     `maxClips`: a folder capped at 1000 keeps 1000 ordinary clips *plus* any favorites.
+         *
+         *     A folder cannot auto-delete and have a password at the same time, in either order:
+         *     the sweep runs with nobody's password, so the two together would walk around the
+         *     password check that deleting a clip enforces. Note there is no endpoint that removes
+         *     a folder password, so a folder that already has one can never be given auto-delete —
+         *     use a folder without one. Encrypted folders are refused for the same reason.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Folder slug. */
+                    folder: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "days": 7,
+                     *       "maxClips": 1000
+                     *     }
+                     */
+                    "application/json": components["schemas"]["FolderRetentionBody"];
+                };
+            };
+            responses: {
+                /** @description The updated folder. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Folder"];
+                    };
+                };
+                /** @description Validation error, neither field sent, or the folder has a password or is encrypted. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5030,8 +5148,12 @@ export interface paths {
          * @description Deletes the folder and every clip in it. Files in the folder are removed from owns3
          *     first, so storage must be connected when the folder holds any.
          *     A folder that has a password is deleted only when the request carries that password,
-         *     as its MD5 hash, in the body. Folders without one are deleted straight away.
+         *     as its MD5 hash, in the body. Folders without one are deleted straight away, which
+         *     includes every folder that auto-deletes, since the two cannot be combined.
          *     The default `clipboard` folder can never be deleted.
+         *
+         *     Deleting the folder removes its auto-delete settings with it; there is nothing left
+         *     for the hourly sweep to act on.
          */
         delete: {
             parameters: {
@@ -5655,7 +5777,14 @@ export interface paths {
         put?: never;
         /**
          * Delete a file
-         * @description Deletes the object on owns3, the file record and its clip. Deleting a file clip through the clip delete endpoint does the same.
+         * @description Deletes the object on owns3, the file record and its clip. Deleting a file clip
+         *     through the clip delete endpoint does the same.
+         *
+         *     An object that is already missing from owns3 is treated as deleted, so the records
+         *     still go and the call succeeds: the end state is what matters, and otherwise a file
+         *     whose object had vanished could never be removed. Any other owns3 failure — the
+         *     server unreachable, the key refused — aborts and changes nothing, so it is safe to
+         *     retry.
          */
         post: {
             parameters: {
@@ -6207,6 +6336,15 @@ export interface paths {
          *     the existing clip's `updatedAt` is touched instead of creating a new one.
          *     Clips pasted into an encrypted folder are stored as-is and flagged `encrypted`, so the
          *     client must encrypt the content before sending it.
+         *
+         *     If the target folder auto-deletes (`retentionDays` or `maxClips`, see
+         *     `POST /client/v1/folder/{folder}/retention`) the clip has a limited life and will be
+         *     flushed without further notice. Note how that meets de-duplication: an age window is
+         *     measured from when a clip was first saved, and a de-duplicated paste only touches
+         *     `updatedAt`, so re-pasting the same content does **not** extend its life — it expires
+         *     on the original clock even though it sorts as recently updated. Paste into a folder
+         *     without caps for anything that must be kept, or mark the clip `favorite`, which is
+         *     never flushed.
          */
         post: {
             parameters: {
@@ -6719,6 +6857,13 @@ export interface paths {
         /**
          * Delete a clip
          * @description Encrypted clips require the MD5 hash of their folder password in the body.
+         *
+         *     A file clip takes its uploaded file with it, so owns3 must be connected to delete
+         *     one. An object already missing from owns3 counts as deleted and the call still
+         *     succeeds; any other owns3 failure aborts and changes nothing, so it is safe to retry.
+         *
+         *     A clip in a folder that auto-deletes may be gone before you ask: see
+         *     `POST /client/v1/folder/{folder}/retention`.
          */
         post: {
             parameters: {
@@ -8117,6 +8262,17 @@ export interface components {
                 id: string;
                 date: string;
             };
+            /** @description Auto-delete window in days, 1-30. Clips older than this are flushed hourly. Absent means the folder keeps its clips for ever. Never set on a folder that has a password. */
+            retentionDays?: number;
+            /** @description Auto-delete cap on clips kept, 50-10000; only the newest this many survive. Absent means no cap. Favorited and locked clips are outside it: they are neither flushed nor counted, so a folder can legitimately report more `contents` than this. */
+            maxClips?: number;
+        };
+        /** @description Either or both, and at least one. `0` turns a cap off. A flushed clip is gone for good, and a file clip takes its uploaded file with it. */
+        FolderRetentionBody: {
+            /** @description Days to keep a clip, 1-30, counted from when it was saved. `0` turns the age cap off. */
+            days?: number;
+            /** @description How many clips to keep, 50-10000, newest first. `0` turns the count cap off. */
+            maxClips?: number;
         };
         CreateFolderBody: {
             /** @description Folder name, must be unique per user. The slug is derived from it. */

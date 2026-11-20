@@ -1,7 +1,14 @@
 <script setup lang="ts">
 /**
  * Settings for one folder: encryption password (once), public paste toggle,
- * and deletion. Opened from the sidebar gear via the folder-settings store.
+ * auto-delete, and deletion. Opened from the sidebar gear via the
+ * folder-settings store.
+ *
+ * Auto-delete and a password cannot be combined, in either order: the hourly
+ * sweep runs with nobody's password. A password can never be removed either,
+ * so a folder that has one can never auto-delete afterwards. Here that door is
+ * only ever opened for an encrypted folder, which is refused auto-delete on
+ * the same grounds, so the two never meet by accident.
  */
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
@@ -11,13 +18,14 @@ import type { ILoadingButton } from "revue-components/vues/component-types";
 import { md5 } from "../../functions/crypto";
 import { $http, alertDeleteError, alertRequestError } from "../../http";
 import config from "../../config";
-import { currentTab, foldersAsObject, getFolders } from "../../stores/tabs.store";
+import { currentTab, foldersAsObject, getFolders, retentionLabel } from "../../stores/tabs.store";
 import { useAuthUser } from "../../stores/auth.store";
 import { closeFolderSettings, folderSettingsSlug, openFolderSettings } from "../../stores/folder-settings.store";
 import type { components } from "../../types/api";
 import { $alert } from "../ws-alert/ws-alert";
 import { redirect } from "../../functions";
-import { askForPassword } from "../PasswordPromptHandler";
+import { askForPassword, ShowPasswordPrompt } from "../PasswordPromptHandler";
+import { askToConfirm, ShowConfirm } from "../ConfirmHandler";
 import Dialog from "../ui/Dialog.vue";
 import Button from "../ui/Button.vue";
 import Input from "../ui/Input.vue";
@@ -27,6 +35,11 @@ import Badge from "../ui/Badge.vue";
 const $router = useRouter();
 const authUser = useAuthUser();
 const open = computed(() => folderSettingsSlug.value !== null);
+
+// A confirm or a password prompt is a dialog of its own, so a click inside it
+// is a click outside this one and would dismiss the folder behind it. Hold the
+// door while one is up; the question that opened it belongs to this dialog.
+const dismissable = computed(() => !ShowConfirm.value && !ShowPasswordPrompt.value);
 const folder = computed(() => (folderSettingsSlug.value ? foldersAsObject.value[folderSettingsSlug.value] : undefined));
 
 const password = ref("");
@@ -35,11 +48,22 @@ const newName = ref("");
 const publicPaste = ref(false);
 const togglingPublic = ref(false);
 
+// Auto-delete. Each cap is its own switch, and the number beside it is only
+// read while that switch is on, so turning one off and on again keeps it.
+const byAge = ref(false);
+const days = ref<number | string>(7);
+const byCount = ref(false);
+const maxClips = ref<number | string>(1000);
+
 watch(folder, (f) => {
   publicPaste.value = !!f?.publicPaste;
   password.value = "";
   deleteName.value = "";
   newName.value = f?.name || "";
+  byAge.value = !!f?.retentionDays;
+  days.value = f?.retentionDays || 7;
+  byCount.value = !!f?.maxClips;
+  maxClips.value = f?.maxClips || 1000;
 }, { immediate: true });
 
 // The default folders cannot be renamed or deleted.
@@ -116,23 +140,84 @@ async function togglePublicPaste(value: boolean) {
   }
 }
 
+/* ---------------- Auto-delete ---------------- */
+
+/** What the folder does today, for the line under its name. */
+const retentionSummary = computed(() => retentionLabel(folder.value));
+
+// 0 is how a cap is turned off, and what the api expects for one that is off.
+const nextDays = computed(() => (byAge.value ? Math.trunc(Number(days.value) || 0) : 0));
+const nextMaxClips = computed(() => (byCount.value ? Math.trunc(Number(maxClips.value) || 0) : 0));
+
+const retentionValid = computed(() => {
+  if (byAge.value && (nextDays.value < 1 || nextDays.value > 30)) return false;
+  if (byCount.value && (nextMaxClips.value < 50 || nextMaxClips.value > 10000)) return false;
+  return true;
+});
+
+const retentionChanged = computed(
+  () => nextDays.value !== (folder.value?.retentionDays || 0) || nextMaxClips.value !== (folder.value?.maxClips || 0)
+);
+
+async function saveRetention(btn: ILoadingButton) {
+  if (!folder.value || !retentionChanged.value) return btn.stopLoading();
+  if (!retentionValid.value) {
+    return btn.stopLoading(() => $alert.warning("Days must be 1 to 30, and clips 50 to 10,000."));
+  }
+
+  // Held on to: the dialog can be closed while the question is on screen, and
+  // the folder computed goes with it.
+  const { slug, name } = folder.value;
+  const nextDaysValue = nextDays.value;
+  const nextMaxClipsValue = nextMaxClips.value;
+
+  // The sweep runs hourly and keeps nothing, so saying yes here deletes clips.
+  // Turning both off takes nothing away, so it is saved as it is.
+  if (nextDaysValue || nextMaxClipsValue) {
+    const ok = await askToConfirm({
+      title: `Auto-delete clips in ${name}?`,
+      message: "Clips outside the limits are deleted within the hour, and cannot be brought back.",
+      confirmLabel: "Save",
+      danger: true
+    });
+    if (!ok) return btn.stopLoading();
+  }
+
+  try {
+    await $http.post<any, components["schemas"]["Folder"]>(`/folder/${slug}/retention`, {
+      days: nextDaysValue,
+      maxClips: nextMaxClipsValue
+    });
+    await getFolders();
+    // The api answers with its own message, which is toasted for us.
+  } catch (e) {
+    alertRequestError(e);
+  } finally {
+    btn.stopLoading();
+  }
+}
+
 async function deleteFolder(btn: ILoadingButton) {
   if (!folder.value) return btn.stopLoading();
   if (deleteName.value !== folder.value.name) {
     return btn.stopLoading(() => $alert.warning("Type the folder name exactly to confirm."));
   }
 
+  // Held on to for the same reason the save does: asking for the password puts
+  // another dialog on top, and this one may not survive it.
+  const { slug, name, hasPassword } = folder.value;
+
   // A folder with a password is only deleted when the request carries that password.
   let password: string | undefined;
-  if (folder.value.hasPassword) {
-    password = await askForPassword(`Enter the password for "${folder.value.name}" to delete it.`);
+  if (hasPassword) {
+    password = await askForPassword(`Enter the password for "${name}" to delete it.`);
     if (!password) return btn.stopLoading();
   }
 
   try {
     // Every clip goes with the folder, and each file is removed from storage one by one.
     // The POST alias carries the password: a DELETE body does not survive every proxy.
-    await $http.post(`/folder/${folder.value.slug}/delete`, password ? { password } : undefined);
+    await $http.post(`/folder/${slug}/delete`, password ? { password } : undefined);
     currentTab.value = "clipboard";
     closeFolderSettings();
     redirect($router.resolve({ name: "clipboard" }).href, 1000);
@@ -145,7 +230,7 @@ async function deleteFolder(btn: ILoadingButton) {
 </script>
 
 <template>
-  <Dialog :open="open" :title="folder?.name || ''" size="md" @close="closeFolderSettings">
+  <Dialog :open="open" :title="folder?.name || ''" size="md" :dismissable="dismissable" @close="closeFolderSettings">
     <template v-if="folder">
       <div class="space-y-6">
         <div class="flex items-center gap-2 text-sm text-muted">
@@ -154,6 +239,7 @@ async function deleteFolder(btn: ILoadingButton) {
             {{ VISIBILITY[folder.visibility].label }}
           </Badge>
           <span class="text-xs">{{ folder.contents }} clips</span>
+          <span v-if="retentionSummary" class="text-xs text-faint">· {{ retentionSummary }}</span>
         </div>
 
         <!-- Rename -->
@@ -194,6 +280,30 @@ async function deleteFolder(btn: ILoadingButton) {
               {{ copied ? "Copied" : "Copy link" }}
             </Button>
           </div>
+        </section>
+
+        <!-- Auto-delete -->
+        <section v-if="folder.visibility !== 'encrypted'" class="space-y-4 border-t border-line pt-5">
+          <div>
+            <h3 class="text-sm font-medium text-fg">Auto-delete</h3>
+            <p class="mt-0.5 text-sm text-muted">Clips outside these limits are deleted every hour, for good.</p>
+          </div>
+
+          <p v-if="folder.hasPassword" class="text-sm text-faint">A folder with a password cannot auto-delete.</p>
+
+          <template v-else>
+            <div class="space-y-2.5">
+              <Switch v-model="byAge" label="Delete clips after a number of days" />
+              <Input v-if="byAge" v-model="days" type="number" min="1" max="30" label="Days" hint="1 to 30" class="w-32" />
+            </div>
+
+            <div class="space-y-2.5">
+              <Switch v-model="byCount" label="Keep only the newest clips" />
+              <Input v-if="byCount" v-model="maxClips" type="number" min="50" max="10000" label="Clips to keep" hint="50 to 10,000" class="w-36" />
+            </div>
+
+            <Button variant="primary" :click="saveRetention" message="Saving" :disabled="!retentionChanged">Save</Button>
+          </template>
         </section>
 
         <!-- Delete -->
