@@ -4,7 +4,7 @@
  * revisiting whenever the data it handles or the services it calls change.
  */
 import PublicPage from "../../layouts/PublicPage.vue";
-import { GRACE_DAYS, OWNS3_URL, POLICY_UPDATED, SUPPORT_EMAIL } from "./legal";
+import { GRACE_DAYS, POLICY_UPDATED, SUPPORT_EMAIL } from "./legal";
 import config from "../../config";
 </script>
 
@@ -67,10 +67,10 @@ import config from "../../config";
       <section>
         <h2>Where files are stored</h2>
         <p>
-          Files go to object storage, and you choose whose. If you connect your own
-          <a :href="OWNS3_URL" target="_blank" rel="noopener" class="text-accent underline underline-offset-2">owns3</a>
-          server, they are stored in your own account with your provider and we never hold a copy. On Pro you can use
-          storage we operate instead, where your files sit under a prefix of your own.
+          Files go to object storage, and you choose whose. If you connect a bucket of your own, your files are stored in
+          your own account with your provider and we never hold a copy of them. To put them there we keep the access key
+          you gave us, encrypted, which is why the setup guide has you limit that key to the one bucket. On Pro you can
+          use storage we operate instead, where your files sit under a prefix of your own.
         </p>
         <p>
           Either way the bytes travel from your browser straight to that storage rather than through us.

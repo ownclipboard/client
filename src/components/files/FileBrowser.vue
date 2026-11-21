@@ -10,9 +10,9 @@
  * `space` is the switch between the two: with it, a tile says who uploaded the
  * file and anything asked for by hand comes from the space's routes.
  *
- * Both sides are served the same way otherwise. A listing carries a preview
- * key and the urls signed with it, which costs nothing to draw and expires;
- * where there is no key, a space's thumbnails are fetched one by one instead.
+ * Both sides are served the same way otherwise. A listing carries urls signed
+ * for one shared window, which cost nothing to draw and expire together; where
+ * it carries none, a space's thumbnails are fetched one by one instead.
  */
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import {
@@ -69,7 +69,7 @@ const emit = defineEmits<{
   (e: "page", page: number): void;
   /** Gone from storage. The page owns the list, so it is the page that trims it. */
   (e: "deleted", file: StoredFile): void;
-  /** The preview key is about to expire, taking the listing's urls with it. */
+  /** The listing's urls are about to expire, taking its thumbnails with them. */
   (e: "refresh"): void;
 }>();
 
@@ -104,9 +104,9 @@ function iconFor(file: StoredFile) {
 }
 
 /**
- * Where the listing came with no preview key, a space's thumbnails are signed
- * for one at a time, and the tiles fill in as they arrive. Nothing to do for
- * the account's own files: without a key they have no inline preview at all.
+ * Where the listing came with no urls, a space's thumbnails are signed for one
+ * at a time, and the tiles fill in as they arrive. Nothing to do for the
+ * account's own files: without them they have no inline preview at all.
  */
 const thumbs = ref<Record<string, string>>({});
 
@@ -126,8 +126,8 @@ watch(
   { immediate: true }
 );
 
-// The key rotates and the urls in hand die with it, so ask the page for a
-// fresh listing a little early. One already spent is caught on the next load.
+// The signing window rolls and the urls in hand die with it, so ask the page for
+// a fresh listing a little early. One already spent is caught on the next load.
 let keyTimer: ReturnType<typeof setTimeout> | undefined;
 
 watch(

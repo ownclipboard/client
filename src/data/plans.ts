@@ -47,9 +47,9 @@ export const PLAN_ROWS: PlanRow[] = [
   { feature: "File upload", desc: "Upload files into any folder", free: true, pro: true, icon: CloudArrowUpIcon },
   {
     feature: "File storage",
-    desc: ["Free: connect your own owns3 server.", "Pro: we host your files for you, nothing to set up."],
-    free: "Own server",
-    pro: "Own server or hosted",
+    desc: ["Free: connect your own s3 bucket.", "Pro: we host your files for you, nothing to set up."],
+    free: "Own bucket",
+    pro: "Own bucket or hosted",
     icon: ServerStackIcon,
     guide: true
   },
@@ -77,7 +77,7 @@ export const PLAN_FAQ = [
   {
     question: "Do I keep my files when Pro ends?",
     answer:
-      "Files on your own owns3 server are untouched. Files we host stay put, but uploads pause until you renew Pro or connect your own server."
+      "Files in your own bucket are untouched. Files we host stay put, but uploads pause until you renew Pro or connect your own bucket."
   }
 ];
 

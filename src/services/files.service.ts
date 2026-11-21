@@ -6,7 +6,8 @@ type FileUploadResponse = components["schemas"]["FileUploadResponse"];
 type FileConfirmResponse = components["schemas"]["FileConfirmResponse"];
 type FileUrlResponse = components["schemas"]["FileUrlResponse"];
 type FileListResponse = components["schemas"]["FileListResponse"];
-export type Owns3Status = components["schemas"]["Owns3Status"];
+export type StorageStatus = components["schemas"]["StorageStatus"];
+export type StorageConnectBody = components["schemas"]["StorageConnectBody"];
 export type StoredFile = components["schemas"]["File"];
 export type FilePreview = components["schemas"]["FilePreview"];
 
@@ -47,7 +48,7 @@ export type UploadOptions = {
 };
 
 /**
- * Upload a file to the user's owns3 storage.
+ * Upload a file to the account's storage.
  *  1. ask the API for a presigned upload slot
  *  2. PUT the bytes straight to storage (no oc-token)
  *  3. confirm with the API, which creates the file clip
@@ -102,9 +103,9 @@ export function putToStorage(
 }
 
 /**
- * Every uploaded file, newest first. When the user's owns3 app has preview links
- * on, each file carries a `previewUrl` that needs no authentication, and the
- * shared `preview` block says when the key behind them rotates: re-fetch at
+ * Every uploaded file, newest first. Each file carries a `previewUrl` that needs
+ * no authentication, and every url in one response is signed for the same window,
+ * so the shared `preview` block says when they all stop working: re-fetch by
  * `preview.expiresAt`. A null `preview` means falling back to `getFileUrl`.
  */
 export function listFiles(options: ListFilesOptions = {}) {
@@ -131,21 +132,31 @@ export function deleteFile(filePublicId: string, password?: string) {
   return $http.post<any, components["schemas"]["MessageResponse"]>(`clip/${filePublicId}/delete`, { password });
 }
 
-export function getOwns3Status() {
-  return $http.get<any, Owns3Status>("account/owns3");
+export function getStorageStatus() {
+  return $http.get<any, StorageStatus>("account/storage");
 }
 
-export function connectOwns3(endpoint: string, apiKey: string) {
-  return $http.post<any, components["schemas"]["Owns3ConnectResponse"]>("account/owns3", { endpoint, apiKey });
+/**
+ * Point the account at an s3 bucket of its own. Any s3 compatible storage works.
+ * The secret access key is stored encrypted and never comes back.
+ *
+ * `prefix` is the field that needs care. When the account already has files it has
+ * to be the prefix those files are already stored under, and the api proves that by
+ * reading one of them back rather than taking it on trust: a wrong prefix comes
+ * back as a 400 naming the file it went looking for. Show that message rather than
+ * a generic failure, because it is the only thing that tells the user what to fix.
+ */
+export function connectStorage(body: StorageConnectBody) {
+  return $http.post<any, components["schemas"]["StorageConnectResponse"]>("account/storage", body);
 }
 
-/** Pro only: store files on the storage operated by OwnClipboard instead of an own server. */
-export function useDefaultOwns3() {
-  return $http.post<any, components["schemas"]["Owns3ConnectResponse"]>("account/owns3/use-default");
+/** Pro only: keep files in the bucket OwnClipboard operates instead of one of your own. */
+export function useAppStorage() {
+  return $http.post<any, components["schemas"]["StorageConnectResponse"]>("account/storage/use-default");
 }
 
-export function disconnectOwns3() {
-  return $http.post<any, components["schemas"]["Owns3DisconnectResponse"]>("account/owns3/disconnect");
+export function disconnectStorage() {
+  return $http.post<any, components["schemas"]["StorageDisconnectResponse"]>("account/storage/disconnect");
 }
 
 /** Human readable file size. */

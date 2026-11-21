@@ -365,7 +365,7 @@ const proCta = computed(() => {
             <Badge v-if="authUser.data?.plan === 'free'" variant="accent">Current</Badge>
           </div>
           <div class="mt-3 text-3xl font-semibold tracking-tight text-fg">$0</div>
-          <p class="mt-1 text-sm text-muted">Forever. Clips, folders, encryption, and file uploads to your own owns3 server.</p>
+          <p class="mt-1 text-sm text-muted">Forever. Clips, folders, encryption, and file uploads to your own s3 bucket.</p>
           <Button
             v-if="!onPaidPro"
             class="mt-5"

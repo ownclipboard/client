@@ -103,7 +103,7 @@ function onDeleted(file: StoredFile) {
     >
       <template #notice>
         <p v-if="previewsOff" class="mb-4 text-xs text-faint">
-          Inline previews are off for your storage, so files open in a new tab instead.
+          Previews need your file storage connected, so files open in a new tab instead.
         </p>
       </template>
     </FileBrowser>

@@ -1,10 +1,28 @@
 <script setup lang="ts">
+/**
+ * Where this account's files live: the bucket we operate (Pro), or s3
+ * credentials of the user's own.
+ *
+ * The form is four fields plus three that have sensible defaults, and `prefix`
+ * is the one worth being careful with. For an account that already has files it
+ * has to be the prefix those files are stored under, or they all stop resolving.
+ * The api refuses a wrong one by reading an existing file back, and its refusal
+ * names the file and the path it expected — so that message is shown in the form
+ * rather than toasted, because it is the only thing that says what to fix.
+ */
 import { computed, onMounted, reactive, ref } from "vue";
-import { CloudIcon, ServerStackIcon } from "@heroicons/vue/20/solid";
+import { CloudIcon, ExclamationTriangleIcon, ServerStackIcon } from "@heroicons/vue/20/solid";
 import type { ILoadingButton } from "revue-components/vues/component-types";
 import { alertRequestError } from "../../http";
 import { $alert } from "../../components/ws-alert/ws-alert";
-import { connectOwns3, disconnectOwns3, getOwns3Status, useDefaultOwns3, type Owns3Status } from "../../services/files.service";
+import {
+  connectStorage,
+  disconnectStorage,
+  getStorageStatus,
+  useAppStorage,
+  type StorageConnectBody,
+  type StorageStatus
+} from "../../services/files.service";
 import { refreshAuthData } from "../../services/auth.service";
 import { useAuthUser } from "../../stores/auth.store";
 import { askToConfirm } from "../../components/ConfirmHandler";
@@ -12,25 +30,37 @@ import Card from "../../components/ui/Card.vue";
 import Button from "../../components/ui/Button.vue";
 import Input from "../../components/ui/Input.vue";
 import Badge from "../../components/ui/Badge.vue";
+import Switch from "../../components/ui/Switch.vue";
 import Skeleton from "../../components/ui/Skeleton.vue";
 import StorageSetupGuide from "../../components/storage/StorageSetupGuide.vue";
 
 const authUser = useAuthUser();
 
-const status = ref<Owns3Status | null>(null);
+const status = ref<StorageStatus | null>(null);
 const loading = ref(true);
-// Which option the user is setting up: the hosted storage (Pro) or their own owns3 server.
+// Set while the user is filling in credentials of their own.
 const showForm = ref<"own" | null>(null);
 const isPro = computed(() => authUser.data?.plan === "pro");
 
-const form = reactive({ endpoint: "", apiKey: "" });
+const form = reactive({
+  endpoint: "",
+  bucket: "",
+  accessKeyId: "",
+  secretAccessKey: "",
+  region: "auto",
+  prefix: "",
+  forcePathStyle: true
+});
+const advanced = ref(false);
+/** The api's own words when a connection is refused. Long, and worth reading. */
+const connectError = ref("");
 const guideOpen = ref(false);
 
 /**
  * Keep the summary `ping` gave us in step with what this page just did, so the
  * upload button reacts without waiting for a reload.
  */
-function setStatus(next: Owns3Status) {
+function setStatus(next: StorageStatus) {
   status.value = next;
   authUser.storage = {
     connected: next.connected,
@@ -42,7 +72,7 @@ function setStatus(next: Owns3Status) {
 
 async function loadStatus() {
   try {
-    setStatus(await getOwns3Status());
+    setStatus(await getStorageStatus());
   } catch (e) {
     alertRequestError(e);
   } finally {
@@ -52,29 +82,56 @@ async function loadStatus() {
 
 onMounted(loadStatus);
 
-function connect(btn: ILoadingButton) {
-  const endpoint = form.endpoint.trim();
-  const apiKey = form.apiKey.trim();
+function openForm() {
+  // Offer the prefix the account is already on, so replacing credentials keeps
+  // pointing at the same objects unless the user says otherwise.
+  form.prefix = status.value?.prefix || "";
+  connectError.value = "";
+  showForm.value = "own";
+}
 
-  if (!endpoint || !apiKey) {
-    $alert.warning("Both the server url and the api key are required.");
+function connect(btn: ILoadingButton) {
+  connectError.value = "";
+
+  const prefix = form.prefix.trim();
+
+  const body: StorageConnectBody = {
+    endpoint: form.endpoint.trim(),
+    bucket: form.bucket.trim(),
+    accessKeyId: form.accessKeyId.trim(),
+    secretAccessKey: form.secretAccessKey.trim(),
+    region: form.region.trim() || "auto",
+    forcePathStyle: form.forcePathStyle,
+    // Left out rather than sent empty: the api's validator rejects "" although its
+    // spec offers "" as the bucket root, and omitting it means the same root to it.
+    ...(prefix ? { prefix } : {})
+  };
+
+  if (!body.endpoint || !body.bucket || !body.accessKeyId || !body.secretAccessKey) {
+    $alert.warning("The endpoint, bucket, access key id and secret access key are all required.");
     return btn.stopLoading();
   }
 
-  return connectOwns3(endpoint, apiKey)
+  return connectStorage(body)
     .then((res) => {
       setStatus(res);
-      form.apiKey = "";
-      form.endpoint = "";
+      form.secretAccessKey = "";
+      form.accessKeyId = "";
       showForm.value = null;
+      advanced.value = false;
     })
-    .catch(alertRequestError)
+    .catch((e: any) => {
+      // The refusal explains itself, and a toast is the wrong place for it.
+      const message = e?.response?.data?.error;
+      if (message) connectError.value = message;
+      else alertRequestError(e);
+    })
     .finally(btn.stopLoading);
 }
 
 async function useHosted(btn: ILoadingButton) {
   try {
-    setStatus(await useDefaultOwns3());
+    setStatus(await useAppStorage());
     showForm.value = null;
   } catch (e: any) {
     alertRequestError(e);
@@ -88,13 +145,13 @@ async function useHosted(btn: ILoadingButton) {
 async function disconnect(btn: ILoadingButton) {
   const ok = await askToConfirm({
     title: "Disconnect storage?",
-    message: "Uploaded files stay on your owns3 server but become unavailable here until you reconnect.",
+    message: "Uploaded files stay in the bucket but become unavailable here until you reconnect.",
     confirmLabel: "Disconnect",
     danger: true
   });
   if (!ok) return btn.stopLoading();
 
-  return disconnectOwns3()
+  return disconnectStorage()
     .then(() => loadStatus())
     .catch(alertRequestError)
     .finally(btn.stopLoading);
@@ -103,7 +160,7 @@ async function disconnect(btn: ILoadingButton) {
 
 <template>
   <div class="space-y-5">
-    <Card title="File storage" description="Where uploaded files are kept. We host them for you (Pro), or connect your own owns3 server.">
+    <Card title="File storage" description="Where uploaded files are kept. We host them for you (Pro), or connect a bucket of your own.">
       <template #header>
         <Badge v-if="status?.connected" variant="accent">Connected</Badge>
         <Badge v-else-if="status?.proRequired" variant="warn">Pro required</Badge>
@@ -116,11 +173,11 @@ async function disconnect(btn: ILoadingButton) {
       </div>
 
       <template v-else>
-        <!-- Pro subscription lapsed while on the hosted storage -->
+        <!-- Pro subscription lapsed while on our bucket -->
         <div v-if="status?.proRequired" class="mb-4 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
-          Your files are on our storage, which needs an active Pro plan. Uploads are paused until you
+          Your files are in our bucket, which needs an active Pro plan. Uploads are paused until you
           <RouterLink :to="{ name: 'pricing' }" class="font-medium underline underline-offset-2">renew Pro</RouterLink>
-          or connect your own server below.
+          or connect a bucket of your own below.
         </div>
 
         <!-- Current connection -->
@@ -129,19 +186,19 @@ async function disconnect(btn: ILoadingButton) {
             <dt class="text-muted">Storage</dt>
             <dd class="flex items-center gap-2 text-fg">
               <template v-if="status.default"><CloudIcon class="h-4 w-4 text-accent" /> Hosted by us</template>
-              <template v-else><ServerStackIcon class="h-4 w-4 text-faint" /> Your own owns3 server</template>
+              <template v-else><ServerStackIcon class="h-4 w-4 text-faint" /> Your own bucket</template>
             </dd>
             <template v-if="!status.default && status.endpoint">
-              <dt class="text-muted">Server</dt>
-              <dd class="font-mono text-fg">{{ status.endpoint }}</dd>
+              <dt class="text-muted">Endpoint</dt>
+              <dd class="break-all font-mono text-fg">{{ status.endpoint }}</dd>
             </template>
-            <template v-if="!status.default && status.app">
-              <dt class="text-muted">App</dt>
-              <dd class="text-fg">{{ status.app.name }}</dd>
+            <template v-if="!status.default && status.bucket">
+              <dt class="text-muted">Bucket</dt>
+              <dd class="font-mono text-fg">{{ status.bucket }}</dd>
             </template>
-            <template v-if="status.permissions">
-              <dt class="text-muted">Permissions</dt>
-              <dd class="text-fg">{{ status.permissions.join(", ") }}</dd>
+            <template v-if="!status.default">
+              <dt class="text-muted">Prefix</dt>
+              <dd class="font-mono text-fg">{{ status.prefix || "bucket root" }}</dd>
             </template>
             <template v-if="status.connectedAt">
               <dt class="text-muted">Connected</dt>
@@ -149,7 +206,7 @@ async function disconnect(btn: ILoadingButton) {
             </template>
           </dl>
           <div class="mt-4 flex flex-wrap gap-2">
-            <Button size="sm" @click="showForm = 'own'">{{ status.default ? "Use my own server" : "Replace connection" }}</Button>
+            <Button size="sm" @click="openForm">{{ status.default ? "Use my own bucket" : "Replace credentials" }}</Button>
             <Button size="sm" variant="danger" :click="disconnect" message="Disconnecting">Disconnect</Button>
           </div>
         </template>
@@ -157,27 +214,24 @@ async function disconnect(btn: ILoadingButton) {
         <!-- Choose a storage -->
         <template v-else>
           <div v-if="!showForm" class="grid gap-3 sm:grid-cols-2">
-            <div
-              v-if="status?.defaultAvailable"
-              class="flex flex-col rounded-md border border-line p-4"
-            >
+            <div v-if="status?.defaultAvailable" class="flex flex-col rounded-md border border-line p-4">
               <div class="flex items-center gap-2 text-sm font-medium text-fg">
                 <CloudIcon class="h-4 w-4 text-accent" /> We host your files
                 <Badge variant="accent" uppercase class="ml-auto">Pro</Badge>
               </div>
-              <p class="mt-1 flex-1 text-sm text-muted">Nothing to set up, nothing to pay for elsewhere. Your files are kept on storage we run, under your own prefix.</p>
+              <p class="mt-1 flex-1 text-sm text-muted">Nothing to set up, nothing to pay for elsewhere. Your files are kept in storage we run, under your own prefix.</p>
               <Button v-if="isPro" class="mt-4" variant="primary" size="sm" :click="useHosted" message="Connecting">Host my files</Button>
               <Button v-else class="mt-4" size="sm" :to="{ name: 'pricing' }">Upgrade to Pro</Button>
             </div>
             <div class="flex flex-col rounded-md border border-line p-4">
               <div class="flex items-center gap-2 text-sm font-medium text-fg">
-                <ServerStackIcon class="h-4 w-4 text-faint" /> Your own owns3 server
+                <ServerStackIcon class="h-4 w-4 text-faint" /> Your own bucket
               </div>
               <p class="mt-1 flex-1 text-sm text-muted">
-                Run owns3 on your own infrastructure, or on ours, and connect it with an application api key.
+                Rent storage in your own name and connect it with an s3 key. Works with Cloudflare R2, Backblaze B2, MinIO and AWS S3.
               </p>
               <div class="mt-4 flex flex-wrap items-center gap-3">
-                <Button size="sm" :variant="status?.defaultAvailable ? 'secondary' : 'primary'" @click="showForm = 'own'">Connect my server</Button>
+                <Button size="sm" :variant="status?.defaultAvailable ? 'secondary' : 'primary'" @click="openForm">Connect my bucket</Button>
                 <button type="button" class="text-[13px] font-medium text-accent underline underline-offset-2" @click="guideOpen = true">
                   Show me how
                 </button>
@@ -186,24 +240,63 @@ async function disconnect(btn: ILoadingButton) {
           </div>
 
           <form v-else class="space-y-4" @submit.prevent>
+            <!-- The api's refusal, which says what to fix. -->
+            <div v-if="connectError" class="flex gap-2.5 rounded-md border border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-danger">
+              <ExclamationTriangleIcon class="mt-0.5 h-4 w-4 shrink-0" />
+              <p>{{ connectError }}</p>
+            </div>
+
             <Input
               v-model="form.endpoint"
               type="url"
-              label="Server url"
-              placeholder="https://owns3.example.com"
+              label="Endpoint"
+              placeholder="https://abc123.r2.cloudflarestorage.com"
               autocomplete="off"
               mono
-              hint="The address of your owns3 instance."
+              hint="The bucket's s3 address, without the bucket name."
             />
+            <Input v-model="form.bucket" label="Bucket" placeholder="my-clips" autocomplete="off" mono />
+            <Input v-model="form.accessKeyId" label="Access key id" autocomplete="off" mono />
             <Input
-              v-model="form.apiKey"
+              v-model="form.secretAccessKey"
               type="password"
-              label="Application api key"
-              placeholder="owns3_…"
+              label="Secret access key"
               autocomplete="off"
               mono
-              hint="The key needs read, write and delete permissions. We store it encrypted and never show it again."
+              hint="Stored encrypted and never shown again. Limit the key to this one bucket."
             />
+
+            <div>
+              <button
+                type="button"
+                class="text-[13px] font-medium text-accent underline underline-offset-2"
+                @click="advanced = !advanced"
+              >
+                {{ advanced ? "Hide" : "Show" }} region, prefix and url style
+              </button>
+              <!-- Worth opening when replacing credentials: the prefix has to keep matching. -->
+              <p v-if="!advanced && status?.connected" class="mt-1.5 text-xs text-faint">
+                Already have files? Open this and check the prefix they are stored under.
+              </p>
+            </div>
+
+            <template v-if="advanced">
+              <Input v-model="form.region" label="Region" placeholder="auto" autocomplete="off" mono hint="`auto` suits R2. On AWS, the bucket's real region." />
+              <Input
+                v-model="form.prefix"
+                label="Prefix"
+                placeholder="(bucket root)"
+                autocomplete="off"
+                mono
+                hint="Folder inside the bucket to keep files in. If you already have files here it must be the folder they are already in, or they stop resolving."
+              />
+              <Switch
+                v-model="form.forcePathStyle"
+                label="Put the bucket in the url path"
+                description="On for R2, Backblaze and MinIO. Off only if your provider needs the bucket as a subdomain."
+              />
+            </template>
+
             <div class="flex flex-wrap items-center gap-2">
               <Button variant="primary" type="submit" :click="connect" message="Connecting">Connect</Button>
               <Button variant="ghost" @click="showForm = null">Cancel</Button>
@@ -216,10 +309,9 @@ async function disconnect(btn: ILoadingButton) {
       </template>
 
       <p class="mt-4 text-xs text-faint">
-        owns3 is open source:
-        <a href="https://github.com/ownclipboard/owns3" target="_blank" rel="noopener" class="text-accent underline underline-offset-2">github.com/ownclipboard/owns3</a>.
-        No server of your own? Use <a href="https://s3.ownclipboard.com" target="_blank" rel="noopener" class="text-accent underline underline-offset-2">s3.ownclipboard.com</a>
-        with your own bucket, or <button type="button" class="text-accent underline underline-offset-2" @click="guideOpen = true">read the setup guide</button>.
+        Files upload from your browser straight to the bucket, so it needs a CORS rule allowing PUT, GET and HEAD from this
+        site. No bucket yet?
+        <button type="button" class="text-accent underline underline-offset-2" @click="guideOpen = true">Read the setup guide</button>.
       </p>
     </Card>
 

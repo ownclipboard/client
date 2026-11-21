@@ -117,10 +117,10 @@ async function copyText(key: string, text: string) {
     <div v-if="info" class="space-y-5 text-sm text-fg/90">
       <template v-if="info.kind === 'mixed-content'">
         <p>
-          This page is served over <b>https</b> but your owns3 server returned an <b>http</b> storage url
+          This page is served over <b>https</b> but your storage endpoint is an <b>http</b> address
           (<code class="font-mono text-xs">{{ info.host }}</code>). Browsers refuse to send data from a secure page to an insecure address.
         </p>
-        <p>Configure the storage endpoint in owns3 with an https url, then try the upload again.</p>
+        <p>Reconnect your storage in Settings using an https endpoint, then try the upload again.</p>
       </template>
 
       <template v-else>

@@ -516,7 +516,7 @@ export interface paths {
          *     `storage.connected` is true when files can be uploaded now. `storage.default` says the
          *     app's own storage is in use, `storage.defaultAvailable` whether it is offered at all,
          *     and `storage.proRequired` appears when the default storage is picked but the Pro plan
-         *     has lapsed. The full connection details live at `GET /client/v1/account/owns3`.
+         *     has lapsed. The full connection details live at `GET /client/v1/account/storage`.
          *
          *     `twoFactor.enabled` says an authenticator is enrolled, which a space can ask for.
          *     `twoFactor.onLogin` says signing in also asks for a code, the switch for which is
@@ -1160,6 +1160,239 @@ export interface paths {
                 };
                 /** @description Missing or invalid `oc-token`. */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Storage status
+         * @description Whether the account can upload files, and with whose bucket: the app's own
+         *     (`default: true`) or s3 credentials of its own. `defaultAvailable` says whether the
+         *     app offers its bucket at all. Never returns the secret access key.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Storage status. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StorageStatus"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Connect your own s3 bucket
+         * @description Stores s3 credentials for this account and uses that bucket for its files. Works with
+         *     any s3-compatible storage: Cloudflare R2, Backblaze B2, MinIO, AWS S3. Replaces any
+         *     previous connection. The secret access key is stored encrypted and never returned.
+         *
+         *     The credentials are checked before they are saved. They must be able to list the
+         *     bucket, and must be allowed to read, write and delete objects.
+         *
+         *     `prefix` is the key prefix every object is stored under, `""` for the bucket root.
+         *     **If this account already has files, the prefix must be the one they are already
+         *     stored under** — the check reads one existing file back and refuses the connection
+         *     when it cannot be found, so a wrong prefix cannot silently hide every file.
+         *
+         *     The bucket needs a CORS policy allowing `PUT`, `GET` and `HEAD` from the app's
+         *     origin, because uploads and downloads go straight to it from the browser.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "endpoint": "https://abc123.r2.cloudflarestorage.com",
+                     *       "bucket": "my-clips",
+                     *       "accessKeyId": "AKIAEXAMPLE",
+                     *       "secretAccessKey": "secret",
+                     *       "region": "auto",
+                     *       "forcePathStyle": true,
+                     *       "prefix": ""
+                     *     }
+                     */
+                    "application/json": components["schemas"]["StorageConnectBody"];
+                };
+            };
+            responses: {
+                /** @description Connected. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StorageConnectResponse"];
+                    };
+                };
+                /**
+                 * @description Invalid endpoint, the bucket could not be reached, the credentials were refused,
+                 *     or the prefix does not match where this account's existing files are stored.
+                 */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid `oc-token`. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/storage/use-default": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Use the app's own bucket
+         * @description Pro only. Puts the account's files in the bucket OwnClipboard operates, so there is
+         *     nothing to set up. Files are stored under the account's own prefix. Replaces any
+         *     previous connection, and is only available when the status reports `defaultAvailable`.
+         *     If the Pro subscription later expires the status reports `proRequired` and uploads are
+         *     refused until it is renewed or the account connects its own bucket.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Connected to the app's bucket. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StorageConnectResponse"];
+                    };
+                };
+                /** @description Not a Pro user. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The app's bucket is not configured or not reachable. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client/v1/account/storage/disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disconnect the storage
+         * @description Forgets the stored credentials. Files already uploaded stay in the bucket and stay
+         *     recorded, but cannot be listed, downloaded or deleted until a storage is connected
+         *     again. Nothing is removed from the bucket.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Disconnected. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StorageDisconnectResponse"];
+                    };
+                };
+                /** @description No storage connected. */
+                400: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4371,227 +4604,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/client/v1/account/owns3": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * owns3 connection status
-         * @description Whether the user has a storage connected: their own owns3 server (https://github.com/ownclipboard/owns3)
-         *     or the app's default one (`default: true`). `defaultAvailable` says whether the default option is offered.
-         *     Never returns an api key.
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Connection status. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Owns3Status"];
-                    };
-                };
-                /** @description Missing or invalid `oc-token`. */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /**
-         * Connect an owns3 server
-         * @description Validates the endpoint and api key against owns3 `/api/v1/me`. The key must carry the
-         *     `read`, `write` and `delete` permissions. Replaces any previous connection.
-         *     The key is stored encrypted.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    /**
-                     * @example {
-                     *       "endpoint": "https://owns3.example.com",
-                     *       "apiKey": "owns3_xxx"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["Owns3ConnectBody"];
-                };
-            };
-            responses: {
-                /** @description Connected. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Owns3ConnectResponse"];
-                    };
-                };
-                /** @description Invalid endpoint or the key lacks a required permission. */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description owns3 rejected the api key. */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description The owns3 endpoint could not be reached. */
-                502: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/client/v1/account/owns3/use-default": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Use the app's default storage
-         * @description Pro only. Connects the user to the owns3 storage operated by OwnClipboard, so they can
-         *     upload files without running their own server. Files are stored under the user's own
-         *     prefix. Replaces any previously connected server. Only available when the status reports
-         *     `defaultAvailable`. If the Pro subscription later expires, the status reports
-         *     `proRequired` and uploads are refused until it is renewed or an own server is connected.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Connected to the default storage. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Owns3ConnectResponse"];
-                    };
-                };
-                /** @description Not a Pro user. */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description The default storage is not configured or not reachable. */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/client/v1/account/owns3/disconnect": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Disconnect the owns3 server
-         * @description Removes the stored endpoint and key. Uploaded files stay on the server but cannot be downloaded or deleted until a server is connected again.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Disconnected. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Owns3DisconnectResponse"];
-                    };
-                };
-                /** @description No server connected. */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/client/v1/folders": {
         parameters: {
             query?: never;
@@ -4603,10 +4615,8 @@ export interface paths {
          * List folders
          * @description All folders of the user with their clip counts.
          *
-         *     Pass `?retention=1` to list only the folders that have an auto-delete cap set
-         *     (`retentionDays` or `maxClips`), which is what a client managing those folders —
-         *     the desktop clipboard push, say — wants rather than filtering the whole list itself.
-         *     Any other value, or no value, lists everything.
+         *     Pass `?retention=1` (or `true`) to list only the folders that have an auto-delete cap
+         *     set (`retentionDays` or `maxClips`). Any other value, or no value, lists everything.
          */
         get: {
             parameters: {
@@ -4718,13 +4728,12 @@ export interface paths {
          * @description Stores the password used to encrypt clips in this folder. The client must send the
          *     MD5 hash of the password, never the plain text. Folders with a password cannot be deleted.
          *
-         *     **Refused with a 400 on a folder that auto-deletes its clips.** A password and
-         *     auto-delete are mutually exclusive, because the hourly sweep flushes without anyone's
-         *     password. Clear the caps first with
+         *     A password and auto-delete are mutually exclusive. This returns a 400 on a folder
+         *     that auto-deletes its clips; clear its caps first with
          *     `POST /client/v1/folder/{folder}/retention` and `{ "days": 0, "maxClips": 0 }`.
          *
-         *     Note there is no endpoint that removes a folder password, so this is one way only:
-         *     once a folder has a password it can never be given auto-delete.
+         *     There is no endpoint that removes a folder password, so once a folder has one it can
+         *     never be given auto-delete.
          */
         post: {
             parameters: {
@@ -4867,27 +4876,24 @@ export interface paths {
          * @description Gives the folder up to two independent caps, and clips that fall outside either are
          *     deleted by a sweep that runs **hourly**:
          *
-         *     - `days` (1-30) — clips older than this many days are flushed, counted from when the
-         *       clip was saved. Editing a clip does not reset its clock, and neither does a
-         *       de-duplicated paste of the same content, which only touches `updatedAt`: such a
-         *       clip still expires on its original clock although it sorts as recently updated.
+         *     - `days` (1-30) — clips older than this many days are flushed. Age is measured from
+         *       `createdAt`, so neither editing a clip nor re-pasting the same content resets its
+         *       clock, even though both move `updatedAt`.
          *     - `maxClips` (50-10000) — only the newest this many clips are kept.
          *
          *     Send either, or both. `0` turns one off. Sending neither is a 400.
          *
          *     **This is permanent.** A flushed clip is gone; there is no trash to restore it from,
-         *     and a file clip takes its uploaded file with it. If the owner's owns3 server cannot
-         *     be reached, those file clips are left alone and retried on the next sweep, so a
-         *     folder can briefly hold more than its cap.
+         *     and a file clip takes its uploaded file with it. File clips are left alone and retried
+         *     on the next sweep when the owner's storage cannot be reached, so a folder can
+         *     briefly hold more than its cap.
          *
          *     Favorited and locked clips are never flushed, and they do not count towards
          *     `maxClips`: a folder capped at 1000 keeps 1000 ordinary clips *plus* any favorites.
          *
-         *     A folder cannot auto-delete and have a password at the same time, in either order:
-         *     the sweep runs with nobody's password, so the two together would walk around the
-         *     password check that deleting a clip enforces. Note there is no endpoint that removes
-         *     a folder password, so a folder that already has one can never be given auto-delete —
-         *     use a folder without one. Encrypted folders are refused for the same reason.
+         *     A folder cannot auto-delete and have a password at the same time, in either order.
+         *     Folders with a password and folders created with `visibility: encrypted` are refused
+         *     here, and a folder password cannot be removed, so use a folder without one.
          */
         post: {
             parameters: {
@@ -5145,15 +5151,12 @@ export interface paths {
         post?: never;
         /**
          * Delete folder
-         * @description Deletes the folder and every clip in it. Files in the folder are removed from owns3
+         * @description Deletes the folder and every clip in it. Files in the folder are removed from storage
          *     first, so storage must be connected when the folder holds any.
          *     A folder that has a password is deleted only when the request carries that password,
-         *     as its MD5 hash, in the body. Folders without one are deleted straight away, which
-         *     includes every folder that auto-deletes, since the two cannot be combined.
+         *     as its MD5 hash, in the body. Folders without one — including every folder that
+         *     auto-deletes — are deleted straight away.
          *     The default `clipboard` folder can never be deleted.
-         *
-         *     Deleting the folder removes its auto-delete settings with it; there is nothing left
-         *     for the hourly sweep to act on.
          */
         delete: {
             parameters: {
@@ -5345,15 +5348,16 @@ export interface paths {
          *     where `type` matches the start of the content type, so `image` returns every image
          *     and `image/png` only PNGs.
          *
-         *     When the user's owns3 app has preview links enabled, the response carries a `preview`
-         *     block with the rotating key's base url and expiry, and every file gets a `previewUrl`
-         *     that needs no authentication and can go straight into an `img` or `video` tag. The key
-         *     rotates, so refresh the listing at `preview.expiresAt`. Files of 99 MB or more are not
-         *     served this way.
+         *     Every file carries a `previewUrl`, and every image with `hasThumbnail` a `thumbUrl`.
+         *     Neither needs authentication, so they go straight into an `img` or `video` tag. They
+         *     are signed for a shared window (`preview.ttlMinutes`, 10 minutes) rather than per
+         *     request, so the same url comes back for the whole window and browsers can cache it.
+         *     `preview.expiresAt` is when they stop working: re-fetch the listing by then.
          *
-         *     `preview` is null when preview links are disabled for the app, when the user has no
-         *     storage connected, or when their default storage needs a Pro plan. Fall back to
-         *     `GET /client/v1/file/{file}/url` for a presigned url in that case.
+         *     `preview` is null, and no file has a `previewUrl`, when the page is empty, when the
+         *     user has no storage connected, or when their default storage needs a Pro plan they no
+         *     longer have. Fall back to `GET /client/v1/file/{file}/url` for a presigned url in
+         *     that case.
          */
         get: {
             parameters: {
@@ -5421,16 +5425,16 @@ export interface paths {
          *
          *     `preview` works the same as on `GET /files`: when it is present, every file has a
          *     `previewUrl`, and every image with `hasThumbnail` a `thumbUrl`, both needing no
-         *     authentication, so they go straight into an `img` or `video` tag. The key is the
-         *     shared storage's and rotates, so re-fetch the listing at `preview.expiresAt`.
+         *     authentication, so they go straight into an `img` or `video` tag. They are signed
+         *     for a shared window, so re-fetch the listing at `preview.expiresAt`.
          *
          *     Because a preview url carries no authentication, it keeps working for anyone
-         *     holding it until the key rotates, even if they are blocked or leave the space in
+         *     holding it until the window rolls, even if they are blocked or leave the space in
          *     the meantime. Use `GET space/{space}/file/{file}/url` instead where that matters:
          *     it is presigned per request, and `?thumb=1` gets the thumbnail.
          *
-         *     `preview` is null when preview links are disabled on the shared storage, or it is
-         *     not configured. Fall back to the same per-file route in that case.
+         *     `preview` is null when the page is empty, or when the shared storage is not
+         *     configured. Fall back to the same per-file route in that case.
          */
         get: {
             parameters: {
@@ -5494,7 +5498,7 @@ export interface paths {
         put?: never;
         /**
          * Request an upload slot
-         * @description Step 1 of 3. Requires a connected owns3 server. Creates a pending file record and
+         * @description Step 1 of 3. Requires a connected storage. Creates a pending file record and
          *     returns a presigned url. Step 2: `PUT` the raw file body to `upload.url` with the returned
          *     headers (no api key needed). Step 3: call confirm. Encrypted folders are refused.
          *     The clip's title is `title` when given, otherwise the file name; its content is always "File Clip".
@@ -5530,7 +5534,7 @@ export interface paths {
                         "application/json": components["schemas"]["FileUploadResponse"];
                     };
                 };
-                /** @description No owns3 server connected, validation error, or encrypted folder. */
+                /** @description No storage connected, validation error, or encrypted folder. */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -5548,7 +5552,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description owns3 could not be reached or refused the request. */
+                /** @description The storage could not be reached or refused the request. */
                 502: {
                     headers: {
                         [name: string]: unknown;
@@ -5576,7 +5580,7 @@ export interface paths {
         put?: never;
         /**
          * Confirm an upload
-         * @description Step 3 of 3. Verifies the object exists on owns3, records its real size and type, and
+         * @description Step 3 of 3. Verifies the object exists in storage, records its real size and type, and
          *     creates a clip of type `file` (content "File Clip") whose `file` field holds the file id and extension. Calling it again
          *     returns the existing clip with `info`.
          */
@@ -5601,7 +5605,7 @@ export interface paths {
                         "application/json": components["schemas"]["FileConfirmResponse"];
                     };
                 };
-                /** @description Not uploaded yet, no owns3 server connected, or the folder no longer exists. */
+                /** @description Not uploaded yet, no storage connected, or the folder no longer exists. */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -5662,7 +5666,7 @@ export interface paths {
                         "application/json": components["schemas"]["FileUrlResponse"];
                     };
                 };
-                /** @description Not uploaded yet or no owns3 server connected. */
+                /** @description Not uploaded yet or no storage connected. */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -5777,14 +5781,12 @@ export interface paths {
         put?: never;
         /**
          * Delete a file
-         * @description Deletes the object on owns3, the file record and its clip. Deleting a file clip
+         * @description Deletes the object in storage, the file record and its clip. Deleting a file clip
          *     through the clip delete endpoint does the same.
          *
-         *     An object that is already missing from owns3 is treated as deleted, so the records
-         *     still go and the call succeeds: the end state is what matters, and otherwise a file
-         *     whose object had vanished could never be removed. Any other owns3 failure — the
-         *     server unreachable, the key refused — aborts and changes nothing, so it is safe to
-         *     retry.
+         *     An object already missing from storage counts as deleted: the records still go and the
+         *     call succeeds. Any other storage failure — server unreachable, key refused — aborts and
+         *     changes nothing, so it is safe to retry.
          */
         post: {
             parameters: {
@@ -5807,7 +5809,7 @@ export interface paths {
                         "application/json": components["schemas"]["MessageResponse"];
                     };
                 };
-                /** @description No owns3 server connected. */
+                /** @description No storage connected. */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -6338,13 +6340,10 @@ export interface paths {
          *     client must encrypt the content before sending it.
          *
          *     If the target folder auto-deletes (`retentionDays` or `maxClips`, see
-         *     `POST /client/v1/folder/{folder}/retention`) the clip has a limited life and will be
-         *     flushed without further notice. Note how that meets de-duplication: an age window is
-         *     measured from when a clip was first saved, and a de-duplicated paste only touches
-         *     `updatedAt`, so re-pasting the same content does **not** extend its life — it expires
-         *     on the original clock even though it sorts as recently updated. Paste into a folder
-         *     without caps for anything that must be kept, or mark the clip `favorite`, which is
-         *     never flushed.
+         *     `POST /client/v1/folder/{folder}/retention`) the clip will be flushed without further
+         *     notice. Age is measured from `createdAt`, and a de-duplicated paste only touches
+         *     `updatedAt`, so re-pasting the same content does **not** extend its life. To keep a
+         *     clip, paste it into a folder without caps or mark it `favorite`.
          */
         post: {
             parameters: {
@@ -6583,7 +6582,8 @@ export interface paths {
          *     - The target folder must belong to the user and must not be encrypted.
          *     - Clips in encrypted folders are skipped (`encrypted`).
          *     - Clips already in the target folder are skipped (`same_folder`).
-         *     - File clips are skipped (`file`): owns3 has no server-side copy. Move them instead.
+         *     - File clips are skipped (`file`): a copy would leave two clips sharing one object,
+         *       so deleting either would break the other. Move them instead.
          *     - If the target already holds a clip with identical content it is merged:
          *       the existing clip is touched instead of creating a duplicate.
          */
@@ -6858,9 +6858,9 @@ export interface paths {
          * Delete a clip
          * @description Encrypted clips require the MD5 hash of their folder password in the body.
          *
-         *     A file clip takes its uploaded file with it, so owns3 must be connected to delete
-         *     one. An object already missing from owns3 counts as deleted and the call still
-         *     succeeds; any other owns3 failure aborts and changes nothing, so it is safe to retry.
+         *     A file clip takes its uploaded file with it, so a storage must be connected to delete
+         *     one. An object already missing from storage counts as deleted and the call still
+         *     succeeds; any other storage failure aborts and changes nothing, so it is safe to retry.
          *
          *     A clip in a folder that auto-deletes may be gone before you ask: see
          *     `POST /client/v1/folder/{folder}/retention`.
@@ -8107,15 +8107,15 @@ export interface components {
             /** @description Latest active subscription, if any. */
             subscription?: components["schemas"]["Subscription"];
         };
-        /** @description Short view of the user's file storage. The full view is `GET account/owns3`. */
+        /** @description Short view of the account's file storage. The full view is `GET account/storage`. */
         StorageSummary: {
             /** @description Whether files can be uploaded right now. */
             connected: boolean;
-            /** @description True when the storage in use is the app's default one, not the user's own server. */
+            /** @description True when the storage in use is the app's own bucket, not one of the account's. */
             default: boolean;
-            /** @description Whether this server offers a default storage at all. */
+            /** @description Whether this server offers its own bucket at all. */
             defaultAvailable: boolean;
-            /** @description Set when the user picked the default storage but is no longer Pro. `connected` is false until they renew or connect their own server. */
+            /** @description Set when the account picked the app's bucket but is no longer Pro. `connected` is false until they renew or connect their own. */
             proRequired?: boolean;
         };
         /** @description Live updates over Ably. Absent capability means the client just polls as before. */
@@ -8341,51 +8341,58 @@ export interface components {
             /** @description Required only for encrypted clips: MD5 hash of the folder password. */
             password?: string;
         };
-        Owns3ConnectBody: {
-            /** @description Base url of the owns3 server, e.g. `https://owns3.example.com`. */
+        /** @description S3 credentials for an account's own bucket. Works with any s3-compatible storage. */
+        StorageConnectBody: {
+            /** @description Bucket endpoint, e.g. `https://abc123.r2.cloudflarestorage.com`. */
             endpoint: string;
-            /** @description Application api key with read, write and delete permissions. */
-            apiKey: string;
-        };
-        Owns3App: {
-            id: string;
-            name: string;
-            slug: string;
-            /** @description Folder prefix the app is confined to. */
-            folder: string;
-        };
-        Owns3Status: {
-            connected: boolean;
-            /** @description True when the connected storage is the app's default one. */
-            default: boolean;
-            /** @description Whether the server offers a default storage (`POST account/owns3/use-default`, Pro only). */
-            defaultAvailable: boolean;
-            /** @description Set when the user chose the default storage but is no longer Pro: `connected` is false until they renew. */
-            proRequired?: boolean;
-            endpoint?: string;
-            app?: components["schemas"]["Owns3App"];
-            permissions?: ("read" | "write" | "delete")[];
-            connectedAt?: string;
-        };
-        Owns3ConnectResponse: {
-            connected: boolean;
-            /** @description True when the connected storage is the app's default one. */
-            default: boolean;
-            /** @description Whether the server offers a default storage (`POST account/owns3/use-default`, Pro only). */
-            defaultAvailable: boolean;
-            /** @description Set when the user chose the default storage but is no longer Pro: `connected` is false until they renew. */
-            proRequired?: boolean;
-            endpoint?: string;
-            app?: components["schemas"]["Owns3App"];
-            permissions?: ("read" | "write" | "delete")[];
-            connectedAt?: string;
             bucket: string;
+            accessKeyId: string;
+            /** @description Stored encrypted and never returned. */
+            secretAccessKey: string;
+            /** @description Defaults to `auto`, which is what r2 expects. On aws, the bucket's real region. */
+            region?: string;
+            /** @description Puts the bucket in the url path. Defaults to true, which suits r2, minio and most others. */
+            forcePathStyle?: boolean;
+            /**
+             * @description Key prefix every object is stored under, `""` for the bucket root.
+             *
+             *     If the account already has files this must be the prefix they are already stored under: the connection is refused when an existing file cannot be read back, so a wrong prefix cannot silently hide everything.
+             */
+            prefix?: string;
+        };
+        StorageStatus: {
+            connected: boolean;
+            /** @description True when the storage in use is the app's own bucket. */
+            default: boolean;
+            /** @description Whether the server offers its own bucket (`POST account/storage/use-default`, Pro only). */
+            defaultAvailable: boolean;
+            /** @description Set when the account chose the app's bucket but is no longer Pro: `connected` is false until they renew. */
+            proRequired?: boolean;
+            /** @description Absent on the app's own bucket, whose details are not the account's business. */
+            endpoint?: string;
+            bucket?: string;
+            prefix?: string;
+            connectedAt?: string;
+        };
+        StorageConnectResponse: {
+            connected: boolean;
+            /** @description True when the storage in use is the app's own bucket. */
+            default: boolean;
+            /** @description Whether the server offers its own bucket (`POST account/storage/use-default`, Pro only). */
+            defaultAvailable: boolean;
+            /** @description Set when the account chose the app's bucket but is no longer Pro: `connected` is false until they renew. */
+            proRequired?: boolean;
+            /** @description Absent on the app's own bucket, whose details are not the account's business. */
+            endpoint?: string;
+            bucket?: string;
+            prefix?: string;
+            connectedAt?: string;
             message: string;
         };
-        Owns3DisconnectResponse: {
+        StorageDisconnectResponse: {
             /** @constant */
             connected: false;
-            /** @description Uploaded files that stay on the server and become unavailable. */
+            /** @description Uploaded files that stay in the bucket and become unavailable. */
             files: number;
             message: string;
         };
@@ -8407,26 +8414,28 @@ export interface components {
             createdAt: string;
             uploadedAt?: string | null;
             /**
-             * @description Public url that needs no authentication, present only when the owns3 app holding the file has preview links enabled. Stops working when `FilePreview.expiresAt` passes.
+             * @description Public url that needs no authentication, so it can be used directly in `<img>` or `<video>`. Stops working when `FilePreview.expiresAt` passes.
              *
-             *     In a space listing this is the shared storage's key, so the url keeps working for anyone holding it until the key rotates, whether or not they are still a member.
+             *     Signed for the current window rather than for this request, so it is the same url for everyone and browsers can cache it. That also means anyone holding it can read the file until the window rolls, whether or not they are still a member of the space it came from.
              */
             previewUrl?: string;
             /** @description True when a 200x200 thumbnail was generated (images only). It is stored as `name.thumb.ext` next to the image and is not listed as a file of its own. */
             hasThumbnail?: boolean;
-            /** @description Public url of the thumbnail, present when `hasThumbnail` is true and preview links are enabled. */
+            /** @description Public url of the thumbnail, present when `hasThumbnail` is true. Expires with `previewUrl`. */
             thumbUrl?: string;
             /** @description Username of the member who uploaded it. Only in a space listing (`GET space/{space}/files`), where the files are not all the caller's own. */
             author?: string;
             /** @description True when the caller uploaded it. Only in a space listing. */
             mine?: boolean;
         };
-        /** @description Rotating owns3 preview key, shared by every file in the response. */
+        /**
+         * @description When the public urls in this response stop working.
+         *
+         *     Every `previewUrl` and `thumbUrl` is signed for the same rotating window, so they all expire together. Re-fetch the listing after `expiresAt` to get fresh ones.
+         */
         FilePreview: {
-            /** @description Files are readable at `baseUrl` + their path. Each file's ready url is its `previewUrl`. */
-            baseUrl: string;
-            /** @description When the key rotates. Re-fetch the listing after this. */
             expiresAt: string;
+            /** @description Length of the signing window. A url stays valid for two of them. */
             ttlMinutes: number;
         };
         FileListResponse: {

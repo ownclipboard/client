@@ -2,7 +2,7 @@
 /** How to reach us, plus the answers that save most people the trouble. */
 import { EnvelopeIcon, LifebuoyIcon } from "@heroicons/vue/20/solid";
 import PublicPage from "../../layouts/PublicPage.vue";
-import { ISSUES_URL, OWNS3_URL, SUPPORT_EMAIL } from "./legal";
+import { ISSUES_URL, SUPPORT_EMAIL } from "./legal";
 import config from "../../config";
 
 const faq = [
@@ -74,9 +74,8 @@ const faq = [
       <section class="rounded-lg border border-line bg-surface p-4 text-[13px] leading-relaxed text-muted">
         <h2 class="text-[15px] font-semibold text-fg">Running it yourself</h2>
         <p class="mt-1">
-          {{ config.name }} can store files in object storage you own, through
-          <a :href="OWNS3_URL" target="_blank" rel="noopener" class="text-accent underline underline-offset-2">owns3</a>,
-          which you can deploy to your own account. The setup guide lives in Settings under Storage.
+          {{ config.name }} can store files in object storage you own: any s3 compatible bucket, connected with a key
+          limited to it. The setup guide lives in Settings under Storage.
         </p>
       </section>
     </div>

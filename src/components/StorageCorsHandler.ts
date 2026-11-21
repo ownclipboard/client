@@ -40,7 +40,7 @@ export function describeStorageUrl(rawUrl: string, kind: StorageCorsInfo["kind"]
   // AWS: s3.<region>.amazonaws.com (path) or <bucket>.s3.<region>.amazonaws.com
   let virtualHost = false;
   if (provider === "backblaze" || provider === "aws") virtualHost = labels[0] !== "s3" && labels[1] === "s3";
-  // Generic providers: assume path style (owns3's default) unless the host has an extra label in
+  // Generic providers: assume path style (the connect form's default) unless the host has an extra label in
   // front of a region endpoint, e.g. <bucket>.nyc3.digitaloceanspaces.com.
   else if (provider === "s3") virtualHost = labels.length >= 4 && labels[0] !== "s3";
 
