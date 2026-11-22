@@ -11,6 +11,17 @@ export type StorageConnectBody = components["schemas"]["StorageConnectBody"];
 export type StoredFile = components["schemas"]["File"];
 export type FilePreview = components["schemas"]["FilePreview"];
 
+/**
+ * The api's ceiling on a single file, whatever storage it goes to, an account's
+ * own bucket included.
+ *
+ * Mirrored here only to turn a doomed upload away before it starts: the api is
+ * what decides, and it measures the real object at confirm, where a file over
+ * the limit is deleted again along with its record. So a wrong value here costs
+ * a wasted upload at worst, never a file that should not have been let through.
+ */
+export const MAX_FILE_BYTES = 4 * 1024 * 1024 * 1024;
+
 export type ListFilesOptions = {
   page?: number;
   perPage?: number;

@@ -69,6 +69,15 @@ export const spaceStorageLeft = computed(() => {
   return storage ? Math.max(0, storage.max - storage.used) : 0;
 });
 
+/**
+ * A space runs in our storage on its owner's plan, so it can sit well inside its
+ * own ceiling and still take nothing: the owner's account allowance covers every
+ * space they own. `limits.storage` cannot show that, which would leave a member
+ * refused in front of a half-empty bar, so the api says so outright. The owner's
+ * own figures are deliberately not exposed — how much they have used is theirs.
+ */
+export const spaceOwnerStorageFull = computed(() => !!currentSpace.value?.limits.ownerStorageFull);
+
 /** Why a file cannot go into this space, or "" when one can. */
 export const spaceUploadIssue = computed(() => {
   if (!currentSpace.value) return "";
@@ -78,6 +87,11 @@ export const spaceUploadIssue = computed(() => {
       : "The owner of this space needs Pro before anyone can upload files.";
   }
   if (spaceStorageLeft.value <= 0) return "This space has used all of its storage.";
+  if (spaceOwnerStorageFull.value) {
+    return isSpaceOwner.value
+      ? "You have used all of your file storage, so nothing can be added to this space."
+      : "The owner of this space has used all of their file storage.";
+  }
   return "";
 });
 

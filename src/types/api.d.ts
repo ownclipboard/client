@@ -1187,6 +1187,11 @@ export interface paths {
          * @description Whether the account can upload files, and with whose bucket: the app's own
          *     (`default: true`) or s3 credentials of its own. `defaultAvailable` says whether the
          *     app offers its bucket at all. Never returns the secret access key.
+         *
+         *     On the app's bucket it also carries `usage: { used, max }` — the account's own files
+         *     plus the files of every space it owns, against its allowance. `used` can be greater
+         *     than `max`: being over refuses the next upload and nothing else. Absent for an
+         *     account on a bucket of its own, which is neither counted nor capped.
          */
         get: {
             parameters: {
@@ -1751,6 +1756,10 @@ export interface paths {
         /**
          * Get a space
          * @description Includes plan limits and storage usage. Anyone who is not the owner or an active member gets a 404.
+         *
+         *     `limits.storage` is the space's own cap, but a space runs in the app's bucket on its
+         *     owner's plan, so `limits.ownerStorageFull` says whether the owner's account allowance
+         *     is used up — uploads are refused when it is, however much of the space's cap is left.
          */
         get: {
             parameters: {
@@ -3427,6 +3436,15 @@ export interface paths {
         /**
          * Start a file upload
          * @description Needs the space owner to be on Pro, and room in the space's 5 GB of storage. PUT the bytes to the returned url, then confirm.
+         *
+         *     A file may not be larger than 4 GB. Beyond the space's own 5 GB, the bytes also
+         *     count against the owner's 50 GB account allowance, whoever uploads them: a space
+         *     lives in our storage on its owner's plan, so one allowance covers every space an
+         *     account owns. An upload can therefore be refused because the owner is full even
+         *     when this space has room.
+         *
+         *     `size` is a claim and only saves a doomed upload the trip; confirm checks the real
+         *     size against the same limits.
          */
         post: {
             parameters: {
@@ -3453,13 +3471,17 @@ export interface paths {
                         "application/json": components["schemas"]["SpaceFileUploadResponse"];
                     };
                 };
-                /** @description Owner is not on Pro, or the space is out of storage. */
+                /**
+                 * @description The owner is not on Pro (`ProRequiredError`), the file is over 4 GB
+                 *     (`FileTooLargeError`), or the owner's allowance or the space itself is out of
+                 *     storage (`StorageFullError`). The message says which of the last two it was.
+                 */
                 403: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
+                        "application/json": components["schemas"]["ProRequiredError"] | components["schemas"]["FileTooLargeError"] | components["schemas"]["StorageFullError"];
                     };
                 };
                 423: components["responses"]["SpaceLocked"];
@@ -3492,6 +3514,12 @@ export interface paths {
         /**
          * Confirm an upload
          * @description Checks the file is in storage, then the clip becomes visible to the space.
+         *
+         *     The real size is measured here, so this is where the 4 GB file limit and the
+         *     space's own 5 GB are enforced whatever was declared at step 1. A file over either
+         *     is deleted from storage and both its record and its clip removed, since nothing
+         *     will ever point at it. The owner's account allowance is not re-checked: it is
+         *     soft, and this upload was already admitted under it.
          */
         post: {
             parameters: {
@@ -3525,13 +3553,17 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Not the uploader, or the file does not fit in the space. */
+                /**
+                 * @description Not the uploader (`ErrorResponse`); the uploaded object is over 4 GB
+                 *     (`FileTooLargeError`); or it does not fit the space (`StorageFullError`). In
+                 *     either of the last two the object, its record and the clip have been removed.
+                 */
                 403: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
+                        "application/json": components["schemas"]["FileTooLargeError"] | components["schemas"]["StorageFullError"] | components["schemas"]["ErrorResponse"];
                     };
                 };
                 /** @description Space not found, or the caller has no part in it. */
@@ -5502,6 +5534,16 @@ export interface paths {
          *     returns a presigned url. Step 2: `PUT` the raw file body to `upload.url` with the returned
          *     headers (no api key needed). Step 3: call confirm. Encrypted folders are refused.
          *     The clip's title is `title` when given, otherwise the file name; its content is always "File Clip".
+         *
+         *     Two limits are checked here. A file may not be larger than 4 GB, in any storage,
+         *     including one the account connected itself. And an account on our storage may hold
+         *     50 GB in it, counting the files of every space it owns; files in its own bucket do
+         *     not count. The storage limit is checked against what is already stored rather than
+         *     what this upload would add, so the last file is allowed to cross it; being over
+         *     blocks the next slot and nothing else.
+         *
+         *     `size` here is the client's claim and only saves a doomed upload the trip. Confirm
+         *     checks the real size and refuses the file there, so send an accurate one.
          */
         post: {
             parameters: {
@@ -5541,6 +5583,18 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /**
+                 * @description The declared size is over 4 GB (`FileTooLargeError`), or the account's storage
+                 *     is full (`StorageFullError`).
+                 */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FileTooLargeError"] | components["schemas"]["StorageFullError"];
                     };
                 };
                 /** @description Folder not found. */
@@ -5583,6 +5637,12 @@ export interface paths {
          * @description Step 3 of 3. Verifies the object exists in storage, records its real size and type, and
          *     creates a clip of type `file` (content "File Clip") whose `file` field holds the file id and extension. Calling it again
          *     returns the existing clip with `info`.
+         *
+         *     The real size is measured here, so this is where the 4 GB file limit is enforced
+         *     whatever was declared at step 1. A file over it is deleted from storage and its
+         *     record removed, since nothing will ever point at it; the upload has to be redone
+         *     with a smaller file. The storage limit is not re-checked: it is soft, and this
+         *     upload was already admitted under it.
          */
         post: {
             parameters: {
@@ -5612,6 +5672,18 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /**
+                 * @description The uploaded object is over 4 GB, `file.size` holding its real size. It has been
+                 *     deleted along with its record.
+                 */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FileTooLargeError"];
                     };
                 };
                 /** @description File not found. */
@@ -7922,6 +7994,45 @@ export interface components {
             /** @description Name of the request field that failed validation, when applicable. */
             field?: string;
         };
+        /**
+         * @description `403` body of an upload refused for the file's size.
+         *
+         *     Returned by both halves of an upload: on `upload` the size is the one the client declared, on `confirm` it is the object's real size, read back from the storage. In the second case the object and its record have already been removed.
+         */
+        FileTooLargeError: {
+            /** @description Human readable error message. */
+            error: string;
+            /** @description Name of the request field that failed validation, when applicable. */
+            field?: string;
+            file: {
+                /** @description Bytes. Declared on `upload`, measured on `confirm`. */
+                size: number;
+                /** @description The ceiling, in bytes. The same on every plan, and on an account's own bucket. */
+                max: number;
+            };
+        };
+        /** @description `403` body of an upload refused for want of room, either in the account's allowance or in the space's. */
+        StorageFullError: {
+            /** @description Human readable error message. */
+            error: string;
+            /** @description Name of the request field that failed validation, when applicable. */
+            field?: string;
+            storage: {
+                /** @description Bytes already stored. Can be greater than `max`: neither limit is enforced strictly. */
+                used: number;
+                /** @description The allowance, in bytes. */
+                max: number;
+            };
+        };
+        /** @description `403` body of a space upload refused because the space's owner is not on Pro. */
+        ProRequiredError: {
+            /** @description Human readable error message. */
+            error: string;
+            /** @description Name of the request field that failed validation, when applicable. */
+            field?: string;
+            /** @constant */
+            plan: "free";
+        };
         /** @description Simple message body. */
         MessageResponse: {
             message: string;
@@ -8368,6 +8479,15 @@ export interface components {
             defaultAvailable: boolean;
             /** @description Set when the account chose the app's bucket but is no longer Pro: `connected` is false until they renew. */
             proRequired?: boolean;
+            /**
+             * @description How much of the app's own bucket the account is using, and how much it is allowed.
+             *
+             *     Only on `GET account/storage`, and only while the account is on the app's bucket: files in a bucket the account brought itself are not counted and not capped. `used` covers the account's own files plus the files of every space it owns, and can exceed `max`, which is not enforced strictly — being over refuses the next upload and nothing else.
+             */
+            usage?: {
+                used: number;
+                max: number;
+            };
             /** @description Absent on the app's own bucket, whose details are not the account's business. */
             endpoint?: string;
             bucket?: string;
@@ -8382,6 +8502,15 @@ export interface components {
             defaultAvailable: boolean;
             /** @description Set when the account chose the app's bucket but is no longer Pro: `connected` is false until they renew. */
             proRequired?: boolean;
+            /**
+             * @description How much of the app's own bucket the account is using, and how much it is allowed.
+             *
+             *     Only on `GET account/storage`, and only while the account is on the app's bucket: files in a bucket the account brought itself are not counted and not capped. `used` covers the account's own files plus the files of every space it owns, and can exceed `max`, which is not enforced strictly — being over refuses the next upload and nothing else.
+             */
+            usage?: {
+                used: number;
+                max: number;
+            };
             /** @description Absent on the app's own bucket, whose details are not the account's business. */
             endpoint?: string;
             bucket?: string;
@@ -8695,6 +8824,12 @@ export interface components {
                     used: number;
                     max: number;
                 };
+                /**
+                 * @description True when the owner's own account allowance is used up.
+                 *
+                 *     A space lives in the app's bucket on its owner's plan, so an upload is refused once the owner is out of room however much of `storage.max` the space itself has left. Nothing in `storage` shows that, which would otherwise leave a member refused with a half-empty bar. Always false while `uploads` is false, which already says uploads are impossible. The owner's own figures are not exposed: how much they have used is their business, not every member's.
+                 */
+                ownerStorageFull: boolean;
             };
         };
         SpaceDetailResponse: {

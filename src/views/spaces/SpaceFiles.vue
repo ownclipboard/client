@@ -12,7 +12,7 @@ import { useRoute } from "vue-router";
 import { alertRequestError } from "../../http";
 import { $events } from "../../events";
 import { listSpaceFiles } from "../../services/spaces.service";
-import { currentSpaceFolders, refreshSpaceStats } from "../../stores/spaces.store";
+import { currentSpaceFolders, isSpaceOwner, refreshSpaceStats, spaceOwnerStorageFull } from "../../stores/spaces.store";
 import type { FilePreview, StoredFile } from "../../services/files.service";
 import { Pagination } from "../../components/paginator/Paginator.vue";
 import FileBrowser from "../../components/files/FileBrowser.vue";
@@ -70,8 +70,21 @@ onBeforeUnmount(() => $events.off("space:clips-changed", onClipsChanged));
     <template #icon><PhotoIcon /></template>
   </EmptyState>
 
+  <template v-else>
+    <!--
+      Said here rather than only when an upload is attempted: the space's own bar
+      can read half empty while the owner's allowance, which every space of theirs
+      shares, is what actually refuses the file.
+    -->
+    <div v-if="spaceOwnerStorageFull" class="mb-5 rounded-md border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
+      <template v-if="isSpaceOwner">
+        You have used all of your file storage, which every space you own shares, so nothing more can be added here.
+        <RouterLink :to="{ name: 'settings.storage' }" class="font-medium underline underline-offset-2">Free up room</RouterLink>.
+      </template>
+      <template v-else>The owner of this space has used all of their file storage, so nothing more can be added here.</template>
+    </div>
+
   <FileBrowser
-    v-else
     v-model:folder="folder"
     v-model:type="type"
     :files="files"
@@ -83,4 +96,5 @@ onBeforeUnmount(() => $events.off("space:clips-changed", onClipsChanged));
     @page="loadFiles"
     @refresh="loadFiles(files.page)"
   />
+  </template>
 </template>

@@ -19,6 +19,7 @@ import {
   connectStorage,
   disconnectStorage,
   getStorageStatus,
+  humanFileSize,
   useAppStorage,
   type StorageConnectBody,
   type StorageStatus
@@ -52,6 +53,25 @@ const form = reactive({
   forcePathStyle: true
 });
 const advanced = ref(false);
+
+/**
+ * Only our own bucket is counted and capped, so `usage` is absent on a bucket of
+ * the account's own. `used` is allowed to exceed `max`: the limit is checked
+ * against what is already stored rather than what an upload would add, so the
+ * file that crosses the line is let through and the next one is refused. The bar
+ * therefore has to stop at full while the figures beside it keep going.
+ */
+const usage = computed(() => {
+  const u = status.value?.usage;
+  if (!u || !u.max) return null;
+  return {
+    used: u.used,
+    max: u.max,
+    // Floored at a sliver so "something stored" never draws as an empty track.
+    percent: u.used > 0 ? Math.min(100, Math.max(2, Math.round((u.used / u.max) * 100))) : 0,
+    full: u.used >= u.max
+  };
+});
 /** The api's own words when a connection is refused. Long, and worth reading. */
 const connectError = ref("");
 const guideOpen = ref(false);
@@ -196,6 +216,18 @@ async function disconnect(btn: ILoadingButton) {
             <template v-if="!status.default">
               <dt class="text-muted">Prefix</dt>
               <dd class="font-mono text-fg">{{ status.prefix || "bucket root" }}</dd>
+            </template>
+            <template v-if="usage">
+              <dt class="text-muted">Used</dt>
+              <dd>
+                <div class="flex items-center gap-2">
+                  <div class="h-1.5 w-40 overflow-hidden rounded-full bg-sunken">
+                    <div :class="['h-full rounded-full', usage.full ? 'bg-warn' : 'bg-accent']" :style="{ width: `${usage.percent}%` }"></div>
+                  </div>
+                  <span class="font-mono text-[11px] text-muted">{{ humanFileSize(usage.used) }} of {{ humanFileSize(usage.max) }}</span>
+                </div>
+                <p v-if="usage.full" class="mt-1 text-xs text-warn">Full, so the next upload is refused. Delete some files to make room.</p>
+              </dd>
             </template>
             <template v-if="status.connectedAt">
               <dt class="text-muted">Connected</dt>

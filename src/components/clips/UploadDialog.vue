@@ -2,10 +2,14 @@
 /**
  * Confirm files before they upload: image previews, optional titles, per-file
  * progress and retry. Stays open until every file went through.
+ *
+ * A file over the api's size ceiling is held back here rather than sent. The api
+ * would refuse it anyway, but only after the whole object had gone up, since the
+ * real size is measured at confirm — so the round trip is the thing worth saving.
  */
 import { computed, onBeforeUnmount, reactive, watch, type PropType } from "vue";
 import { ArrowPathIcon, CheckCircleIcon, CloudArrowUpIcon, DocumentIcon, ExclamationCircleIcon, XMarkIcon } from "@heroicons/vue/20/solid";
-import { humanFileSize } from "../../services/files.service";
+import { humanFileSize, MAX_FILE_BYTES } from "../../services/files.service";
 import Dialog from "../ui/Dialog.vue";
 import Button from "../ui/Button.vue";
 
@@ -34,6 +38,8 @@ const rows = reactive<Row[]>([]);
 const isDone = (i: number) => props.results[i] === true;
 const errorOf = (i: number) => (typeof props.results[i] === "string" ? (props.results[i] as string) : null);
 const isImage = (file: File) => file.type.startsWith("image/");
+/** Refused before it is sent, so it is never one of the rows that upload. */
+const isTooLarge = (i: number) => !!rows[i] && rows[i].file.size > MAX_FILE_BYTES;
 
 function revokeAll() {
   rows.forEach((r) => r.preview && URL.revokeObjectURL(r.preview));
@@ -56,7 +62,10 @@ watch(
 onBeforeUnmount(revokeAll);
 
 const totalSize = computed(() => rows.reduce((n, r) => n + r.file.size, 0));
-const remaining = computed(() => rows.map((r, index) => ({ ...r, index })).filter((r) => !isDone(r.index)));
+const remaining = computed(() =>
+  rows.map((r, index) => ({ ...r, index })).filter((r) => !isDone(r.index) && !isTooLarge(r.index))
+);
+const oversized = computed(() => rows.filter((_, i) => isTooLarge(i)).length);
 const hasFailures = computed(() => rows.some((_, i) => errorOf(i) !== null));
 
 function remove(index: number) {
@@ -119,6 +128,9 @@ function cancel() {
           </div>
           <div v-else-if="isDone(i)" class="mt-2 flex items-center gap-1 text-xs text-accent"><CheckCircleIcon class="h-4 w-4" /> Uploaded</div>
           <div v-else-if="errorOf(i)" class="mt-2 flex items-start gap-1 text-xs text-danger"><ExclamationCircleIcon class="h-4 w-4 shrink-0" /> {{ errorOf(i) }}</div>
+          <div v-else-if="isTooLarge(i)" class="mt-2 flex items-start gap-1 text-xs text-danger">
+            <ExclamationCircleIcon class="h-4 w-4 shrink-0" /> Too large to upload. The limit is {{ humanFileSize(MAX_FILE_BYTES) }}.
+          </div>
         </div>
 
         <button
@@ -134,7 +146,12 @@ function cancel() {
     </ul>
 
     <template #footer>
-      <span class="mr-auto text-xs text-muted">Total {{ humanFileSize(totalSize) }}</span>
+      <span class="mr-auto text-xs text-muted">
+        Total {{ humanFileSize(totalSize) }}
+        <span v-if="oversized" class="text-danger">
+          · {{ oversized }} too large, {{ oversized === 1 ? "it stays" : "they stay" }} behind
+        </span>
+      </span>
       <Button variant="ghost" :disabled="uploading" @click="cancel">{{ hasFailures ? "Close" : "Cancel" }}</Button>
       <Button variant="primary" :disabled="uploading || !remaining.length" @click="confirm">
         <template v-if="uploading"><ArrowPathIcon class="h-4 w-4 animate-spin" /> Uploading</template>
