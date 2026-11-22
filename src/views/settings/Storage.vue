@@ -93,8 +93,6 @@ function openForm() {
 function connect(btn: ILoadingButton) {
   connectError.value = "";
 
-  const prefix = form.prefix.trim();
-
   const body: StorageConnectBody = {
     endpoint: form.endpoint.trim(),
     bucket: form.bucket.trim(),
@@ -102,9 +100,8 @@ function connect(btn: ILoadingButton) {
     secretAccessKey: form.secretAccessKey.trim(),
     region: form.region.trim() || "auto",
     forcePathStyle: form.forcePathStyle,
-    // Left out rather than sent empty: the api's validator rejects "" although its
-    // spec offers "" as the bucket root, and omitting it means the same root to it.
-    ...(prefix ? { prefix } : {})
+    // Empty means the bucket root, which the api takes as written.
+    prefix: form.prefix.trim()
   };
 
   if (!body.endpoint || !body.bucket || !body.accessKeyId || !body.secretAccessKey) {

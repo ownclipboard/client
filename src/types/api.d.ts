@@ -8446,7 +8446,7 @@ export interface components {
                 lastPage: number;
                 data: components["schemas"]["File"][];
             };
-            /** @description Null when preview links are off for the app, or no storage is connected. A space listing carries the shared storage's key, so it is present there on the same terms. */
+            /** @description Null when the page is empty, when no storage is connected, or when the account's default storage needs a Pro plan it no longer has. No file carries a `previewUrl` in that case. */
             preview: components["schemas"]["FilePreview"] | null;
         };
         FileUploadBody: {
