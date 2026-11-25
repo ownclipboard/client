@@ -3594,12 +3594,18 @@ export interface paths {
         /**
          * Download url of a file clip
          * @description Presigned and short lived. Add `?thumb=1` for the 200x200 thumbnail of an image (404 when it has none). To keep a copy, download it and upload it to your own storage with `/files/upload`, which needs your own storage connected.
+         *
+         *     `?download=1` makes the url save the file rather than preview it, and `?name=title|filename` picks the name it saves as — a title is slugified on underscores and given the file's real extension. The title used is the clip's.
          */
         get: {
             parameters: {
                 query?: {
                     /** @description Get the thumbnail instead of the file. */
                     thumb?: boolean;
+                    /** @description Save the file instead of previewing it. The url answers with a `Content-Disposition` of `attachment`. */
+                    download?: boolean;
+                    /** @description Which name a download saves as. Default `title`, which falls back to the file name when there is no title, when the title is the file name, or when slugifying it leaves nothing. */
+                    name?: "title" | "filename";
                 };
                 header?: never;
                 path: {
@@ -5712,13 +5718,20 @@ export interface paths {
         };
         /**
          * Temporary download url
-         * @description Presigned url valid for one hour, fetched directly from the user's storage without an api key. Add `?thumb=1` for the 200x200 thumbnail of an image.
+         * @description Presigned url valid for one hour, fetched directly from the user's storage without
+         *     an api key. Add `?thumb=1` for the 200x200 thumbnail of an image.
+         *
+         *     `?download=1` makes the url save the file rather than preview it, and `?name=title|filename` picks the name it saves as — a title is slugified on underscores and given the file's real extension.
          */
         get: {
             parameters: {
                 query?: {
                     /** @description Get the thumbnail instead of the file. 404 when it has none. */
                     thumb?: boolean;
+                    /** @description Save the file instead of previewing it. The url answers with a `Content-Disposition` of `attachment`. */
+                    download?: boolean;
+                    /** @description Which name a download saves as. Default `title`, which falls back to the file name when there is no title, when the title is the file name, or when slugifying it leaves nothing. */
+                    name?: "title" | "filename";
                 };
                 header?: never;
                 path: {
@@ -5783,12 +5796,18 @@ export interface paths {
          *     Presigned against the shared default storage, valid for one hour, and fetched with
          *     no api key. A personal file's id does not resolve here, nor a space file's on the
          *     personal route: both answer 404.
+         *
+         *     `?download=1` makes the url save the file rather than preview it, and `?name=title|filename` picks the name it saves as — a title is slugified on underscores and given the file's real extension.
          */
         get: {
             parameters: {
                 query?: {
                     /** @description Get the thumbnail instead of the file. 404 when it has none. */
                     thumb?: boolean;
+                    /** @description Save the file instead of previewing it. The url answers with a `Content-Disposition` of `attachment`. */
+                    download?: boolean;
+                    /** @description Which name a download saves as. Default `title`, which falls back to the file name when there is no title, when the title is the file name, or when slugifying it leaves nothing. */
+                    name?: "title" | "filename";
                 };
                 header?: never;
                 path: {

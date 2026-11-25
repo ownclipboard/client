@@ -2,15 +2,16 @@
 /** Full view of a clip: text with copy, url, or an inline file preview with download. */
 import { computed, ref, watch } from "vue";
 import { useClipboard } from "@vueuse/core";
-import { ArrowDownTrayIcon, ArrowTopRightOnSquareIcon, CheckIcon, ClipboardDocumentIcon, DocumentIcon } from "@heroicons/vue/20/solid";
+import { ArrowDownTrayIcon, ArrowTopRightOnSquareIcon, CheckIcon, ChevronDownIcon, ClipboardDocumentIcon, DocumentIcon } from "@heroicons/vue/20/solid";
 import { ClipPreviewClip, ClipPreviewUrlResolver, closeClipPreview, ShowClipPreview } from "./ClipPreviewHandler";
-import { getFileUrl } from "../services/files.service";
+import { getFileUrl, startDownload } from "../services/files.service";
 import { alertRequestError } from "../http";
 import { foldersAsObject } from "../stores/tabs.store";
 import Dialog from "./ui/Dialog.vue";
 import Button from "./ui/Button.vue";
 import Badge from "./ui/Badge.vue";
 import Spinner from "./ui/Spinner.vue";
+import DownloadMenu from "./files/DownloadMenu.vue";
 
 const clip = computed(() => ClipPreviewClip.value);
 
@@ -82,8 +83,25 @@ async function copyContent() {
   setTimeout(() => (copied.value = false), 2000);
 }
 
-function download() {
-  if (fileUrl.value) window.open(fileUrl.value, "_blank");
+const downloading = ref(false);
+
+/**
+ * Asked for fresh rather than reusing the url the preview is drawn with: that
+ * one has no attachment on it, so it would open the file instead of saving it.
+ */
+async function download(name: "title" | "filename") {
+  const c = clip.value;
+  if (!c?.file) return;
+  downloading.value = true;
+  try {
+    const options = { download: true, name } as const;
+    const resolver = ClipPreviewUrlResolver.value;
+    startDownload(resolver ? await resolver(c, options) : await getFileUrl(c.file.publicId, options));
+  } catch (e) {
+    alertRequestError(e);
+  } finally {
+    downloading.value = false;
+  }
 }
 </script>
 
@@ -143,7 +161,14 @@ function download() {
         <template v-else-if="clip">{{ clip.context.length.toLocaleString() }} characters</template>
       </span>
       <Button variant="ghost" @click="closeClipPreview">Close</Button>
-      <Button v-if="isFile" variant="primary" :disabled="!fileUrl" @click="download"><ArrowDownTrayIcon class="h-4 w-4" /> Download</Button>
+      <DownloadMenu v-if="isFile" placement="top" :disabled="!fileUrl" @download="download">
+        <template #trigger>
+          <Button variant="primary" :disabled="!fileUrl">
+            <Spinner v-if="downloading" size="sm" /><ArrowDownTrayIcon v-else class="h-4 w-4" /> Download
+            <ChevronDownIcon class="h-4 w-4 opacity-70" />
+          </Button>
+        </template>
+      </DownloadMenu>
       <Button v-else variant="primary" @click="copyContent">
         <CheckIcon v-if="copied" class="h-4 w-4" /><ClipboardDocumentIcon v-else class="h-4 w-4" />
         {{ copied ? "Copied" : "Copy" }}

@@ -126,7 +126,7 @@ const asOwnClip = computed<OwnClip>(() => ({
 }));
 
 function openPreview() {
-  previewClip(asOwnClip.value, () => getSpaceClipFileUrl(props.spaceId, props.clip.publicId));
+  previewClip(asOwnClip.value, (_clip, options) => getSpaceClipFileUrl(props.spaceId, props.clip.publicId, options));
 }
 
 async function download(btn: ILoadingButton) {

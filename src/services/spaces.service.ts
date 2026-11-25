@@ -12,7 +12,7 @@
  */
 import { $http } from "../http";
 import type { components } from "../types/api";
-import type { ListFilesOptions } from "./files.service";
+import { fileUrlParams, type FileUrlOptions, type ListFilesOptions } from "./files.service";
 
 export type Space = components["schemas"]["SpaceSummary"];
 export type SpaceDetail = components["schemas"]["SpaceDetail"];
@@ -223,10 +223,10 @@ export function confirmSpaceUpload(spaceId: string, clipId: string) {
  * By clip, for a file shown as a clip of the space. `thumb` asks for the
  * 200x200 version, which exists only for images.
  */
-export async function getSpaceClipFileUrl(spaceId: string, clipId: string, thumb = false) {
+export async function getSpaceClipFileUrl(spaceId: string, clipId: string, options: FileUrlOptions = {}) {
   const { url } = await $http.get<any, components["schemas"]["FileUrlResponse"]>(
     `space/${spaceId}/clip/${clipId}/url`,
-    { timeout: 30_000, params: thumb ? { thumb: 1 } : undefined }
+    { timeout: 30_000, params: fileUrlParams(options) }
   );
   return url;
 }
@@ -246,11 +246,11 @@ export function listSpaceFiles(spaceId: string, options: ListFilesOptions = {}) 
   return $http.get<any, components["schemas"]["FileListResponse"]>(`space/${spaceId}/files`, { params: options });
 }
 
-/** By file, for the space's own storage. `thumb` asks for the 200x200 image. */
-export async function getSpaceFileUrl(spaceId: string, fileId: string, thumb = false) {
+/** By file, for the space's own storage. Same options as the personal route. */
+export async function getSpaceFileUrl(spaceId: string, fileId: string, options: FileUrlOptions = {}) {
   const { url } = await $http.get<any, components["schemas"]["FileUrlResponse"]>(
     `space/${spaceId}/file/${fileId}/url`,
-    { timeout: 30_000, params: thumb ? { thumb: 1 } : undefined }
+    { timeout: 30_000, params: fileUrlParams(options) }
   );
   return url;
 }

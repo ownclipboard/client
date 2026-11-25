@@ -29,7 +29,7 @@ import { $events } from "../../events";
 import { useAuthUser } from "../../stores/auth.store";
 import { foldersAsObject, getFolders } from "../../stores/tabs.store";
 import { askForFolder } from "../FolderPickerHandler";
-import { getFileUrl } from "../../services/files.service";
+import { getFileUrl, startDownload } from "../../services/files.service";
 import { previewClip } from "../ClipPreviewHandler";
 import { refreshAuthData } from "../../services/auth.service";
 import { aesDecrypt, aesEncrypt } from "../../functions/crypto";
@@ -45,6 +45,8 @@ import DropdownMenu from "../ui/DropdownMenu.vue";
 import DropdownItem from "../ui/DropdownItem.vue";
 import Divider from "../ui/Divider.vue";
 import Textarea from "../ui/Textarea.vue";
+import Spinner from "../ui/Spinner.vue";
+import DownloadMenu from "../files/DownloadMenu.vue";
 
 const props = defineProps({
   clip: { type: Object as PropType<OwnClip>, required: true },
@@ -72,7 +74,7 @@ const thumbUrl = ref("");
 
 onMounted(() => {
   if (!clip.value.file?.thumbnail) return;
-  getFileUrl(clip.value.file.publicId, true)
+  getFileUrl(clip.value.file.publicId, { thumb: true })
     .then((url) => (thumbUrl.value = url))
     .catch(() => undefined);
 });
@@ -239,18 +241,16 @@ async function transfer(action: "move" | "copy") {
 
 /* ---------------- File download ---------------- */
 
-async function downloadFile(btn: ILoadingButton) {
-  // Open the tab first so the browser doesn't treat the async open as a popup.
-  const tab = window.open("", "_blank");
+const downloading = ref(false);
+
+async function downloadFile(name: "title" | "filename") {
+  downloading.value = true;
   try {
-    const url = await getFileUrl(clip.value.file!.publicId);
-    if (tab) tab.location.href = url;
-    else window.location.href = url;
+    startDownload(await getFileUrl(clip.value.file!.publicId, { download: true, name }));
   } catch (e) {
-    tab?.close();
     alertRequestError(e);
   } finally {
-    btn.stopLoading();
+    downloading.value = false;
   }
 }
 
@@ -384,7 +384,14 @@ function remove() {
         </IconButton>
         <IconButton v-else label="Preview" size="sm" @click="previewClip(clip)"><EyeIcon /></IconButton>
 
-        <IconButton v-if="isFile" label="Download" size="sm" variant="primary" :click="downloadFile"><ArrowDownTrayIcon /></IconButton>
+        <DownloadMenu v-if="isFile" @download="downloadFile">
+          <template #trigger>
+            <IconButton label="Download" size="sm" variant="primary">
+              <Spinner v-if="downloading" size="sm" />
+              <ArrowDownTrayIcon v-else />
+            </IconButton>
+          </template>
+        </DownloadMenu>
         <IconButton v-else :label="copied ? 'Copied' : 'Copy'" size="sm" variant="primary" :click="copyClip">
           <CheckIcon v-if="copied" />
           <ClipboardDocumentIcon v-else />

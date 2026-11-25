@@ -123,15 +123,56 @@ export function listFiles(options: ListFilesOptions = {}) {
   return $http.get<any, FileListResponse>("files", { params: options });
 }
 
+export type FileUrlOptions = {
+  /** The 200x200 thumbnail instead of the file, which only images have. */
+  thumb?: boolean;
+  /** Save the file rather than open it: the url answers with an attachment. */
+  download?: boolean;
+  /**
+   * Which name a download saves as. The api decides what each one resolves to —
+   * `title` slugifies the clip's title and keeps the file's real extension, and
+   * falls back to the stored name when there is no title worth using — so the
+   * two can land on the same name, and working that out here would only risk
+   * disagreeing with it.
+   */
+  name?: "title" | "filename";
+};
+
+/** Shared by the personal and space url routes, which take the same query. */
+export function fileUrlParams(options: FileUrlOptions) {
+  const params: Record<string, string> = {};
+  if (options.thumb) params.thumb = "1";
+  if (options.download) params.download = "1";
+  if (options.name) params.name = options.name;
+  return Object.keys(params).length ? params : undefined;
+}
+
 /**
  * Temporary (1 hour) download url for a file clip. Signed by the storage server.
- * `thumb` asks for the 200x200 version instead, which only images have.
  */
-export async function getFileUrl(filePublicId: string, thumb = false) {
+export async function getFileUrl(filePublicId: string, options: FileUrlOptions = {}) {
   const { url } = await $http.get<any, FileUrlResponse>(`file/${filePublicId}/url`, {
-    params: thumb ? { thumb: 1 } : undefined
+    params: fileUrlParams(options)
   });
   return url;
+}
+
+/**
+ * Start a download from a signed url.
+ *
+ * Asked for with `download`, the storage answers with an attachment, so the
+ * browser saves the file and the page stays where it is. That is why there is no
+ * tab opened ahead of the fetch here: nothing navigates, so nothing is mistaken
+ * for a popup, and a failed url fetch leaves no blank tab to close.
+ */
+export function startDownload(url: string) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.rel = "noopener";
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 /**

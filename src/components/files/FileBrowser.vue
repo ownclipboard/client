@@ -29,6 +29,7 @@ import {
   deleteFile,
   getFileUrl,
   humanFileSize,
+  startDownload,
   type FilePreview,
   type StoredFile
 } from "../../services/files.service";
@@ -39,9 +40,11 @@ import { foldersAsObject } from "../../stores/tabs.store";
 import { useAuthUser } from "../../stores/auth.store";
 import Select from "../ui/Select.vue";
 import Badge from "../ui/Badge.vue";
+import DownloadMenu from "./DownloadMenu.vue";
 import Button from "../ui/Button.vue";
 import IconButton from "../ui/IconButton.vue";
 import Skeleton from "../ui/Skeleton.vue";
+import Spinner from "../ui/Spinner.vue";
 import EmptyState from "../ui/EmptyState.vue";
 import Paginator, { type Pagination } from "../paginator/Paginator.vue";
 import FilePreviewModal from "./FilePreviewModal.vue";
@@ -118,7 +121,7 @@ watch(
     for (const file of files) {
       if (!file.hasThumbnail || file.status !== "uploaded" || file.thumbUrl) continue;
       const id = file.publicId;
-      getSpaceFileUrl(props.space, id, true)
+      getSpaceFileUrl(props.space, id, { thumb: true })
         .then((url) => (thumbs.value[id] = url))
         .catch(() => undefined);
     }
@@ -174,21 +177,24 @@ function openPreview(file: StoredFile) {
 }
 
 /**
- * Download one file. The tab is opened before the signed url is fetched, so the
- * browser does not treat the later navigation as a popup. The signed url is used
- * rather than the preview one: that key expires and may be cached.
+ * Download one file under the name the user picked. The signed url is asked for
+ * rather than the preview one: that key expires and may be cached, and only this
+ * one can carry the attachment the download needs.
  */
-async function downloadFile(btn: ILoadingButton, file: StoredFile) {
-  const tab = window.open("", "_blank");
+const downloading = ref("");
+
+async function downloadFile(file: StoredFile, name: "title" | "filename") {
+  downloading.value = file.publicId;
   try {
-    const url = await urlOf(file);
-    if (tab) tab.location.href = url;
-    else window.location.href = url;
+    const options = { download: true, name } as const;
+    const url = props.space
+      ? await getSpaceFileUrl(props.space, file.publicId, options)
+      : await getFileUrl(file.publicId, options);
+    startDownload(url);
   } catch (e) {
-    tab?.close();
     alertRequestError(e);
   } finally {
-    btn.stopLoading();
+    downloading.value = "";
   }
 }
 
@@ -299,10 +305,15 @@ function deleteFromPreview() {
       <div
         v-for="file in files.data"
         :key="file.publicId"
-        class="group relative overflow-hidden rounded-lg border border-line bg-surface transition-colors hover:border-line-strong"
+        class="group relative rounded-lg border border-line bg-surface transition-colors hover:border-line-strong"
       >
         <button type="button" class="block w-full text-left" :title="file.name" @click="openPreview(file)">
-          <div class="relative flex aspect-square items-center justify-center bg-sunken">
+          <!--
+            The clipping lives on the image rather than on the card, so the thumbnail
+            still takes the card's top corners while the download menu, which opens
+            from a corner of this tile, is free to overhang its edge.
+          -->
+          <div class="relative flex aspect-square items-center justify-center overflow-hidden rounded-t-lg bg-sunken">
             <img
               v-if="thumbnailOf(file)"
               :src="thumbnailOf(file)"
@@ -327,17 +338,20 @@ function deleteFromPreview() {
         </button>
 
         <div class="absolute right-2 top-2 flex gap-1">
-          <IconButton
-            label="Download"
-            size="sm"
-            variant="subtle"
-            class="shadow-card"
-            :disabled="file.status === 'pending'"
-            :click="downloadFile"
-            :data="file"
-          >
-            <ArrowDownTrayIcon />
-          </IconButton>
+          <DownloadMenu :disabled="file.status === 'pending'" @download="downloadFile(file, $event)">
+            <template #trigger>
+              <IconButton
+                label="Download"
+                size="sm"
+                variant="subtle"
+                class="shadow-card"
+                :disabled="file.status === 'pending'"
+              >
+                <Spinner v-if="downloading === file.publicId" size="sm" />
+                <ArrowDownTrayIcon v-else />
+              </IconButton>
+            </template>
+          </DownloadMenu>
           <IconButton
             v-if="canDelete"
             label="Delete"

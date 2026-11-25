@@ -8,8 +8,8 @@
  * space file has no preview url, so it is always fetched.
  */
 import { computed, ref, watch } from "vue";
-import { ArrowDownTrayIcon, DocumentIcon, TrashIcon } from "@heroicons/vue/20/solid";
-import { getFileUrl, humanFileSize, type StoredFile } from "../../services/files.service";
+import { ArrowDownTrayIcon, ChevronDownIcon, DocumentIcon, TrashIcon } from "@heroicons/vue/20/solid";
+import { getFileUrl, humanFileSize, startDownload, type StoredFile } from "../../services/files.service";
 import { getSpaceFileUrl } from "../../services/spaces.service";
 import { alertRequestError } from "../../http";
 import { foldersAsObject } from "../../stores/tabs.store";
@@ -17,6 +17,7 @@ import Dialog from "../ui/Dialog.vue";
 import Button from "../ui/Button.vue";
 import Badge from "../ui/Badge.vue";
 import Spinner from "../ui/Spinner.vue";
+import DownloadMenu from "./DownloadMenu.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -108,18 +109,27 @@ watch(
   { immediate: true }
 );
 
-async function download() {
-  if (!props.file) return;
-  // Opened before the await so the browser does not treat it as a popup.
-  const tab = window.open("", "_blank");
+const downloading = ref(false);
+
+/**
+ * Asked for fresh each time rather than reusing `downloadUrl`: that one carries
+ * no attachment, so it would open the file instead of saving it, and the name
+ * the user picked is part of the url, so there is nothing here worth caching.
+ */
+async function download(name: "title" | "filename") {
+  const file = props.file;
+  if (!file) return;
+  downloading.value = true;
   try {
-    // The signed url is the real file; the preview key expires and may be cached.
-    downloadUrl.value = downloadUrl.value || (await urlOf(props.file));
-    if (tab) tab.location.href = downloadUrl.value;
-    else window.location.href = downloadUrl.value;
+    const options = { download: true, name } as const;
+    const url = props.space
+      ? await getSpaceFileUrl(props.space, file.publicId, options)
+      : await getFileUrl(file.publicId, options);
+    startDownload(url);
   } catch (e) {
-    tab?.close();
     alertRequestError(e);
+  } finally {
+    downloading.value = false;
   }
 }
 </script>
@@ -173,9 +183,14 @@ async function download() {
         <TrashIcon class="h-4 w-4" /> Delete
       </Button>
       <Button variant="ghost" @click="emit('close')">Close</Button>
-      <Button variant="primary" :disabled="file?.status === 'pending'" @click="download">
-        <ArrowDownTrayIcon class="h-4 w-4" /> Download
-      </Button>
+      <DownloadMenu placement="top" :disabled="file?.status === 'pending'" @download="download">
+        <template #trigger>
+          <Button variant="primary" :disabled="file?.status === 'pending'">
+            <Spinner v-if="downloading" size="sm" /><ArrowDownTrayIcon v-else class="h-4 w-4" /> Download
+            <ChevronDownIcon class="h-4 w-4 opacity-70" />
+          </Button>
+        </template>
+      </DownloadMenu>
     </template>
   </Dialog>
 </template>
