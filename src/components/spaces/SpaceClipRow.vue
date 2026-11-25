@@ -88,7 +88,7 @@ const thumbUrl = ref("");
 
 onMounted(() => {
   if (!props.clip.file?.thumbnail) return;
-  getSpaceClipFileUrl(props.spaceId, props.clip.publicId, true)
+  getSpaceClipFileUrl(props.spaceId, props.clip.publicId, { thumb: true })
     .then((url) => (thumbUrl.value = url))
     .catch(() => undefined);
 });

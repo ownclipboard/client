@@ -89,7 +89,7 @@ function loadThumbs() {
   for (const report of reports.value) {
     if (!report.clip || !report.file?.thumbnail) continue;
     const id = report.publicId;
-    getSpaceClipFileUrl(props.spaceId, report.clip, true)
+    getSpaceClipFileUrl(props.spaceId, report.clip, { thumb: true })
       .then((url) => (thumbs.value[id] = url))
       .catch(() => undefined);
   }
